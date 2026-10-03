@@ -1,0 +1,18 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. ATM-DEADLOCK.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WS-RETRY-COUNT        PIC 9(02)   VALUE 0.
+       01 WS-DEVICE-READY       PIC X(01)   VALUE "N".
+       01 WS-DISPENSE-STATUS    PIC X(04)   VALUE "WAIT".
+
+       PROCEDURE DIVISION.
+       0000-POLL-DISPENSER.
+           ADD 1 TO WS-RETRY-COUNT.
+           IF WS-DEVICE-READY = "Y"
+               MOVE "DONE" TO WS-DISPENSE-STATUS
+               STOP RUN
+           ELSE
+               PERFORM 0000-POLL-DISPENSER
+           END-IF.
+           STOP RUN.

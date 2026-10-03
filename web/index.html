@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Błyskawica Mathy | Physics & Spectral Topology Engine for Code Intelligence</title>
+  <meta name="description" content="Mathematical representation and physics-informed topology engine for COBOL and core enterprise systems. Maps legacy code to Graph Laplacians, Diamond Yant Cymatics, PINN Diffusion, and Relativistic Geodesics.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+  <!-- Dynamic Quantum Background Mesh -->
+  <div class="mesh-background" id="mesh-bg"></div>
+
+  <!-- Main Application Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-badge">
+        <span class="pulse-orb"></span>
+        <span class="engine-tag">BŁYSKAWICA // MATHY V1.0</span>
+      </div>
+      <h1 class="app-title">PHYSICS & SPECTRAL TOPOLOGY ENGINE</h1>
+      <p class="app-subtitle">Continuous Mathematical Manifolds for COBOL & Core Enterprise Systems</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" id="btn-quick-compare">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        Compare V1 vs V2
+      </button>
+      <button class="btn btn-primary" id="btn-analyze-code">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        Analyze Topology
+      </button>
+    </div>
+  </header>
+
+  <!-- Navigation Tab Bar -->
+  <nav class="app-nav" aria-label="Engine Navigation">
+    <div class="nav-tabs">
+      <button class="tab-btn active" data-tab="single-view" id="tab-single">Single Program Manifold</button>
+      <button class="tab-btn" data-tab="compare-view" id="tab-compare">Differential Anomaly Radar (V1 vs V2)</button>
+      <button class="tab-btn" data-tab="brief-view" id="tab-brief">LLM Cognitive Synthesis</button>
+    </div>
+    <div class="system-status">
+      <span class="status-indicator online"></span>
+      <span class="status-text">Tensor Engine Ready &bull; CUDA Active &bull; Zero State Drift</span>
+    </div>
+  </nav>
+
+  <!-- Main Content Workspace -->
+  <main class="app-main">
+    
+    <!-- TAB 1: Single Program Manifold View -->
+    <section class="tab-pane active" id="pane-single-view">
+      
+      <!-- Top Row: Code Input & Config Controls -->
+      <div class="panel code-control-panel glass-card">
+        <div class="panel-header">
+          <div class="header-title-group">
+            <span class="icon-chip">01</span>
+            <h2>COBOL SOURCE CODE & MEMORY HUB LATTICE</h2>
+          </div>
+          <div class="panel-controls">
+            <label for="example-select" class="control-label">Load Canonical Archetype:</label>
+            <select id="example-select" class="form-select">
+              <option value="bank_demo_v1">BANK-DEMO-V1 (Core Banking Withdrawal)</option>
+              <option value="bank_demo_v2" selected>BANK-DEMO-V2 (Patched with Fraud & Risk)</option>
+              <option value="atm_deadlock">ATM-DEADLOCK (Terminal Trapping Loop)</option>
+              <option value="batch_interest">BATCH-INTEREST (High Coupling / Frame-Dragging)</option>
+            </select>
+            <button class="btn btn-sm btn-outline" id="btn-reset-code">Reset to Default</button>
+          </div>
+        </div>
+
+        <div class="code-editor-wrapper">
+          <textarea id="cobol-editor" class="code-editor" spellcheck="false" placeholder="Enter COBOL procedure & data division code..."></textarea>
+        </div>
+
+        <!-- Quick Metrics Ribbon -->
+        <div class="metrics-ribbon" id="single-metrics-ribbon">
+          <div class="ribbon-card">
+            <span class="ribbon-label">Program Nodes</span>
+            <span class="ribbon-val" id="val-nodes">--</span>
+          </div>
+          <div class="ribbon-card">
+            <span class="ribbon-label">Flow Edges</span>
+            <span class="ribbon-val" id="val-edges">--</span>
+          </div>
+          <div class="ribbon-card">
+            <span class="ribbon-label">Working-Storage Vars</span>
+            <span class="ribbon-val" id="val-vars">--</span>
+          </div>
+          <div class="ribbon-card accent-cyan">
+            <span class="ribbon-label">Fiedler Connectivity (λ₁)</span>
+            <span class="ribbon-val" id="val-fiedler">--</span>
+          </div>
+          <div class="ribbon-card accent-amber">
+            <span class="ribbon-label">Diffusion Half-Life (τ½)</span>
+            <span class="ribbon-val" id="val-halflife">--</span>
+          </div>
+          <div class="ribbon-card accent-violet">
+            <span class="ribbon-label">Geodesic Mass (M)</span>
+            <span class="ribbon-val" id="val-mass">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Core Physics Visualization Grid (4 Quadrants) -->
+      <div class="physics-quad-grid">
+        
+        <!-- Quadrant 1: Topological Graph Field (CFG + DFG) -->
+        <div class="panel quad-card glass-card" id="quad-graph">
+          <div class="panel-header">
+            <div class="header-title-group">
+              <span class="icon-chip cyan">Q1</span>
+              <h3>UNIFIED TOPOLOGY GRAPH (CFG &bull; DFG)</h3>
+            </div>
+            <div class="badge-group">
+              <span class="badge badge-cyan" id="badge-topology-state">Connected Field</span>
+              <button class="btn btn-xs btn-icon" id="btn-recenter-graph" title="Recenter Graph">&#x21bb;</button>
+            </div>
+          </div>
+          <div class="canvas-container">
+            <canvas id="canvas-graph"></canvas>
+            <div class="graph-legend">
+              <span class="legend-item"><span class="dot stmt-dot"></span> Statement</span>
+              <span class="legend-item"><span class="dot branch-dot"></span> Branch (IF/ELSE)</span>
+              <span class="legend-item"><span class="dot perform-dot"></span> Call (PERFORM)</span>
+              <span class="legend-item"><span class="dot var-dot"></span> Variable Hub</span>
+            </div>
+          </div>
+          <div class="node-inspector" id="node-inspector">
+            <span class="inspector-prompt">Click any node in the graph to inspect statement code and data flow dependencies.</span>
+          </div>
+        </div>
+
+        <!-- Quadrant 2: Diamond Yant 2D Cymatics (Chladni Plate Resonance) -->
+        <div class="panel quad-card glass-card" id="quad-cymatics">
+          <div class="panel-header">
+            <div class="header-title-group">
+              <span class="icon-chip gold">Q2</span>
+              <h3>DIAMOND YANT CYMATICS (CHLADNI RESONANCE)</h3>
+            </div>
+            <div class="badge-group">
+              <span class="badge badge-gold" id="badge-cymatics-modes">6 Modes Active</span>
+              <button class="btn btn-xs btn-icon" id="btn-toggle-cymatics-anim" title="Pause/Play Wave">&#x23ef;</button>
+            </div>
+          </div>
+          <div class="canvas-container">
+            <canvas id="canvas-cymatics"></canvas>
+            <div class="cymatics-overlay-info">
+              <div class="formula-banner">w(x,y) = &sum; c<sub>k</sub> [a<sub>k</sub> sin(n&pi;x) sin(m&pi;y) + b<sub>k</sub> sin(m&pi;x) sin(n&pi;y)]</div>
+              <div class="nodal-stats">Nodal Line Ratio: <strong id="val-nodal-ratio">--</strong></div>
+            </div>
+          </div>
+          <div class="modal-frequency-bar" id="modal-freq-bar">
+            <!-- Populated dynamically with modal pill badges -->
+          </div>
+        </div>
+
+        <!-- Quadrant 3: PINN Heat Diffusion Simulator -->
+        <div class="panel quad-card glass-card" id="quad-diffusion">
+          <div class="panel-header">
+            <div class="header-title-group">
+              <span class="icon-chip emerald">Q3</span>
+              <h3>PINN HEAT DIFFUSION ENGINE (&part;u/&part;t = -&alpha;Lu)</h3>
+            </div>
+            <div class="badge-group">
+              <span class="badge badge-emerald">Asymptotic Decay</span>
+            </div>
+          </div>
+          <div class="canvas-container">
+            <canvas id="canvas-diffusion"></canvas>
+          </div>
+          <div class="diffusion-controls">
+            <div class="diffusion-slider-row">
+              <label for="slider-time">Temporal Step (t = <span id="label-current-time">0.00</span>s):</label>
+              <input type="range" id="slider-time" min="0" max="2.0" step="0.05" value="0.0" class="custom-range">
+            </div>
+            <div class="diffusion-action-row">
+              <div class="impulse-selector">
+                <span>Inject Impulse into:</span>
+                <select id="select-impulse-node" class="form-select select-sm">
+                  <option value="0">Entry Block (0000-MAIN)</option>
+                </select>
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-sm btn-primary" id="btn-play-diffusion">Play Wave</button>
+                <button class="btn btn-sm btn-outline" id="btn-reset-diffusion">Reset</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quadrant 4: Relativistic State-Space Geodesic Radar -->
+        <div class="panel quad-card glass-card" id="quad-geodesic">
+          <div class="panel-header">
+            <div class="header-title-group">
+              <span class="icon-chip violet">Q4</span>
+              <h3>STATE-SPACE GEODESIC RADAR (BOYER-LINDQUIST)</h3>
+            </div>
+            <div class="badge-group">
+              <span class="badge badge-violet" id="badge-geodesic-status">Trajectory Normal</span>
+            </div>
+          </div>
+          <div class="canvas-container">
+            <canvas id="canvas-geodesic"></canvas>
+            <div class="geodesic-hud">
+              <div>Horizon r<sub>+</sub>: <strong id="hud-rplus">--</strong></div>
+              <div>Frame-Dragging a: <strong id="hud-spin">--</strong></div>
+              <div>Escape Velocity: <strong id="hud-escape">Positive</strong></div>
+            </div>
+          </div>
+          <div class="geodesic-explanation" id="geodesic-verdict-box">
+            Execution path successfully avoids terminal trap singularity; flow terminates gracefully at STOP RUN sink.
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 2: Differential Anomaly Radar (V1 vs V2 Comparison) -->
+    <section class="tab-pane" id="pane-compare-view">
+      <div class="compare-container">
+        
+        <!-- Scorecard Banner -->
+        <div class="panel compare-scorecard glass-card">
+          <div class="scorecard-header">
+            <h2>DIFFERENTIAL SPECTRAL SCORECARD: V1 &rarr; V2</h2>
+            <div class="verdict-pill" id="scorecard-verdict">Computing Comparison...</div>
+          </div>
+          <div class="scorecard-grid">
+            <div class="score-box">
+              <span class="score-title">Spectral Distance (L2)</span>
+              <span class="score-number cyan" id="cmp-spectral-dist">--</span>
+              <span class="score-subtext">Frobenius metric between modal signatures</span>
+            </div>
+            <div class="score-box">
+              <span class="score-title">&Delta; Fiedler Connectivity</span>
+              <span class="score-number emerald" id="cmp-fiedler-delta">--</span>
+              <span class="score-subtext">Reinforcement of global inter-routine flow</span>
+            </div>
+            <div class="score-box">
+              <span class="score-title">Cymatic Wave Match</span>
+              <span class="score-number gold" id="cmp-cymatic-match">--%</span>
+              <span class="score-subtext">Topological cosine correlation</span>
+            </div>
+            <div class="score-box">
+              <span class="score-title">Refactoring Health Index</span>
+              <span class="score-number violet" id="cmp-health-score">-- / 100</span>
+              <span class="score-subtext">Structural preservation & safety score</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Side-by-Side Code Editors -->
+        <div class="compare-code-grid">
+          <div class="panel glass-card code-half">
+            <div class="panel-header">
+              <div class="header-title-group">
+                <span class="icon-chip cyan">A</span>
+                <h3>BASE PROGRAM (V1 - ORIGINAL)</h3>
+              </div>
+            </div>
+            <textarea id="compare-code-a" class="code-editor" spellcheck="false"></textarea>
+          </div>
+
+          <div class="panel glass-card code-half">
+            <div class="panel-header">
+              <div class="header-title-group">
+                <span class="icon-chip emerald">B</span>
+                <h3>TARGET PROGRAM (V2 - REFACTORED / PATCHED)</h3>
+              </div>
+            </div>
+            <textarea id="compare-code-b" class="code-editor" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <div class="compare-action-bar">
+          <button class="btn btn-primary btn-lg" id="btn-trigger-compare">Re-evaluate Differential Radar</button>
+        </div>
+
+        <!-- Comparative Visual Charts -->
+        <div class="compare-charts-grid">
+          <div class="panel glass-card chart-half">
+            <div class="panel-header">
+              <h3>MODAL EIGENVALUE SPECTRUM COMPARISON</h3>
+            </div>
+            <div class="canvas-container">
+              <canvas id="canvas-compare-spectrum"></canvas>
+            </div>
+          </div>
+          <div class="panel glass-card chart-half">
+            <div class="panel-header">
+              <h3>TOPOLOGICAL ANOMALY & RADAR PROFILE</h3>
+            </div>
+            <div class="canvas-container">
+              <canvas id="canvas-compare-radar"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 3: LLM Cognitive Synthesis -->
+    <section class="tab-pane" id="pane-brief-view">
+      <div class="brief-container">
+        <div class="panel glass-card brief-panel">
+          <div class="panel-header">
+            <div class="header-title-group">
+              <span class="icon-chip violet">AI</span>
+              <h2>STRUCTURED LLM MATHEMATICAL PROMPT & AUDIT BRIEF</h2>
+            </div>
+            <button class="btn btn-primary" id="btn-copy-brief">Copy Markdown to Clipboard</button>
+          </div>
+          <div class="brief-description">
+            This brief translates the continuous topological tensors, modal frequencies, and diffusion half-lives into a formal mathematical representation. Provide this directly to LLMs (Claude, GPT, Gemini, Qwen) to bypass lexical hallucinations in archaic COBOL syntax.
+          </div>
+          <pre class="brief-output" id="brief-text-content">Generating cognitive brief...</pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="app-footer">
+    <div class="footer-left">
+      <span>BŁYSKAWICA MATHY &bull; Spectral Graph Theory &bull; Physics-Informed Neural Networks &bull; General Relativity Geodesics</span>
+    </div>
+    <div class="footer-right">
+      <span>Repository: <a href="https://github.com/V1B3hR/Blyskawica" target="_blank" rel="noopener">V1B3hR/Blyskawica</a></span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
