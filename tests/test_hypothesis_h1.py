@@ -9,10 +9,10 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from mathy.ast_graph_builder import CobolASTGraphBuilder
-from mathy.program_slicer import ProgramSlicer
-from mathy.diffusion_ranker import DiffusionRanker
-from mathy.mutation_benchmark import MutationBenchmark
+from rezonator.ast_graph_builder import CobolASTGraphBuilder
+from rezonator.program_slicer import ProgramSlicer
+from rezonator.diffusion_ranker import DiffusionRanker
+from rezonator.mutation_benchmark import MutationBenchmark
 
 
 class TestHypothesisH1(unittest.TestCase):

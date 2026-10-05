@@ -16,10 +16,10 @@ if sys.stdout.encoding != 'utf-8':
     except Exception:
         pass
 
-from mathy.cobol_parser import CobolParser
-from mathy.program_comparator import ProgramComparator
-from mathy.llm_synthesizer import LLMSynthesizer
-from mathy.server import run_server
+from rezonator.cobol_parser import CobolParser
+from rezonator.program_comparator import ProgramComparator
+from rezonator.llm_synthesizer import LLMSynthesizer
+from rezonator.server import run_server
 
 
 def cmd_demo():

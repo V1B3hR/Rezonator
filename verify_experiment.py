@@ -13,8 +13,8 @@ if sys.stdout.encoding != 'utf-8':
     except Exception:
         pass
 
-from mathy.program_comparator import ProgramComparator
-from mathy.llm_synthesizer import LLMSynthesizer
+from rezonator.program_comparator import ProgramComparator
+from rezonator.llm_synthesizer import LLMSynthesizer
 
 
 def main():

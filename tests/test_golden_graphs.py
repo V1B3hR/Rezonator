@@ -11,9 +11,9 @@ from typing import Set, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from mathy.ast_graph_builder import CobolASTGraphBuilder
-from mathy.graph_field import GraphField
-from mathy.cycle_detector import CycleDetector
+from rezonator.ast_graph_builder import CobolASTGraphBuilder
+from rezonator.graph_field import GraphField
+from rezonator.cycle_detector import CycleDetector
 from tests.golden_graphs import (
     BANK_DEMO_V1_NODES, BANK_DEMO_V1_EDGES, BANK_DEMO_V1_VARS,
     BANK_DEMO_V2_NODES, BANK_DEMO_V2_EDGES, BANK_DEMO_V2_VARS,
@@ -161,7 +161,7 @@ class TestGoldenGraphs(unittest.TestCase):
         self.assertEqual(cycles["risk_verdict"], "DIRECTED_ACYCLIC_FLOW")
 
     def test_05_runtime_execution_traces(self):
-        from mathy.cobol_runtime import CobolRuntime
+        from rezonator.cobol_runtime import CobolRuntime
         runtime = CobolRuntime()
 
         # 1. Bank Demo V1
@@ -202,7 +202,7 @@ class TestGoldenGraphs(unittest.TestCase):
         self.assertEqual(sb.variables["WS-MONTHS-ACTIVE"], 36)
 
     def test_06_mutation_ground_truth_impact(self):
-        from mathy.cobol_runtime import CobolRuntime
+        from rezonator.cobol_runtime import CobolRuntime
         runtime = CobolRuntime()
 
         c1 = self._load_code("bank_demo_v1.cbl")

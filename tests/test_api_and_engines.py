@@ -19,14 +19,14 @@ import urllib.request
 import urllib.error
 import numpy as np
 
-from mathy.cobol_parser import CobolParser
-from mathy.graph_field import GraphField
-from mathy.diamond_yant import DiamondYantSpectralEngine
-from mathy.pinn_diffusion import PINNGraphDiffusionEngine
-from mathy.cycle_detector import CycleDetector
-from mathy.program_comparator import ProgramComparator
-from mathy.llm_synthesizer import LLMSynthesizer
-from mathy.server import HTTPServer, MathyRequestHandler
+from rezonator.cobol_parser import CobolParser
+from rezonator.graph_field import GraphField
+from rezonator.diamond_yant import DiamondYantSpectralEngine
+from rezonator.pinn_diffusion import PINNGraphDiffusionEngine
+from rezonator.cycle_detector import CycleDetector
+from rezonator.program_comparator import ProgramComparator
+from rezonator.llm_synthesizer import LLMSynthesizer
+from rezonator.server import HTTPServer, MathyRequestHandler
 
 
 class TestRezonatorEngine(unittest.TestCase):

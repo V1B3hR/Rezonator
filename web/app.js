@@ -1,5 +1,5 @@
 /**
- * Błyskawica Mathy: Frontend Application Logic
+ * Błyskawica Rezonator: Frontend Application Logic
  * Interactive 4-Quadrant Physics Visualizers & Differential Anomaly Radar
  */
 

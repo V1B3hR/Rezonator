@@ -1,8 +1,37 @@
 """
-Błyskawica Mathy: Physics & Spectral Topology Engine for Code Intelligence.
-Bridging Legacy COBOL/Mainframe Systems with Graph Laplacians, PINN Diffusion,
-Diamond Yant Modal Cymatics, and Relativistic State-Space Geodesics.
+Backward-compatibility forwarder for legacy 'mathy' imports.
+All active development and core implementations are located in 'rezonator'.
 """
 
-__version__ = "0.1.0"
-__author__ = "Błyskawica & Mathy Team"
+import sys
+from rezonator import (
+    __version__,
+    __author__,
+    CobolASTGraphBuilder,
+    CobolParser,
+    CobolRuntime,
+    CycleDetector,
+    DiamondYantSpectralEngine,
+    DiffusionRanker,
+    GraphField,
+    LLMSynthesizer,
+    MutationBenchmark,
+    PINNGraphDiffusionEngine,
+    ProgramComparator,
+    ProgramSlicer,
+)
+
+__all__ = [
+    "CobolASTGraphBuilder",
+    "CobolParser",
+    "CobolRuntime",
+    "CycleDetector",
+    "DiamondYantSpectralEngine",
+    "DiffusionRanker",
+    "GraphField",
+    "LLMSynthesizer",
+    "MutationBenchmark",
+    "PINNGraphDiffusionEngine",
+    "ProgramComparator",
+    "ProgramSlicer",
+]

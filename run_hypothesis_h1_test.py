@@ -11,7 +11,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from mathy.mutation_benchmark import MutationBenchmark
+from rezonator.mutation_benchmark import MutationBenchmark
 
 
 def main():

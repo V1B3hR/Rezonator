@@ -3,12 +3,12 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from mathy.ast_graph_builder import CobolASTGraphBuilder
-from mathy.graph_field import GraphField
-from mathy.cycle_detector import CycleDetector
-from mathy.diamond_yant import DiamondYantSpectralEngine
-from mathy.pinn_diffusion import PINNGraphDiffusionEngine
-from mathy.program_comparator import ProgramComparator
+from rezonator.ast_graph_builder import CobolASTGraphBuilder
+from rezonator.graph_field import GraphField
+from rezonator.cycle_detector import CycleDetector
+from rezonator.diamond_yant import DiamondYantSpectralEngine
+from rezonator.pinn_diffusion import PINNGraphDiffusionEngine
+from rezonator.program_comparator import ProgramComparator
 
 def main():
     builder = CobolASTGraphBuilder()

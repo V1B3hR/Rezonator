@@ -1,0 +1,12 @@
+# REZONATOR: Physics & Spectral Topology Engine for Code Intelligence
+# Strategic Specification of Runtime and Scientific Computing Dependencies
+
+# Core Numerical & Spectral Foundations
+numpy>=1.24.0,<3.0.0
+scipy>=1.10.0,<2.0.0
+
+# Physics-Informed Neural Network (PINN) Diffusion Trajectory Solver
+torch>=2.0.0
+
+# Optional AST Parser (Rezonator embeds a 100% hermetic pure-Python parser)
+# cobolparser>=0.1.0; platform_system != "Windows" or platform_machine != "AMD64"
