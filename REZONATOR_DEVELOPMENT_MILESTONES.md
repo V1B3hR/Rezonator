@@ -21,9 +21,14 @@ This document chronicles the major development milestones of the project, detail
   │   Initial Prototype        Deprecate Bogus GR         Ground-Truth Specs    │
   │   AST to Laplacians        Tarjan SCC Cycles          Isomorphism Tests     │
   │                                                               │             │
-  │  [M5: Rezonator V1.0] <── [M4: Sparse Lanczos] <───── [M3: Hermetic Parser] │
-  │   Namespace Rebrand        O(k*E) Scalability          Pure-Python Core     │
-  │   Strategic Docs & V&V     Shift-Invert 1800x          Windows SAC Fixed    │
+  │  [M5: Empirical Test] <── [M4: Sparse Lanczos] <───── [M3: Hermetic Parser] │
+  │   Hypothesis H1 Battery    O(k*E) Scalability          Pure-Python Core     │
+  │   Precision/MAP Metrics    Shift-Invert 1800x          Windows SAC Fixed    │
+  │        │                                                                    │
+  │        v                                                                    │
+  │  [M6: Production V1.0] ─> [M7: Enterprise Dialects & Zero-Trust Hardening]  │
+  │   Namespace Rebrand        CICS / SQL / COPYBOOK Inlining                   │
+  │   Strategic Docs & V&V     HTTP/1.0, CORS, SHA-256 Provenance, AST Sandbox  │
   └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -120,13 +125,36 @@ This document chronicles the major development milestones of the project, detail
 
 ---
 
+### Milestone 7: Enterprise Dialects & Zero-Trust Security Hardening (Phase F4 & Hardening)
+**Theme**: *Production Dialects (CICS / SQL / Copybooks) & Zero-Trust Defense Boundaries*
+- **Key Breakthrough**: Expanded the AST builder to ingest real-world enterprise mainframe dialects (CICS, DB2 SQL, nested copybooks) while hardening the entire runtime and HTTP stack against untrusted input.
+- **Deliverables**:
+  - **Milestone F4.1 Enterprise Dialects**:
+    - Embedded `EXEC SQL` statements parsed into typed `db_access` nodes with reads/writes connected to persistent `db_table:*` resource nodes.
+    - Embedded `EXEC CICS` commands (`LINK`, `SEND MAP`, `RECEIVE MAP`, `SYNCPOINT`, `XCTL`) extracted as typed external transfer nodes.
+    - Resources and database tables fully integrated into Graph Laplacian, NetLSD spectrum, and PINN heat diffusion blast radius.
+  - **Milestone F4.2 Copybook Inlining**:
+    - Built `CopybookInliner` supporting nested copybook hierarchies, provenance tracking (`line_origins`), and `REPLACING ==old== BY ==new==` syntax.
+    - Implemented circular reference protection that fails closed with `CopybookResolutionError` displaying the full cycle chain.
+  - **Zero-Trust Hardening & AST Safety**:
+    - Replaced unsafe `eval()` with a hermetic, whitelist-based AST expression evaluator supporting arithmetic and boolean logic without interpreter escape.
+    - Enforced fail-closed limits (`MAX_SOURCE_BYTES = 10MB`, `MAX_GRAPH_NODES = 50,000`, `MAX_DENSE_MATRIX_NODES = 1,000`, `MAX_RUNTIME_STEPS = 10,000`).
+    - Cryptographic SHA-256 provenance tagging with fixed solver seed (`42`), version stamp, and UTC ISO timestamp.
+    - HTTP stack hardened to explicit `HTTP/1.0`, `Connection: close`, 10 MB payload limits, origin allowlisting, and `--remote --token` bearer authentication for remote deployments.
+  - Reached **33 / 33 unit tests passing (100% pass rate in 1.939 seconds)**.
+
+---
+
 ### Summary of Accomplishments
 
-| Metric | Initial State (M0) | Production State (Rezonator V1.0) | Improvement Factor |
+| Metric | Initial State (M0) | Production State (Rezonator V1.0) | Current Hardened State (M7) |
 |:---|:---:|:---:|:---:|
-| **Hermetic Pure-Python Parsing** | None (Binary dependent) | 100% Hermetic Built-in | **Infinite (Zero DLL failure)** |
-| **Max Scalable Graph Size ($N$)** | $N \le 200$ (Dense $O(N^3)$) | $N = 10,000+$ (Sparse $O(k \cdot E)$) | **50x Larger Graphs** |
-| **Lanczos Eigensolver ($N=1000$)** | 2,870 ms | 1.53 ms (Shift-Invert) | **1,875x Faster** |
-| **Deadlock Identification** | Heuristic size-based (Flawed) | Formal Tarjan SCC Analysis | **100% Deterministic** |
-| **Test Suite Coverage** | 7 tests (failing on Win11) | 22 tests (100% passing) | **Robust & Cross-Platform** |
-| **Full Suite Execution Time** | > 10 seconds | 0.996 seconds | **10x Faster Suite** |
+| **Hermetic Pure-Python Parsing** | None (Binary dependent) | 100% Hermetic Built-in | **Hermetic + CICS + SQL + COPYBOOKs** |
+| **Max Scalable Graph Size ($N$)** | $N \le 200$ (Dense $O(N^3)$) | $N = 10,000+$ (Sparse $O(k \cdot E)$) | **Fail-Closed Limits & Sparse Lanczos** |
+| **Lanczos Eigensolver ($N=1000$)** | 2,870 ms | 1.53 ms (Shift-Invert) | **1.53 ms (1,875x Faster)** |
+| **Deadlock Identification** | Heuristic size-based (Flawed) | Formal Tarjan SCC Analysis | **100% Deterministic (Tarjan SCC)** |
+| **Security & AST Safety** | Unrestricted `eval()` | Unrestricted `eval()` | **Hermetic AST Sandbox (Zero eval)** |
+| **HTTP Transport & Auth** | Unauthenticated HTTP/1.1 `*` | Unauthenticated HTTP/1.1 `*` | **HTTP/1.0, CORS Allowlist, Bearer Auth** |
+| **Provenance Tracking** | None | None | **SHA-256 + Seed 42 + UTC Timestamp** |
+| **Test Suite Coverage** | 7 tests (failing on Win11) | 22 tests (100% passing) | **33 tests (100% passing across 8 suites)** |
+| **Full Suite Execution Time** | > 10 seconds | 0.996 seconds | **1.939 seconds (< 2.0 s)** |

@@ -12,6 +12,8 @@ from rezonator.graph_field import GraphField
 from rezonator.diamond_yant import DiamondYantSpectralEngine
 from rezonator.pinn_diffusion import PINNGraphDiffusionEngine
 from rezonator.cycle_detector import CycleDetector
+from rezonator.limits import validate_source_size
+from rezonator.provenance import comparison_provenance, source_provenance
 
 
 class ProgramComparator:
@@ -27,6 +29,7 @@ class ProgramComparator:
 
     def analyze_single(self, source_code: str) -> Dict[str, Any]:
         """Runs the complete multi-modal mathematical pipeline on a COBOL program."""
+        validate_source_size(source_code)
         # 1. Parse into graph
         parsed = self.parser.parse(source_code)
 
@@ -63,11 +66,14 @@ class ProgramComparator:
                 "event_horizon_r_plus": 2.0 * float(field.num_nodes * 0.75 + len(field.edges) * 0.25),
                 "fell_into_horizon_trap": cycle_analysis["has_deadlock"],
                 "frame_dragging_coupling_factor": float(len(field.variables) * 0.45)
-            }
+            },
+            "provenance": source_provenance(source_code)
         }
 
     def compare(self, source_a: str, source_b: str) -> Dict[str, Any]:
         """Performs rigorous comparative analysis between Program A and Program B."""
+        validate_source_size(source_a)
+        validate_source_size(source_b)
         res_a = self.analyze_single(source_a)
         res_b = self.analyze_single(source_b)
 
@@ -143,5 +149,6 @@ class ProgramComparator:
             },
             "verdict": verdict,
             "program_a_details": res_a,
-            "program_b_details": res_b
+            "program_b_details": res_b,
+            "provenance": comparison_provenance(source_a, source_b)
         }

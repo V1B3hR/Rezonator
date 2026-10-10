@@ -94,14 +94,13 @@ class DiamondYantSpectralEngine:
                 # Fast Hutchinson stochastic trace estimator with Rademacher random vectors
                 M_samples = 15
                 rng = np.random.default_rng(42)
-                V = rng.choice([-1.0, 1.0], size=(M_samples, n)) / np.sqrt(n)
+                # Keep samples as columns so expm_multiply can propagate all
+                # probes in one sparse matrix operation per time scale.
+                V = rng.choice([-1.0, 1.0], size=(n, M_samples)) / np.sqrt(n)
                 for t in times:
-                    tr_est = 0.0
-                    for m in range(M_samples):
-                        v_m = V[m]
-                        w_m = spla.expm_multiply(-t * L_norm_sp, v_m)
-                        tr_est += float(np.dot(v_m, w_m))
-                    netlsd_sig.append(float(tr_est / M_samples))
+                    W = spla.expm_multiply(-t * L_norm_sp, V)
+                    tr_est = float(np.sum(V * W))
+                    netlsd_sig.append(tr_est / M_samples)
 
         return {
             "eigenvalues": top_evals,

@@ -5,24 +5,34 @@ adhering to IBM Enterprise COBOL and ANSI-85 semantics.
 Includes a fully hermetic pure-Python AST parser with optional cobolparser integration.
 """
 
+import os
 import re
 from typing import Dict, List, Set, Any, Optional, Tuple
 
-try:
-    import cobolparser
-    from cobolparser.models.statements import (
-        IfStatement as _CobolParserIfStatement,
-        PerformStatement as _CobolParserPerformStatement,
-        StopStatement as _CobolParserStopStatement,
-        GobackStatement as _CobolParserGobackStatement,
-        MoveStatement as _CobolParserMoveStatement,
-        SubtractStatement as _CobolParserSubtractStatement,
-        AddStatement as _CobolParserAddStatement,
-        ComputeStatement as _CobolParserComputeStatement
-    )
-    COBOLPARSER_AVAILABLE = True
-except (ImportError, Exception):
-    COBOLPARSER_AVAILABLE = False
+from rezonator.copybooks import CopybookInliner, SourceOrigin
+from rezonator.limits import validate_graph_payload, validate_source_size
+
+COBOLPARSER_AVAILABLE = False
+
+# The pure-Python parser is the deterministic default.  The third-party
+# adapter is opt-in because optional parser packages can perform expensive or
+# environment-sensitive initialization on import (especially on Windows).
+if os.environ.get("REZONATOR_ENABLE_EXTERNAL_COBOLPARSER") == "1":
+    try:
+        import cobolparser
+        from cobolparser.models.statements import (
+            IfStatement as _CobolParserIfStatement,
+            PerformStatement as _CobolParserPerformStatement,
+            StopStatement as _CobolParserStopStatement,
+            GobackStatement as _CobolParserGobackStatement,
+            MoveStatement as _CobolParserMoveStatement,
+            SubtractStatement as _CobolParserSubtractStatement,
+            AddStatement as _CobolParserAddStatement,
+            ComputeStatement as _CobolParserComputeStatement
+        )
+        COBOLPARSER_AVAILABLE = True
+    except (ImportError, Exception):
+        COBOLPARSER_AVAILABLE = False
 
 
 # ============================================================================
@@ -46,6 +56,7 @@ class DataItem:
         self.level = level
         self.picture_clause = PictureClause(picture)
         self.initial_value = initial_value
+        self.source_origin: Optional[SourceOrigin] = None
 
 
 class Condition:
@@ -65,6 +76,7 @@ class ComplexCondition:
 class Statement:
     def __init__(self, line: int = 0):
         self.location = Location(line=line)
+        self.source_origin: Optional[SourceOrigin] = None
 
 
 class IfStatement(Statement):
@@ -126,6 +138,100 @@ class ComputeStatement(Statement):
         self.expression = expression
 
 
+class ExecSqlStatement(Statement):
+    """Embedded DB2/SQL statement represented as a first-class AST node."""
+
+    READ_OPERATIONS = {"SELECT", "UPDATE", "DELETE", "MERGE"}
+    WRITE_OPERATIONS = {"INSERT", "UPDATE", "DELETE", "MERGE"}
+
+    def __init__(self, sql: str, line: int = 0):
+        super().__init__(line)
+        self.sql = " ".join(sql.split()).strip().rstrip(".")
+        self.operation = self._extract_operation(self.sql)
+        self.tables = self._extract_tables(self.sql)
+        self.host_variables = self._extract_host_variables(self.sql)
+        self.host_writes = self._extract_host_writes(self.sql)
+        self.host_reads = self.host_variables - self.host_writes
+
+    @staticmethod
+    def _extract_operation(sql: str) -> str:
+        match = re.match(r"^([A-Za-z]+)", sql.strip())
+        return match.group(1).upper() if match else "UNKNOWN"
+
+    @staticmethod
+    def _extract_tables(sql: str) -> List[str]:
+        """Extract common DB2 table references while ignoring host variables."""
+        matches = re.findall(
+            r"\b(?:FROM|JOIN|UPDATE|INTO|USING)\s+([A-Za-z][A-Za-z0-9_$#@-]*(?:\.[A-Za-z][A-Za-z0-9_$#@-]*)?)",
+            sql,
+            flags=re.IGNORECASE,
+        )
+        tables: List[str] = []
+        for table in matches:
+            normalized = table.upper().rstrip(".,;")
+            if normalized.startswith(":") or normalized not in tables:
+                if not normalized.startswith(":"):
+                    tables.append(normalized)
+        return tables
+
+    @staticmethod
+    def _extract_host_variables(sql: str) -> Set[str]:
+        return {name.upper() for name in re.findall(r":([A-Za-z][A-Za-z0-9_-]*)", sql)}
+
+    def _extract_host_writes(self, sql: str) -> Set[str]:
+        write_vars: Set[str] = set()
+        clauses = re.findall(
+            r"\b(?:INTO|RETURNING)\b(.*?)(?=\bFROM\b|\bWHERE\b|\bFOR\b|\bEND-EXEC\b|$)",
+            sql,
+            flags=re.IGNORECASE,
+        )
+        for clause in clauses:
+            write_vars.update(self._extract_host_variables(clause))
+
+        # SELECT/FETCH host variables are output values; other host variables
+        # participate as predicates or input values.
+        if self.operation == "FETCH":
+            write_vars.update(self.host_variables)
+        return write_vars
+
+
+class ExecCicsStatement(Statement):
+    """IBM CICS command represented as an external control-flow operation."""
+
+    COMMANDS = ("SEND", "RECEIVE", "SYNCPOINT", "LINK", "XCTL")
+
+    def __init__(self, cics: str, line: int = 0):
+        super().__init__(line)
+        self.cics = " ".join(cics.split()).strip().rstrip(".")
+        self.command = self._extract_command(self.cics)
+        self.resource_kind, self.resource_name = self._extract_resource(self.cics)
+
+    @classmethod
+    def _extract_command(cls, cics: str) -> str:
+        upper = cics.upper()
+        for command in cls.COMMANDS:
+            if re.search(rf"\b{command}\b", upper):
+                if command in {"SEND", "RECEIVE"} and re.search(r"\bMAP\b", upper):
+                    return f"{command} MAP"
+                return command
+        return "UNKNOWN"
+
+    @staticmethod
+    def _extract_resource(cics: str) -> Tuple[str, str]:
+        upper = cics.upper()
+        if "PROGRAM" in upper:
+            match = re.search(r"\bPROGRAM\s*\(\s*['\"]?([A-Za-z0-9_-]+)", cics, re.IGNORECASE)
+            if match:
+                return "PROGRAM", match.group(1).upper()
+        if "MAP" in upper:
+            match = re.search(r"\bMAP\s*\(\s*['\"]?([A-Za-z0-9_-]+)", cics, re.IGNORECASE)
+            if match:
+                return "MAP", match.group(1).upper()
+        if "SYNCPOINT" in upper:
+            return "TRANSACTION", "SYNCPOINT"
+        return "COMMAND", ExecCicsStatement._extract_command(cics)
+
+
 class Paragraph:
     def __init__(self, name: str, statements: Optional[List[Any]] = None):
         self.paragraph_name = name
@@ -174,11 +280,28 @@ def parse_condition_expr(cond_text: str) -> Any:
     return Condition(cond_text, "=", "TRUE")
 
 
-def parse_cobol_source(source_code: str) -> CobolProgramAST:
+def parse_cobol_source(
+    source_code: str,
+    copybooks: Optional[Dict[str, str]] = None,
+    copybook_dirs: Optional[List[str]] = None,
+    source_origins: Optional[List[SourceOrigin]] = None,
+) -> CobolProgramAST:
     """
     Parses COBOL source code into a CobolProgramAST structure.
     Hermetic, deterministic ANSI-85 and IBM Enterprise COBOL syntax parser.
     """
+    validate_source_size(source_code)
+    if copybooks is not None or copybook_dirs:
+        expanded = CopybookInliner(copybooks, copybook_dirs).inline_with_provenance(source_code)
+        source_code = expanded.text
+        source_origins = list(expanded.line_origins)
+        validate_source_size(source_code)
+
+    def origin_for_line(lineno: int) -> Optional[SourceOrigin]:
+        if source_origins and 0 < lineno <= len(source_origins):
+            return source_origins[lineno - 1]
+        return None
+
     lines = source_code.splitlines()
     prog_name = "UNKNOWN"
     data_items: List[DataItem] = []
@@ -215,12 +338,14 @@ def parse_cobol_source(source_code: str) -> CobolProgramAST:
             m = re.match(r'(\d{2})\s+([A-Za-z0-9_-]+)(?:\s+PIC\s+([A-Za-z0-9()Vv]+))?(?:\s+VALUE\s+(.+?))?\.\s*$', clean, re.IGNORECASE)
             if m:
                 lvl, name, pic, val = m.groups()
-                data_items.append(DataItem(
+                data_item = DataItem(
                     name=name,
                     level=int(lvl),
                     picture=pic or "",
                     initial_value=(val or "").strip().strip('"').strip("'")
-                ))
+                )
+                data_item.source_origin = origin_for_line(lineno)
+                data_items.append(data_item)
 
         if in_proc:
             proc_lines.append((lineno, clean))
@@ -238,10 +363,19 @@ def parse_cobol_source(source_code: str) -> CobolProgramAST:
 
     idx = 0
     total = len(proc_lines)
-    VERBS = ("PERFORM", "STOP", "GOBACK", "MOVE", "SUBTRACT", "ADD", "COMPUTE", "IF")
+    VERBS = ("PERFORM", "STOP", "GOBACK", "MOVE", "SUBTRACT", "ADD", "COMPUTE", "IF", "EXEC")
 
     def parse_stmt_from_lines(start_lineno: int, full_text: str) -> Optional[Any]:
         t_up = full_text.upper()
+        # Embedded Enterprise COBOL subsystems.  Keep the full block intact so
+        # multiline SQL/CICS clauses remain a single semantic statement.
+        m_exec = re.match(r"^EXEC\s+(SQL|CICS)\s+(.+?)\s+END-EXEC\.?$", full_text, re.IGNORECASE | re.DOTALL)
+        if m_exec:
+            dialect, body = m_exec.groups()
+            if dialect.upper() == "SQL":
+                return ExecSqlStatement(body, line=start_lineno)
+            return ExecCicsStatement(body, line=start_lineno)
+
         # PERFORM
         m = re.match(r'^PERFORM\s+([A-Za-z0-9_-]+)', full_text, re.IGNORECASE)
         if m:
@@ -324,7 +458,24 @@ def parse_cobol_source(source_code: str) -> CobolProgramAST:
                 
                 cond_obj = parse_condition_expr(cond_text)
                 if_stmt = IfStatement(condition=cond_obj, then_stmts=then_stmts, else_stmts=else_stmts, line=lineno)
+                if_stmt.source_origin = origin_for_line(lineno)
                 stmts.append(if_stmt)
+            elif line_up.startswith(("EXEC SQL", "EXEC CICS")):
+                start_lineno = lineno
+                block_lines = [line]
+                idx += 1
+                if not re.search(r"\bEND-EXEC\.?\s*$", line, re.IGNORECASE):
+                    while idx < total:
+                        block_lines.append(proc_lines[idx][1])
+                        end_line = proc_lines[idx][1]
+                        idx += 1
+                        if re.search(r"\bEND-EXEC\.?\s*$", end_line, re.IGNORECASE):
+                            break
+
+                stmt = parse_stmt_from_lines(start_lineno, " ".join(block_lines))
+                if stmt:
+                    stmt.source_origin = origin_for_line(start_lineno)
+                    stmts.append(stmt)
             else:
                 start_lineno = lineno
                 accum_lines = [line]
@@ -346,6 +497,7 @@ def parse_cobol_source(source_code: str) -> CobolProgramAST:
                 full_stmt_text = " ".join(accum_lines)
                 stmt = parse_stmt_from_lines(start_lineno, full_stmt_text)
                 if stmt:
+                    stmt.source_origin = origin_for_line(start_lineno)
                     stmts.append(stmt)
 
         return stmts
@@ -374,18 +526,45 @@ class CobolASTGraphBuilder:
     Constructs high-fidelity program dependence graphs (CFG + DFG) from COBOL AST.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        copybooks: Optional[Dict[str, str]] = None,
+        copybook_dirs: Optional[List[str]] = None,
+    ):
         self.program_id = "UNKNOWN-PROGRAM"
         self.variables: Dict[str, Dict[str, Any]] = {}
         self.nodes: Dict[str, Dict[str, Any]] = {}
         self.edges: List[Dict[str, Any]] = []
+        self.copybook_inliner = (
+            CopybookInliner(copybooks, copybook_dirs)
+            if copybooks is not None or copybook_dirs
+            else None
+        )
 
     @classmethod
     def is_available(cls) -> bool:
         return True
 
-    def build_from_source(self, source_code: str) -> Dict[str, Any]:
+    def build_from_source(
+        self,
+        source_code: str,
+        copybooks: Optional[Dict[str, str]] = None,
+        copybook_dirs: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
         """Parses COBOL source code and builds the unified graph payload."""
+        validate_source_size(source_code)
+        source_origins: Optional[List[SourceOrigin]] = None
+        if copybooks is not None or copybook_dirs:
+            expanded = CopybookInliner(copybooks, copybook_dirs).inline_with_provenance(source_code)
+            source_code = expanded.text
+            source_origins = list(expanded.line_origins)
+            validate_source_size(source_code)
+        elif self.copybook_inliner:
+            expanded = self.copybook_inliner.inline_with_provenance(source_code)
+            source_code = expanded.text
+            source_origins = list(expanded.line_origins)
+            validate_source_size(source_code)
+
         ast_obj = None
         if COBOLPARSER_AVAILABLE:
             try:
@@ -396,7 +575,7 @@ class CobolASTGraphBuilder:
                 ast_obj = None
 
         if ast_obj is None:
-            ast_obj = parse_cobol_source(source_code)
+            ast_obj = parse_cobol_source(source_code, source_origins=source_origins)
 
         return self.build_from_ast(ast_obj)
 
@@ -420,12 +599,16 @@ class CobolASTGraphBuilder:
             init_val = getattr(d, "initial_value", None) or getattr(d, "value_clause", None) or getattr(d, "value", "")
             init_val_clean = str(init_val or "").strip().strip('"').strip("'")
 
-            self.variables[name] = {
+            variable = {
                 "name": name,
                 "pic": str(pic_str),
                 "initial_value": init_val_clean,
                 "level": getattr(d, "level", 1) or 1
             }
+            source_origin = getattr(d, "source_origin", None)
+            if source_origin:
+                variable["source_origin"] = source_origin.to_dict()
+            self.variables[name] = variable
 
         # 2. Extract Procedures & Statements
         procedures = ast_program.get_procedures() if hasattr(ast_program, "get_procedures") else []
@@ -457,12 +640,14 @@ class CobolASTGraphBuilder:
         # Fourth pass: Build direct Def-Use DFG edges
         self._link_def_use_chains()
 
-        return {
+        payload = {
             "program_id": self.program_id,
             "variables": list(self.variables.values()),
             "nodes": list(self.nodes.values()),
             "edges": self.edges
         }
+        validate_graph_payload(payload, include_variables=True)
+        return payload
 
     def _extract_vars_from_expr(self, obj: Any) -> Set[str]:
         """Recursively extracts declared variable names from an AST expression or string."""
@@ -497,6 +682,11 @@ class CobolASTGraphBuilder:
         reads: Set[str] = set()
         writes: Set[str] = set()
         stype = type(stmt).__name__
+
+        if isinstance(stmt, ExecSqlStatement):
+            reads.update(v for v in stmt.host_reads if v in self.variables)
+            writes.update(v for v in stmt.host_writes if v in self.variables)
+            return reads, writes
 
         # 1. Writes
         targets = getattr(stmt, "targets", None)
@@ -611,6 +801,16 @@ class CobolASTGraphBuilder:
             expr = getattr(stmt, "expression", "")
             label = f"COMPUTE {dest}"
             code = f"COMPUTE {dest} = {expr}"
+        elif isinstance(stmt, ExecSqlStatement):
+            node_type = "db_access"
+            tables = ", ".join(stmt.tables) if stmt.tables else "UNKNOWN-TABLE"
+            label = f"SQL {stmt.operation} {tables}"
+            code = f"EXEC SQL {stmt.sql} END-EXEC"
+        elif isinstance(stmt, ExecCicsStatement):
+            node_type = "external"
+            resource = f"{stmt.resource_kind}({stmt.resource_name})"
+            label = f"CICS {stmt.command} {resource}"
+            code = f"EXEC CICS {stmt.cics} END-EXEC"
         else:
             node_type = "stmt"
             target_var = getattr(stmt, "target", "") or (stmt.targets[0] if getattr(stmt, "targets", None) else "")
@@ -630,8 +830,76 @@ class CobolASTGraphBuilder:
             "location": {"line": line, "column": getattr(stmt.location, "column", 0) if getattr(stmt, "location", None) else 0},
             "_ast_stmt": stmt
         }
+        if isinstance(stmt, ExecSqlStatement):
+            node["sql_operation"] = stmt.operation
+            node["tables"] = list(stmt.tables)
+            node["host_reads"] = sorted(stmt.host_reads)
+            node["host_writes"] = sorted(stmt.host_writes)
+        elif isinstance(stmt, ExecCicsStatement):
+            node["cics_command"] = stmt.command
+            node["resource_kind"] = stmt.resource_kind
+            node["resource_name"] = stmt.resource_name
+        source_origin = getattr(stmt, "source_origin", None)
+        if source_origin:
+            node["source_origin"] = source_origin.to_dict()
         self.nodes[node_id] = node
+        self._link_external_resources(node, stmt)
         return node
+
+    def _link_external_resources(self, node: Dict[str, Any], stmt: Any):
+        """Materializes SQL tables and CICS targets as graph state nodes."""
+        if isinstance(stmt, ExecSqlStatement):
+            for table in stmt.tables:
+                table_id = f"db_table:{table}"
+                if table_id not in self.nodes:
+                    self.nodes[table_id] = {
+                        "id": table_id,
+                        "label": f"[DB2:{table}]",
+                        "node_type": "db_table",
+                        "paragraph": "DATABASE",
+                        "code": f"TABLE {table}",
+                        "reads": [],
+                        "writes": [],
+                        "resource": table,
+                    }
+
+                if stmt.operation in ExecSqlStatement.READ_OPERATIONS or stmt.operation not in ExecSqlStatement.WRITE_OPERATIONS:
+                    self.edges.append({
+                        "source": table_id,
+                        "target": node["id"],
+                        "edge_type": "dfg_db_read",
+                        "weight": 1.3,
+                        "label": f"read({table})",
+                    })
+                if stmt.operation in ExecSqlStatement.WRITE_OPERATIONS:
+                    self.edges.append({
+                        "source": node["id"],
+                        "target": table_id,
+                        "edge_type": "dfg_db_write",
+                        "weight": 1.6,
+                        "label": f"write({table})",
+                    })
+
+        elif isinstance(stmt, ExecCicsStatement):
+            resource_id = f"cics_resource:{stmt.resource_kind}:{stmt.resource_name}"
+            if resource_id not in self.nodes:
+                self.nodes[resource_id] = {
+                    "id": resource_id,
+                    "label": f"[CICS:{stmt.resource_kind} {stmt.resource_name}]",
+                    "node_type": "cics_resource",
+                    "paragraph": "CICS",
+                    "code": f"CICS {stmt.command} {stmt.resource_kind}({stmt.resource_name})",
+                    "reads": [],
+                    "writes": [],
+                    "resource": stmt.resource_name,
+                }
+            self.edges.append({
+                "source": node["id"],
+                "target": resource_id,
+                "edge_type": "cfg_external",
+                "weight": 1.4,
+                "label": stmt.command,
+            })
 
     def _process_statement_block(self, stmts: List[Any], para_name: str, continuation_id: Optional[str]) -> Tuple[Optional[str], List[str]]:
         """

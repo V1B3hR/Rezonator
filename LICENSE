@@ -1,21 +1,104 @@
-MIT License
+REZONATOR SOURCE-AVAILABLE & COMMERCIAL LICENSE (VERSION 1.0)
+Copyright (c) 2026 V1B3hR. All rights reserved.
+Jurisdiction: England and Wales, United Kingdom.
 
-Copyright (c) 2026 V1B3hR
+================================================================================
+1. PREAMBLE & PRINCIPLES
+================================================================================
+Rezonator is a deterministic, mathematical code intelligence engine for legacy
+mainframe systems. This license is structured to encourage scientific research,
+academic peer review, and non-commercial evaluation, while strictly requiring
+commercial entities (including banks, financial institutions, and enterprise
+consultancies) to acquire a commercial license, and providing a dedicated
+royalty-free waiver for public, life-saving healthcare infrastructure.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+================================================================================
+2. PERMITTED FREE USES (NON-COMMERCIAL & EVALUATION)
+================================================================================
+Permission is hereby granted, free of charge, to any individual or academic
+institution to obtain a copy of this software and associated documentation files
+(the "Software"), to inspect, compile, run, test, and evaluate the Software
+subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+a. Non-Commercial Use: The Software may be used freely for personal evaluation,
+   academic study, scientific research, and non-profit educational purposes.
+b. Security Audit & Peer Review: The Software may be audited and evaluated for
+   scientific reproducibility, cryptographic provenance, and security analysis.
+c. Retention of Notices: All copies or substantial portions of the Software
+   must retain the above copyright notice, this license agreement, and the
+   disclaimer of warranty.
 
+================================================================================
+3. COMMERCIAL USE RESTRICTIONS
+================================================================================
+ANY USE OF THE SOFTWARE FOR COMMERCIAL, REVENUE-GENERATING, FOR-PROFIT, OR
+ENTERPRISE OPERATIONAL PURPOSES IS STRICTLY PROHIBITED WITHOUT A SEPARATE,
+DIRECTLY EXECUTED REZONATOR COMMERCIAL LICENSE.
+
+Specifically:
+a. Financial Institutions & Banking: Any deployment, integration, or execution
+   of the Software by or on behalf of banks, credit unions, clearing houses,
+   hedge funds, insurance corporations, fintech providers, or their contractors
+   requires a paid Rezonator Commercial License.
+b. Enterprise Migration & Consulting: Any systems integrator, consultancy, or
+   cloud vendor (including but not limited to IBM, Kyndryl, Accenture, AWS,
+   Microsoft, or Big 4 advisory firms) analyzing client codebases with the
+   Software must hold a valid commercial license.
+c. SaaS & Network Hosting: Hosting the Software as an internal microservice,
+   web API, remote analysis hub, or cloud SaaS offering for commercial users
+   is expressly prohibited under the free tier.
+
+================================================================================
+4. PUBLIC HEALTHCARE & LIFE-SAVING HUMANITARIAN EXEMPTION
+================================================================================
+The copyright holder recognizes the imperative to protect life-critical and
+acute emergency healthcare systems:
+
+a. Royalty-Free Public Healthcare Waiver:
+   Accredited public non-profit healthcare institutions, national public health
+   services (including National Health Service (NHS) trusts in the UK), public
+   university medical centres, emergency major trauma units, and intensive care
+   units (ICU) may request and receive a 100% royalty-free, perpetual commercial
+   use waiver for direct patient care, clinical operations, and life-critical
+   hospital infrastructure upon written application to the copyright holder.
+
+b. Exclusion of For-Profit Med-Tech Corporations:
+   For-profit medical technology conglomerates, proprietary hospital software
+   vendors, commercial electronic health record (EHR) corporations, and private
+   for-profit clinic networks are expressly EXCLUDED from this humanitarian
+   waiver. Such entities are classified as commercial users under Section 3 and
+   must acquire a commercial license.
+
+================================================================================
+5. RESTRICTIONS ON REDISTRIBUTION & FORKING
+================================================================================
+You may not:
+a. Sublicense, sell, rent, lease, or distribute closed-source binaries derived
+   from this Software without a commercial agreement.
+b. Relicense the Software, or any derivative work thereof, under more permissive
+   terms (including MIT, Apache 2.0, BSD, or similar public licenses).
+c. Remove, obscure, or alter any copyright notices, cryptographic provenance
+   identifiers, or license headers.
+
+================================================================================
+6. DISCLAIMER OF WARRANTY & LIMITATION OF LIABILITY
+================================================================================
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER, AUTHOR, OR CONTRIBUTORS BE LIABLE FOR
+ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
+(INCLUDING NEGLIGENCE), STRICT LIABILITY, OR OTHERWISE, ARISING FROM, OUT OF,
+OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE,
+INCLUDING WITHOUT LIMITATION ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+PUNITIVE, OR CONSEQUENTIAL DAMAGES (INCLUDING LOSS OF PROFITS, DATA LOSS,
+TRANSACTION FAILURES, MAINFRAME DOWNTIME, OR SYSTEM OUTAGES).
+
+================================================================================
+7. COMMERCIAL LICENSING & INQUIRIES
+================================================================================
+To inquire about purchasing a Rezonator Commercial License, obtaining an
+enterprise deployment agreement, or applying for an accredited Public Healthcare
+Humanitarian Waiver, contact the author via the official project repository:
+https://github.com/V1B3hR/Rezonator

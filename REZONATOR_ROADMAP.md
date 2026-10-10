@@ -13,15 +13,15 @@ This post-debugging roadmap outlines the transition from the completed foundatio
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                              REZONATOR STRATEGIC ROADMAP                               │
 ├───────────────────────────────────────────────────────┬────────────────────────────────┤
-│ COMPLETED PHASES (v1.0.0 - Production Certified)     │ TARGET PHASES (v1.1 - v2.0)    │
+│ COMPLETED PHASES (v1.0 - Hardened Production)         │ TARGET PHASES (v1.2 - v2.0)    │
 ├───────────────────────────────────────────────────────┼────────────────────────────────┤
-│ [F0] Mathematical Rigor & Pseudoscience Purge         │ [F4] Enterprise Dialects, CICS │
-│      - Deprecated bogus GR event-horizon heuristics   │      - EXEC CICS & EXEC SQL    │
-│      - Integrated Tarjan SCC cycle / deadlock engine  │      - Automated COPYBOOK inline│
-│                                                       │                                │
-│ [F1] Ground-Truth & Golden Graph Isomorphism          │ [F5] Multi-Program Hypergraphs │
-│      - 4 canonical benchmark programs (Bank, ATM, etc)│      - Cross-program CALL flow │
-│      - 100% exact isomorphism verification tests      │      - JCL batch pipeline link │
+│ [F0] Mathematical Rigor & Pseudoscience Purge         │ [F4.3] ProLeap/Tree-Sitter     │
+│      - Deprecated bogus GR event-horizon heuristics   │      - Hybrid dialect bridges  │
+│      - Integrated Tarjan SCC cycle / deadlock engine  │                                │
+│                                                       │ [F5] Multi-Program Hypergraphs │
+│ [F1] Ground-Truth & Golden Graph Isomorphism          │      - Cross-program CALL flow │
+│      - 4 canonical benchmark programs (Bank, ATM, etc)│      - JCL batch pipeline link │
+│      - 100% exact isomorphism verification tests      │      - Multi-dataset dataflow  │
 │                                                       │                                │
 │ [F2] Hermetic Pure-Python AST Parser                  │ [F6] Automated Monolith Cut    │
 │      - Zero external Cython/pyd native dependencies   │      - Cheeger spectral cluster│
@@ -30,6 +30,11 @@ This post-debugging roadmap outlines the transition from the completed foundatio
 │ [F3] Sparse Lanczos & Krylov Scaling                  │                                │
 │      - Shift-invert Lanczos eigensolver (1800x faster)│                                │
 │      - Krylov expm trajectory scaling to N=10,000     │                                │
+│                                                       │                                │
+│ [F4] Enterprise Dialects & Security Hardening         │                                │
+│      - F4.1: Embedded EXEC CICS & DB2 EXEC SQL nodes  │                                │
+│      - F4.2: Nested COPYBOOK inlining + REPLACING     │                                │
+│      - Zero-Trust: AST sandbox, CORS, limits, SHA-256 │                                │
 └───────────────────────────────────────────────────────┴────────────────────────────────┘
 ```
 
@@ -70,26 +75,33 @@ This post-debugging roadmap outlines the transition from the completed foundatio
 
 ---
 
-### 2. Strategic Roadmap: Upcoming Phases (Phases F4 – F6)
+#### Phase F4: Enterprise Dialects & Security Hardening [COMPLETED]
+- **Accomplishments**:
+  - **F4.1 Embedded Dialects**:
+    - Parsed `EXEC SQL` statements into typed `db_access` nodes with reads/writes mapped to persistent database tables (`db_table:*`) and connected via `dfg_db_read`/`dfg_db_write` edges.
+    - Parsed `EXEC CICS` commands (`LINK`, `SEND MAP`, `RECEIVE MAP`, `SYNCPOINT`, `XCTL`) into typed `external` transactional nodes.
+    - Connected database tables and transaction boundaries directly into the Graph Laplacian, modal spectrum, and PINN heat diffusion engine.
+  - **F4.2 Copybook Inliner**:
+    - Built pure-Python `CopybookInliner` with support for multi-level nested copybook expansion.
+    - Implemented `REPLACING ==old== BY ==new==` syntax with full token boundary fidelity.
+    - Enforced circular copybook reference protection with full cycle-chain traces.
+  - **Zero-Trust Security Hardening**:
+    - Hardened HTTP server: strict `HTTP/1.0`, `Connection: close`, origin CORS allowlisting, and `--remote --token` bearer auth.
+    - Replaced `eval()` with a hermetic AST expression evaluator.
+    - Implemented fail-closed limits (`MAX_SOURCE_BYTES = 10MB`, `MAX_GRAPH_NODES = 50,000`, `MAX_DENSE_MATRIX_NODES = 1,000`).
+    - Added SHA-256 cryptographic provenance metadata.
 
 ---
 
-#### Phase F4: Enterprise Dialects, CICS & SQL Monolithic Parser Expansion
-**Target Release**: Rezonator v1.1.0  
-**Objective**: Expand front-end grammar to ingest full-scale IBM Enterprise COBOL z/OS production programs containing embedded subsystems.
+### 2. Strategic Roadmap: Upcoming Phases (Phases F4.3 – F6)
 
-- **Milestone F4.1: Embedded Subsystem Grammar Rules**
-  - **`EXEC CICS` Parser**: Extract transaction handles (`SEND MAP`, `RECEIVE MAP`, `SYNCPOINT`, `LINK`, `XCTL`) as external transfer edges in CFG.
-  - **`EXEC SQL` Parser**: Extract database table accesses (`SELECT`, `INSERT`, `UPDATE`, `DELETE`, `CURSOR`) into DFG as persistent database state nodes.
-  - **`EXEC DLI` / IMS DB**: Support hierarchical database calls (`GU`, `GHU`, `ISRT`).
-- **Milestone F4.2: Automated COPYBOOK Preprocessing**
-  - Implement an in-memory `COPY` statement inliner supporting `REPLACING ==old== BY ==new==` syntax.
-  - Resolve nested copybooks with circular reference protection.
-- **Milestone F4.3: ProLeap & Tree-Sitter Hybrid Parser Bridge**
-  - Implement an optional Java/ANTLR bridge (ProLeap COBOL parser) for complex dialect corner cases while retaining the hermetic pure-Python parser as default.
-- **Deliverables & Acceptance Criteria**:
-  - Ingestion of real-world 10,000-line banking monoliths containing mixed CICS/DB2 logic with 0 parse errors.
-  - Golden test suite expanded to 10 enterprise dialect programs.
+---
+
+#### Phase F4.3: ProLeap & Tree-Sitter Hybrid Parser Bridge
+**Target Release**: Rezonator v1.2.0
+**Objective**: Optional Java/ANTLR bridge (ProLeap COBOL parser) and tree-sitter grammars for obscure dialect corner cases while retaining the hermetic pure-Python parser as default.
+- Ingestion of real-world 50,000-line banking monoliths containing non-standard precompiler directives.
+- Retain fallback to hermetic pure-Python parser on platforms without JVM or native toolchains.
 
 ---
 

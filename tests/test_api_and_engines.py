@@ -42,9 +42,10 @@ class TestRezonatorEngine(unittest.TestCase):
             cls.code_deadlock = f.read()
 
         # Start hermetic test server on test port 8089
-        cls.test_port = 8089
+        cls.test_port = 0
         try:
             cls.server = HTTPServer(("127.0.0.1", cls.test_port), MathyRequestHandler)
+            cls.test_port = cls.server.server_address[1]
             cls.server_thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
             cls.server_thread.start()
             time.sleep(0.1)

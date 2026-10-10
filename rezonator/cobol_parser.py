@@ -6,6 +6,8 @@ Extracts basic blocks, control transfers, variable definitions, and usage chains
 import re
 from typing import Dict, List, Set, Any, Tuple
 
+from rezonator.limits import ResourceLimitError, validate_graph_payload, validate_source_size
+
 
 class VariableDef:
     def __init__(self, name: str, pic: str = "", initial_value: str = "", level: int = 1):
@@ -112,11 +114,14 @@ class CobolParser:
         return lines
 
     def parse(self, source_code: str) -> Dict[str, Any]:
+        validate_source_size(source_code)
         # 1. Primary engine: Compiler-grade AST Graph Builder
         try:
             from rezonator.ast_graph_builder import CobolASTGraphBuilder
             if CobolASTGraphBuilder.is_available():
                 return CobolASTGraphBuilder().build_from_source(source_code)
+        except ResourceLimitError:
+            raise
         except Exception:
             pass
 
@@ -140,7 +145,9 @@ class CobolParser:
         self._parse_procedure_division(lines)
 
         # 4. Construct Unified Analytic Graph
-        return self._build_graph_payload()
+        payload = self._build_graph_payload()
+        validate_graph_payload(payload, include_variables=True)
+        return payload
 
     def _parse_data_division(self, text: str):
         ws_idx = text.upper().find("WORKING-STORAGE SECTION")

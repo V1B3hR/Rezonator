@@ -101,6 +101,8 @@ def main():
     parser.add_argument("--demo", action="store_true", help="Run verification proof-of-concept experiment")
     parser.add_argument("--serve", action="store_true", help="Start the local Web Studio & REST API")
     parser.add_argument("--port", type=int, default=8080, help="Web studio port (default: 8080)")
+    parser.add_argument("--remote", action="store_true", help="Bind the API externally; requires --token")
+    parser.add_argument("--token", type=str, help="Bearer token required by --remote")
     parser.add_argument("--file", type=str, help="Analyze single COBOL source file")
     parser.add_argument("--compare", nargs=2, metavar=("FILE1", "FILE2"), help="Compare two COBOL source files")
     parser.add_argument("--brief", type=str, help="Generate LLM cognitive prompt brief for a file")
@@ -110,7 +112,13 @@ def main():
     if args.demo:
         cmd_demo()
     elif args.serve:
-        run_server(port=args.port)
+        if args.remote and not args.token:
+            parser.error("--remote requires --token")
+        run_server(
+            port=args.port,
+            mode="remote" if args.remote else "local",
+            token=args.token,
+        )
     elif args.file:
         cmd_analyze(args.file)
     elif args.compare:

@@ -5,8 +5,17 @@ Executes CFG/AST statements, maintains WORKING-STORAGE state, and records execut
 Enables verifiable ground-truth mutation testing for Phase F1/F2.
 """
 
+import ast
 import re
 from typing import Dict, List, Any, Optional, Set, Tuple
+
+from rezonator.limits import (
+    MAX_EXPRESSION_AST_NODES,
+    MAX_EXPRESSION_CHARS,
+    MAX_RUNTIME_STEPS,
+    validate_graph_payload,
+    validate_source_size,
+)
 
 
 class ExecutionState:
@@ -52,34 +61,167 @@ class CobolRuntime:
             return s
 
     def _eval_expr(self, expr_str: str, variables: Dict[str, Any]) -> Any:
-        """Safely evaluates a COBOL arithmetic or boolean expression using variable values."""
-        s = expr_str.strip()
-        # 1. Substitute variable names by length-descending order
-        for k in sorted(variables.keys(), key=len, reverse=True):
-            val = variables[k]
-            val_repr = repr(val) if isinstance(val, str) else str(val)
-            s = re.sub(r'\b' + re.escape(k) + r'\b', val_repr, s, flags=re.IGNORECASE)
-
-        # 2. Map COBOL keywords to Python equivalents
-        s = re.sub(r'\bAND\b', ' and ', s, flags=re.IGNORECASE)
-        s = re.sub(r'\bOR\b', ' or ', s, flags=re.IGNORECASE)
-        s = re.sub(r'\bNOT\b', ' not ', s, flags=re.IGNORECASE)
-
-        # 3. Map comparison operators: single '=' to '=='
-        s = re.sub(r'(?<![<>=!])=(?![=])', '==', s)
+        """Evaluate a bounded COBOL expression with a closed AST evaluator."""
+        if not isinstance(expr_str, str) or len(expr_str) > MAX_EXPRESSION_CHARS:
+            return 0
 
         try:
-            return eval(s, {"__builtins__": {}}, {})
-        except Exception:
+            rewritten, aliases = self._rewrite_expression(expr_str, variables)
+            tree = ast.parse(rewritten, mode="eval")
+            if sum(1 for _ in ast.walk(tree)) > MAX_EXPRESSION_AST_NODES:
+                return 0
+            return self._evaluate_ast(tree.body, aliases)
+        except (ArithmeticError, MemoryError, SyntaxError, TypeError, ValueError):
             return 0
+
+    def _rewrite_expression(self, expression: str, variables: Dict[str, Any]):
+        """Map COBOL identifiers to inert AST names without touching strings."""
+        output: List[str] = []
+        aliases: Dict[str, Any] = {}
+        variable_aliases: Dict[str, str] = {}
+        index = 0
+
+        while index < len(expression):
+            char = expression[index]
+            if char in ("'", '"'):
+                quote = char
+                end = index + 1
+                while end < len(expression):
+                    if expression[end] == "\\":
+                        end += 2
+                        continue
+                    if expression[end] == quote:
+                        end += 1
+                        break
+                    end += 1
+                output.append(expression[index:end])
+                index = end
+                continue
+
+            if char.isalpha() or char == "_":
+                end = index + 1
+                while end < len(expression) and (expression[end].isalnum() or expression[end] in "_-"):
+                    end += 1
+                token = expression[index:end]
+                upper = token.upper()
+                if upper in variables:
+                    alias = variable_aliases.get(upper)
+                    if alias is None:
+                        alias = f"__rez_var_{len(variable_aliases)}"
+                        variable_aliases[upper] = alias
+                        aliases[alias] = variables[upper]
+                    output.append(alias)
+                elif upper == "AND":
+                    output.append(" and ")
+                elif upper == "OR":
+                    output.append(" or ")
+                elif upper == "NOT":
+                    output.append(" not ")
+                elif upper == "TRUE":
+                    output.append("True")
+                elif upper == "FALSE":
+                    output.append("False")
+                else:
+                    output.append(token)
+                index = end
+                continue
+
+            if char == "<" and index + 1 < len(expression) and expression[index + 1] == ">":
+                output.append("!=")
+                index += 2
+                continue
+            if char == "=" and not (
+                (index > 0 and expression[index - 1] in "<>=!")
+                or (index + 1 < len(expression) and expression[index + 1] == "=")
+            ):
+                output.append("==")
+            else:
+                output.append(char)
+            index += 1
+
+        return "".join(output), aliases
+
+    def _evaluate_ast(self, node: ast.AST, aliases: Dict[str, Any]) -> Any:
+        """Evaluate only explicitly whitelisted Python AST node types."""
+        if isinstance(node, ast.Constant):
+            if isinstance(node.value, (str, int, float, bool)) or node.value is None:
+                return node.value
+            raise ValueError("unsupported literal")
+
+        if isinstance(node, ast.Name):
+            if node.id in aliases:
+                return aliases[node.id]
+            raise ValueError("unknown identifier")
+
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub, ast.Not)):
+            operand = self._evaluate_ast(node.operand, aliases)
+            if isinstance(node.op, ast.UAdd):
+                return +operand
+            if isinstance(node.op, ast.USub):
+                return -operand
+            return not bool(operand)
+
+        if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod)):
+            left = self._evaluate_ast(node.left, aliases)
+            right = self._evaluate_ast(node.right, aliases)
+            if isinstance(node.op, ast.Add):
+                result = left + right
+            elif isinstance(node.op, ast.Sub):
+                result = left - right
+            elif isinstance(node.op, ast.Mult):
+                result = left * right
+            elif isinstance(node.op, ast.Div):
+                result = left / right
+            elif isinstance(node.op, ast.FloorDiv):
+                result = left // right
+            else:
+                result = left % right
+            if isinstance(result, str) and len(result) > MAX_EXPRESSION_CHARS:
+                raise ValueError("expression result is too large")
+            return result
+
+        if isinstance(node, ast.BoolOp) and isinstance(node.op, (ast.And, ast.Or)):
+            values = [self._evaluate_ast(value, aliases) for value in node.values]
+            return all(bool(value) for value in values) if isinstance(node.op, ast.And) else any(bool(value) for value in values)
+
+        if isinstance(node, ast.Compare):
+            left = self._evaluate_ast(node.left, aliases)
+            for operator, comparator in zip(node.ops, node.comparators):
+                right = self._evaluate_ast(comparator, aliases)
+                if isinstance(operator, ast.Eq):
+                    valid = left == right
+                elif isinstance(operator, ast.NotEq):
+                    valid = left != right
+                elif isinstance(operator, ast.Lt):
+                    valid = left < right
+                elif isinstance(operator, ast.LtE):
+                    valid = left <= right
+                elif isinstance(operator, ast.Gt):
+                    valid = left > right
+                elif isinstance(operator, ast.GtE):
+                    valid = left >= right
+                else:
+                    raise ValueError("unsupported comparison")
+                if not valid:
+                    return False
+                left = right
+            return True
+
+        raise ValueError(f"unsupported expression node: {type(node).__name__}")
 
     def run(self, source_code: str, initial_overrides: Optional[Dict[str, Any]] = None, max_steps: int = 500) -> ExecutionState:
         """Executes the COBOL source code and returns the full execution trace and variable state."""
+        validate_source_size(source_code)
+        if max_steps > MAX_RUNTIME_STEPS:
+            raise ValueError(f"max_steps exceeds {MAX_RUNTIME_STEPS}")
         graph_data = self.builder.build_from_source(source_code)
         return self.run_graph(graph_data, initial_overrides=initial_overrides, max_steps=max_steps)
 
     def run_graph(self, graph_data: Dict[str, Any], initial_overrides: Optional[Dict[str, Any]] = None, max_steps: int = 500) -> ExecutionState:
         """Executes a pre-constructed AST graph payload."""
+        validate_graph_payload(graph_data, include_variables=True)
+        if max_steps > MAX_RUNTIME_STEPS:
+            raise ValueError(f"max_steps exceeds {MAX_RUNTIME_STEPS}")
         # 1. Initialize variables from Working-Storage
         init_vars = {}
         for v in graph_data.get("variables", []):

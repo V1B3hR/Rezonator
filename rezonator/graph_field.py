@@ -7,6 +7,8 @@ Includes both statement basic blocks and shared WORKING-STORAGE memory hubs.
 from typing import Dict, List, Any, Tuple
 import numpy as np
 
+from rezonator.limits import MAX_DENSE_MATRIX_NODES, GraphLimitError, validate_graph_payload
+
 
 class GraphField:
     """
@@ -22,6 +24,8 @@ class GraphField:
         self.variables = list(parsed_data.get("variables", []))
         self.symmetrize = symmetrize
         self.include_variables = include_variables
+
+        validate_graph_payload(parsed_data, include_variables=include_variables)
 
         self.nodes = raw_nodes
         self.edges = raw_edges
@@ -61,6 +65,11 @@ class GraphField:
                     })
 
         self.num_nodes = len(self.nodes)
+        if self.num_nodes > MAX_DENSE_MATRIX_NODES:
+            raise GraphLimitError(
+                "GraphField dense matrix limit exceeded: "
+                f"{self.num_nodes} > {MAX_DENSE_MATRIX_NODES} nodes"
+            )
         self.node_id_to_idx: Dict[str, int] = {n["id"]: idx for idx, n in enumerate(self.nodes)}
         self.idx_to_node_id: Dict[int, str] = {idx: n["id"] for idx, n in enumerate(self.nodes)}
 

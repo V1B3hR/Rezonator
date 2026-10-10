@@ -4,6 +4,7 @@ version = "1.0.0"
 edition = "2021"
 authors = ["Błyskawica & Rezonator Team"]
 description = "Rezonator: Physics & Spectral Topology Engine for Code Intelligence (COBOL to Spectral/PINN/Diffusion)"
+license = "Custom / Rezonator Source-Available & Commercial v1.0"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
