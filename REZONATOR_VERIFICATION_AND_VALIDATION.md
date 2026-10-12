@@ -78,7 +78,7 @@ This document records project-level verification and validation checks informed 
   - NetLSD Topological Distance: $0.0550$ (well below divergence alert threshold of $0.250$).
   - Deadlock Introduced: **NO** (0 cycles detected).
   - Refactoring Fidelity Score: **86.3 / 100**.
-  - The current API emits `SAFE_MODULAR_EXTENSION` for this structural-score threshold. That label is heuristic and does not certify a safe logic extension.
+  - The API emits `STRUCTURAL_MODULAR_EXTENSION` for this structural-score threshold. That label is a neutral structural descriptor and does not certify behavioral preservation or a safe logic extension.
 
 #### VAL-03: Isolation of Dead State & Unreferenced Data Hubs
 - **Requirement**: The system must detect unreferenced memory fields in legacy COBOL programs that consume mainframe buffers without contributing to transactions.

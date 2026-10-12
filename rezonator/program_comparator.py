@@ -123,9 +123,9 @@ class ProgramComparator:
         elif deadlock_b and not deadlock_a:
             verdict = "CRITICAL_REGRESSION: Program B introduces an infinite loop or recursive deadlock cycle!"
         elif not deadlock_b and deadlock_a:
-            verdict = "DEFECT_RESOLVED: Program B successfully eliminates recursion deadlock present in Program A."
+            verdict = "HAZARD_REDUCED: Program B eliminates recursion cycle present in Program A."
         elif netlsd_dist < 0.08:
-            verdict = "SAFE_MODULAR_EXTENSION: High topological fidelity maintained with conservative logic extension."
+            verdict = "STRUCTURAL_MODULAR_EXTENSION: High topological fidelity maintained with conservative logic extension."
         elif fiedler_delta < -0.04:
             verdict = "MODULAR_DECOUPLING: Program branched into more cleanly partitioned subroutines."
         else:

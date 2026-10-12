@@ -232,6 +232,19 @@ class ExecCicsStatement(Statement):
         return "COMMAND", ExecCicsStatement._extract_command(cics)
 
 
+class UnhandledStatement(Statement):
+    """
+    Represents an unhandled or dialect statement in the Procedure Division.
+    Preserves raw text, recognized verb, and source location so that it is
+    not silently dropped from the control-flow and dependency models.
+    """
+
+    def __init__(self, raw_text: str, verb: str = "UNKNOWN", line: int = 0):
+        super().__init__(line)
+        self.raw_text = " ".join(raw_text.split()).strip().rstrip(".")
+        self.verb = verb.upper()
+
+
 class Paragraph:
     def __init__(self, name: str, statements: Optional[List[Any]] = None):
         self.paragraph_name = name
@@ -239,16 +252,26 @@ class Paragraph:
 
 
 class CobolProgramAST:
-    def __init__(self, name: str = "", data_items: Optional[List[DataItem]] = None, procedures: Optional[List[Paragraph]] = None):
+    def __init__(
+        self,
+        name: str = "",
+        data_items: Optional[List[DataItem]] = None,
+        procedures: Optional[List[Paragraph]] = None,
+        unhandled_statements: Optional[List[Any]] = None,
+    ):
         self.program_name = name
         self.data_items = data_items or []
         self.procedures = procedures or []
+        self.unhandled_statements = unhandled_statements or []
 
     def get_data_items(self) -> List[DataItem]:
         return self.data_items
 
     def get_procedures(self) -> List[Paragraph]:
         return self.procedures
+
+    def get_unhandled_statements(self) -> List[Any]:
+        return self.unhandled_statements
 
 
 # ============================================================================
@@ -363,7 +386,14 @@ def parse_cobol_source(
 
     idx = 0
     total = len(proc_lines)
-    VERBS = ("PERFORM", "STOP", "GOBACK", "MOVE", "SUBTRACT", "ADD", "COMPUTE", "IF", "EXEC")
+    KNOWN_STATEMENT_VERBS = (
+        "PERFORM", "STOP", "GOBACK", "MOVE", "SUBTRACT", "ADD", "COMPUTE", "IF", "EXEC",
+        "DISPLAY", "ACCEPT", "CALL", "OPEN", "CLOSE", "READ", "WRITE", "REWRITE", "DELETE",
+        "START", "INITIALIZE", "STRING", "UNSTRING", "INSPECT", "SEARCH", "SET", "EVALUATE",
+        "WHEN", "CONTINUE", "EXIT", "GO", "GOTO", "ALTER", "MERGE", "SORT", "DIVIDE", "MULTIPLY"
+    )
+    VERBS = KNOWN_STATEMENT_VERBS
+    unhandled_stmts: List[UnhandledStatement] = []
 
     def parse_stmt_from_lines(start_lineno: int, full_text: str) -> Optional[Any]:
         t_up = full_text.upper()
@@ -424,7 +454,12 @@ def parse_cobol_source(
             dst, expr = m.groups()
             return ComputeStatement(target=dst.strip(), expression=expr.strip().rstrip("."), line=start_lineno)
 
-        return None
+        # Unhandled statement fallback: retain verb, raw text, and line location
+        cleaned_text = " ".join(full_text.split()).strip()
+        if not cleaned_text:
+            return None
+        verb = cleaned_text.split()[0].rstrip(".").upper()
+        return UnhandledStatement(raw_text=cleaned_text, verb=verb, line=start_lineno)
 
     def parse_statement_sequence(stop_keywords: List[str]) -> List[Any]:
         nonlocal idx
@@ -435,7 +470,7 @@ def parse_cobol_source(
 
             # Check if this line is paragraph header: e.g. "1000-VALIDATE-REQUEST."
             m_para = re.match(r'^([A-Za-z0-9_-]+)\.\s*$', line)
-            if m_para and not any(kw in line_up for kw in ["END-IF", "ELSE", "PERFORM", "STOP", "GOBACK"]):
+            if m_para and not any(kw in line_up for kw in ["END-IF", "ELSE", "PERFORM", "STOP", "GOBACK", "EXIT"]):
                 break
 
             # Check stop keywords (e.g. ELSE, END-IF)
@@ -475,6 +510,8 @@ def parse_cobol_source(
                 stmt = parse_stmt_from_lines(start_lineno, " ".join(block_lines))
                 if stmt:
                     stmt.source_origin = origin_for_line(start_lineno)
+                    if isinstance(stmt, UnhandledStatement):
+                        unhandled_stmts.append(stmt)
                     stmts.append(stmt)
             else:
                 start_lineno = lineno
@@ -484,10 +521,10 @@ def parse_cobol_source(
                     next_lineno, next_line = proc_lines[idx]
                     next_up = next_line.upper().strip()
                     m_p = re.match(r'^([A-Za-z0-9_-]+)\.\s*$', next_line)
-                    if m_p and not any(kw in next_up for kw in ["END-IF", "ELSE", "PERFORM", "STOP", "GOBACK"]):
+                    if m_p and not any(kw in next_up for kw in ["END-IF", "ELSE", "PERFORM", "STOP", "GOBACK", "EXIT"]):
                         break
                     next_first = next_up.split()[0].rstrip(".")
-                    if next_first in stop_keywords or next_first in VERBS:
+                    if next_first in stop_keywords or next_first in KNOWN_STATEMENT_VERBS:
                         break
                     accum_lines.append(next_line)
                     idx += 1
@@ -498,6 +535,8 @@ def parse_cobol_source(
                 stmt = parse_stmt_from_lines(start_lineno, full_stmt_text)
                 if stmt:
                     stmt.source_origin = origin_for_line(start_lineno)
+                    if isinstance(stmt, UnhandledStatement):
+                        unhandled_stmts.append(stmt)
                     stmts.append(stmt)
 
         return stmts
@@ -514,7 +553,7 @@ def parse_cobol_source(
             idx += 1
 
     flush_para()
-    return CobolProgramAST(prog_name, data_items, procedures)
+    return CobolProgramAST(prog_name, data_items, procedures, unhandled_statements=unhandled_stmts)
 
 
 # ============================================================================
@@ -640,11 +679,41 @@ class CobolASTGraphBuilder:
         # Fourth pass: Build direct Def-Use DFG edges
         self._link_def_use_chains()
 
+        # Extract unsupported statements report
+        unsupported_nodes = [
+            {
+                "id": n["id"],
+                "verb": n.get("unsupported_verb") or n.get("label", "").replace("UNSUPPORTED: ", "").strip(),
+                "code": n["code"],
+                "paragraph": n["paragraph"],
+                "location": n["location"],
+                "source_origin": n.get("source_origin"),
+            }
+            for n in self.nodes.values()
+            if n.get("node_type") == "unsupported_stmt"
+        ]
+
+        stmt_nodes = [
+            n for n in self.nodes.values()
+            if n.get("node_type") in ("stmt", "branch", "perform", "stop", "db_access", "external", "unsupported_stmt")
+        ]
+        total_stmts = len(stmt_nodes)
+        unsupported_count = len(unsupported_nodes)
+        supported_count = total_stmts - unsupported_count
+        coverage_ratio = (supported_count / total_stmts) if total_stmts > 0 else 1.0
+
         payload = {
             "program_id": self.program_id,
             "variables": list(self.variables.values()),
             "nodes": list(self.nodes.values()),
-            "edges": self.edges
+            "edges": self.edges,
+            "unsupported_statements": unsupported_nodes,
+            "parser_coverage": {
+                "total_statements": total_stmts,
+                "supported_statements": supported_count,
+                "unsupported_statements": unsupported_count,
+                "coverage_ratio": round(coverage_ratio, 4),
+            }
         }
         validate_graph_payload(payload, include_variables=True)
         return payload
@@ -682,6 +751,10 @@ class CobolASTGraphBuilder:
         reads: Set[str] = set()
         writes: Set[str] = set()
         stype = type(stmt).__name__
+
+        if isinstance(stmt, UnhandledStatement):
+            reads.update(self._extract_vars_from_expr(stmt.raw_text))
+            return reads, writes
 
         if isinstance(stmt, ExecSqlStatement):
             reads.update(v for v in stmt.host_reads if v in self.variables)
@@ -761,61 +834,81 @@ class CobolASTGraphBuilder:
         """Creates a standardized ProgramNode dictionary from an AST statement."""
         stype_name = type(stmt).__name__.replace("Statement", "").upper()
         line = stmt.location.line if getattr(stmt, "location", None) else 0
-        node_id = f"{para_name}:L{line}_{stype_name}"
 
         # Classify node type and reconstruct human-readable code
-        if isinstance(stmt, (IfStatement, _CobolParserIfStatement if COBOLPARSER_AVAILABLE else IfStatement)):
+        if isinstance(stmt, UnhandledStatement):
+            node_type = "unsupported_stmt"
+            label = f"UNSUPPORTED: {stmt.verb}"
+            code = stmt.raw_text
+            node_id = f"{para_name}:L{line}_UNSUPPORTED_{stmt.verb}"
+        elif isinstance(stmt, (IfStatement, _CobolParserIfStatement if COBOLPARSER_AVAILABLE else IfStatement)):
             node_type = "branch"
             cond_str = self._format_condition(stmt.condition)
             label = f"IF {cond_str[:24]}"
             code = f"IF {cond_str}"
+            node_id = f"{para_name}:L{line}_{stype_name}"
         elif isinstance(stmt, (PerformStatement, _CobolParserPerformStatement if COBOLPARSER_AVAILABLE else PerformStatement)):
             node_type = "perform"
             target_p = getattr(stmt, "target_paragraph", "") or (stmt.operands[0] if getattr(stmt, "operands", None) else "")
             label = f"PERFORM {target_p}"
             code = f"PERFORM {target_p}"
+            node_id = f"{para_name}:L{line}_{stype_name}"
         elif isinstance(stmt, (StopStatement, GobackStatement, _CobolParserStopStatement if COBOLPARSER_AVAILABLE else StopStatement, _CobolParserGobackStatement if COBOLPARSER_AVAILABLE else GobackStatement)):
             node_type = "stop"
             label = "STOP RUN" if type(stmt).__name__.startswith("Stop") else "GOBACK"
             code = label
+            node_id = f"{para_name}:L{line}_{stype_name}"
         elif isinstance(stmt, (MoveStatement, _CobolParserMoveStatement if COBOLPARSER_AVAILABLE else MoveStatement)):
             node_type = "stmt"
             dest = ", ".join(stmt.targets) if getattr(stmt, "targets", None) else getattr(stmt, "target", "")
             label = f"MOVE {dest}"
             code = f"MOVE {getattr(stmt, 'source', '')} TO {dest}"
+            node_id = f"{para_name}:L{line}_{stype_name}"
         elif isinstance(stmt, (SubtractStatement, _CobolParserSubtractStatement if COBOLPARSER_AVAILABLE else SubtractStatement)):
             node_type = "stmt"
             src = stmt.operands[0] if getattr(stmt, "operands", None) else ""
             dest = getattr(stmt, "target", "") or (stmt.targets[0] if getattr(stmt, "targets", None) else "")
             label = f"SUB {dest}"
             code = f"SUBTRACT {src} FROM {dest}"
+            node_id = f"{para_name}:L{line}_{stype_name}"
         elif isinstance(stmt, (AddStatement, _CobolParserAddStatement if COBOLPARSER_AVAILABLE else AddStatement)):
             node_type = "stmt"
             src = stmt.operands[0] if getattr(stmt, "operands", None) else ""
             dest = getattr(stmt, "target", "") or (stmt.targets[0] if getattr(stmt, "targets", None) else "")
             label = f"ADD {dest}"
             code = f"ADD {src} TO {dest}"
+            node_id = f"{para_name}:L{line}_{stype_name}"
         elif isinstance(stmt, (ComputeStatement, _CobolParserComputeStatement if COBOLPARSER_AVAILABLE else ComputeStatement)):
             node_type = "stmt"
             dest = ", ".join(stmt.targets) if getattr(stmt, "targets", None) else getattr(stmt, "target", "")
             expr = getattr(stmt, "expression", "")
             label = f"COMPUTE {dest}"
             code = f"COMPUTE {dest} = {expr}"
+            node_id = f"{para_name}:L{line}_{stype_name}"
         elif isinstance(stmt, ExecSqlStatement):
             node_type = "db_access"
             tables = ", ".join(stmt.tables) if stmt.tables else "UNKNOWN-TABLE"
             label = f"SQL {stmt.operation} {tables}"
             code = f"EXEC SQL {stmt.sql} END-EXEC"
+            node_id = f"{para_name}:L{line}_{stype_name}"
         elif isinstance(stmt, ExecCicsStatement):
             node_type = "external"
             resource = f"{stmt.resource_kind}({stmt.resource_name})"
             label = f"CICS {stmt.command} {resource}"
             code = f"EXEC CICS {stmt.cics} END-EXEC"
+            node_id = f"{para_name}:L{line}_{stype_name}"
         else:
             node_type = "stmt"
             target_var = getattr(stmt, "target", "") or (stmt.targets[0] if getattr(stmt, "targets", None) else "")
             label = f"{stype_name} {target_var}".strip()
             code = label
+            node_id = f"{para_name}:L{line}_{stype_name}"
+
+        base_id = node_id
+        suffix = 2
+        while node_id in self.nodes:
+            node_id = f"{base_id}_{suffix}"
+            suffix += 1
 
         reads, writes = self._analyze_statement_io(stmt)
 
@@ -830,7 +923,9 @@ class CobolASTGraphBuilder:
             "location": {"line": line, "column": getattr(stmt.location, "column", 0) if getattr(stmt, "location", None) else 0},
             "_ast_stmt": stmt
         }
-        if isinstance(stmt, ExecSqlStatement):
+        if isinstance(stmt, UnhandledStatement):
+            node["unsupported_verb"] = stmt.verb
+        elif isinstance(stmt, ExecSqlStatement):
             node["sql_operation"] = stmt.operation
             node["tables"] = list(stmt.tables)
             node["host_reads"] = sorted(stmt.host_reads)

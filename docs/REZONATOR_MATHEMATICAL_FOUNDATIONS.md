@@ -198,7 +198,7 @@ The current comparator calculates a base score from NetLSD distance:
 $$F_{\text{base}} = \max(0, \min(100, 100(1 - 2.5 D_{\text{NetLSD}})))$$
 It sets the score to zero if Program B receives the heuristic deadlock flag while A does not; if B has that flag in both inputs, it caps the score at 20% of the base. Otherwise it returns the base score. The implemented formula does not include the Fiedler delta or cymatic similarity.
 
-The API currently emits labels including `SAFE_MODULAR_EXTENSION` and `CRITICAL_REGRESSION`. These are heuristic structural labels, not calibrated confidence, functional-equivalence results, or safety certificates. Differential tests and domain invariants are required to assess behavioral preservation.
+The API emits labels including `STRUCTURAL_MODULAR_EXTENSION`, `HAZARD_REDUCED`, and `CRITICAL_REGRESSION`. These are heuristic structural labels, not calibrated confidence, functional-equivalence results, or safety certificates. Differential tests and domain invariants are required to assess behavioral preservation.
 
 ---
 

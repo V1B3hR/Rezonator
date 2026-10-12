@@ -7,10 +7,10 @@
 
 The **Rezonator** test harness exercises selected parser fixtures, graph invariants, spectral and diffusion routines, cycle reporting, embedded CICS/SQL forms, copybook preprocessing, provenance fields, and local/remote HTTP access controls. This report is a test snapshot, not a code-coverage measurement, complete COBOL conformance result, security certification, or proof of production readiness.
 
-- **Total Test Cases**: 33
-- **Recorded Run**: 33 Passed, 0 Failed, 0 Skipped, 0 Errors (100% for that run)
-- **Recorded Suite Time**: 1.939 seconds in the captured environment; this is not a performance guarantee.
-- **Areas Exercised**: Front-End AST fixtures, spectral and diffusion routines, slicing/ranking, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, provenance fields, REST API, and backward compatibility.
+- **Total Test Cases**: 40
+- **Recorded Run**: 40 Passed, 0 Failed, 0 Skipped, 0 Errors (100% for that run)
+- **Recorded Suite Time**: 1.959 seconds in the captured environment; this is not a performance guarantee.
+- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, spectral and diffusion routines, slicing/ranking, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, provenance fields, REST API, neutral comparator verdicts, and backward compatibility.
 
 The source revision and run date for the recorded result are not captured here. Re-run the suite against the current commit before treating this as current status.
 
@@ -28,7 +28,8 @@ The source revision and run date for the recorded result are not captured here. 
 | **Enterprise Copybook Inlining** | `tests/test_copybook_inliner.py` | 3 | **PASS** | 0.012 s | Validates nested COPYBOOK resolution, REPLACING semantics, and circular dependency detection. |
 | **Enterprise Statements (CICS/SQL)** | `tests/test_f4_enterprise_statements.py` | 3 | **PASS** | 0.025 s | Verifies EXEC SQL and EXEC CICS commands as typed graph nodes with persistent and external flow. |
 | **Basic Security Controls** | `tests/test_security_hardening.py` | 5 | **PASS** | 0.145 s | Exercises CORS allowlisting, 10MB limits, remote bearer auth, bounded AST evaluation, and SHA-256 source provenance. |
-| **TOTAL** | | **33** | **PASS** | **1.939 s** | **All listed tests passed in the recorded run** |
+| **Truthful Parser & Tarjan SCCs** | `tests/test_increment_a_truthful_parser.py` | 7 | **PASS** | 0.020 s | Validates unhandled statement materialization, DFG read dependencies, copybook provenance, Tarjan SCC analysis, bounded cycle budgets, and neutral comparator verdicts. |
+| **TOTAL** | | **40** | **PASS** | **1.959 s** | **All listed tests passed in the recorded run** |
 
 ---
 
@@ -253,8 +254,46 @@ Enforces strict security boundaries, AST evaluation sandboxing, resource caps, a
   - Tests payload guard: HTTP POST requests with bodies exceeding 10 MB fail-closed with `HTTP 413 Payload Too Large`.
   - **Result**: **PASS**
 
+#### 9. Truthful Parser, Tarjan SCCs & Neutral Comparator Suite (`tests/test_increment_a_truthful_parser.py`)
+Validates Increment A contract: explicit materialization of unhandled statements, Tarjan SCC linear-time cycle detection, bounded cycle budgets, and neutral comparator verdicts.
+
+- `test_unhandled_statements_materialization_and_coverage`:
+  - Tests that unhandled verbs (`DISPLAY`, `CALL`, `ACCEPT`) are instantiated as `unsupported_stmt` nodes instead of being silently dropped.
+  - Verifies sequential control flow (`cfg_seq`) remains unbroken through unsupported statement nodes.
+  - Verifies `parser_coverage` metadata (`total_statements`, `supported_statements`, `unsupported_statements`, `coverage_ratio`) and `unsupported_statements` inventory.
+  - **Result**: **PASS**
+
+- `test_unhandled_statement_variable_read_dependencies`:
+  - Asserts that variables mentioned in unhandled statements are conservatively tracked in `reads`.
+  - Verifies def-use chain edges (`dfg_def_use`) connect preceding writers to the unhandled statement.
+  - **Result**: **PASS**
+
+- `test_copybook_expansion_retains_provenance_on_unhandled_statement`:
+  - Asserts that unhandled statements originating inside inlined copybooks retain precise line and copybook filename provenance (`source_origin`).
+  - **Result**: **PASS**
+
+- `test_cycle_detector_tarjan_scc_acyclic_dag`:
+  - Verifies that linear-time Tarjan SCC analysis identifies DAGs with 0 non-trivial SCCs and assigns `DIRECTED_ACYCLIC_FLOW`.
+  - **Result**: **PASS**
+
+- `test_cycle_detector_tarjan_scc_trapped_cycle`:
+  - Tests recursive cycles with invariant condition guards and trapped SCC components.
+  - Verifies classification of `CRITICAL_INFINITE_LOOP` and `has_deadlock = True`.
+  - **Result**: **PASS**
+
+- `test_cycle_detector_bounded_cycle_budget`:
+  - Tests dense multi-cyclic graphs ($K_7$) under `CycleDetector`.
+  - Asserts that cycle enumeration respects `MAX_CYCLES_PER_SCC = 25` and `TOTAL_CYCLE_BUDGET = 100`, terminates immediately without hanging, and flags `cycle_budget_exhausted: True`.
+  - **Result**: **PASS**
+
+- `test_comparator_neutral_structural_verdicts`:
+  - Asserts that small refactorings produce `STRUCTURAL_MODULAR_EXTENSION` (not `SAFE_MODULAR_EXTENSION`).
+  - Asserts that cycle removal produces `HAZARD_REDUCED` (not `DEFECT_RESOLVED`).
+  - Asserts that cycle introductions produce `CRITICAL_REGRESSION`.
+  - **Result**: **PASS**
+
 ---
 
 ### Conclusion & Quality Sign-Off
 
-The recorded run passed all **33 listed tests**. This is not 100% code coverage and does not establish complete dialect, security, or production readiness. The Python project still uses scientific dependencies; the statement about avoiding a native COBOL parser does not mean the entire application has no native binary dependencies. Runtime varies by host.
+The recorded run passed all **40 listed tests**. This is not 100% code coverage and does not establish complete dialect, security, or production readiness. The Python project still uses scientific dependencies; the statement about avoiding a native COBOL parser does not mean the entire application has no native binary dependencies. Runtime varies by host.

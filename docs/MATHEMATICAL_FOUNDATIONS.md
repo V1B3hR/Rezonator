@@ -102,4 +102,4 @@ The current comparator returns several graph metrics. Its base health score is:
 $$F_{\text{base}} = \max(0, \min(100, 100(1 - 2.5 d_{\text{NetLSD}})))$$
 If Program B receives the heuristic deadlock flag and A does not, the score is zero. If both receive the flag, B's score is capped at 20% of the base; otherwise the base is returned.
 
-This score is not calibrated against behavioral equivalence, expert judgments, or migration outcomes. Verdict strings such as `SAFE_MODULAR_EXTENSION` are labels over graph metrics, not a safety assessment. Use differential execution tests and domain invariants to evaluate behavior.
+This score is not calibrated against behavioral equivalence, expert judgments, or migration outcomes. Verdict strings such as `STRUCTURAL_MODULAR_EXTENSION` are labels over graph metrics, not a safety assessment. Use differential execution tests and domain invariants to evaluate behavior.
