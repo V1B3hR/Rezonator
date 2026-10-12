@@ -1,115 +1,91 @@
 # ⚡ REZONATOR (Błyskawica Spectral Code Intelligence)
-### Continuous Topological Manifolds, Spectral Graph Theory & Formal Verification for Legacy Enterprise Code Intelligence
+### Spectral Graph Analysis & Static Code Intelligence for Legacy Enterprise Systems
 
 [![License: Rezonator Commercial](https://img.shields.io/badge/License-Source--Available%20%26%20Commercial-red.svg)](REZONATOR_LICENSE.md)
 [![Python 3.12](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Powered by Błyskawica](https://img.shields.io/badge/Powered%20by-B%C5%82yskawica%20SPARKLE%20V10-cyan.svg)](https://github.com/V1B3hR/Blyskawica)
 [![GitHub Repo](https://img.shields.io/badge/GitHub-V1B3hR%2FRezonator-blue.svg)](https://github.com/V1B3hR/Rezonator)
-[![Tests Passing](https://img.shields.io/badge/tests-33%2F33%20passing-brightgreen.svg)]()
+[![Focused Test Inventory](https://img.shields.io/badge/focused%20tests-33%20listed-blue.svg)]()
 
-> *"Nie traktujemy kodu COBOL jako tekstu słowo po słowie – traktujemy program jako pole wektorowe i przestrzeń topologiczną, którą można różniczkować, całkować i analizować widmowo."*
+> *"Rezonator maps selected COBOL constructs into a finite program graph, making structural relationships easier to inspect."*
 
 ---
 
 ## 🌌 Context & Problem Statement
 
-Over **95% of ATM transactions** and **43% of core banking mainframes** run on COBOL. Mainframe systems are defined by deep determinism: variables have fixed contiguous memory addresses, execution flows resemble hydraulic or thermodynamic pipelines, and global `WORKING-STORAGE` structures create complex coupling.
+Long-lived COBOL systems can contain non-local control flow, shared `WORKING-STORAGE`, and dependencies spread across paragraphs and copybooks. Reconstructing those relationships is difficult; a graph view can help navigate them, provided parser coverage and uncertainty are visible.
 
-Standard linguistic LLMs treat code as plain text tokens, frequently hallucinating control flow across archaic `PERFORM`, `EVALUATE`, and `GO TO` jumps. 
+Rezonator is a research-oriented static-analysis prototype. Its line-oriented parser recognizes a supported subset of COBOL, then computes graph and spectral metrics, diffusion rankings, and heuristic cycle signals. It does not model all COBOL semantics or prove program behavior.
 
-**Rezonator** adapts the cognitive and physical solvers from [V1B3hR/Blyskawica](https://github.com/V1B3hR/Blyskawica) (Diamond Yant, PINN Thermal Engine, Spectral Manifolds) into a **rigorous mathematical pipeline**:
+The current source-to-result path is summarized below; the dense graph representation is limited to 2,048 nodes:
 
 ```
-Legacy COBOL World
-       │
-       ▼
-┌─────────────────────────┐
-│   COBOL Front-End       │  ──> Hermetic AST & Block Extractor
-└────────────┬────────────┘
+COBOL source
+    │
+    ▼
+[Supported-subset, line-oriented parser]
+    │  unsupported syntax may be missed
+    ▼
+[Parsed statements and source relationships]
+    ├──> CFG (control-flow edges)
+    └──> DFG (selected data-flow edges)
              │
              ▼
-┌─────────────────────────┐
-│ Program Intermediate    │  ──> Basic blocks, statements, shared memory hubs
-│ Representation (PIR)    │
-└────────────┬────────────┘
+[Dense GraphField: adjacency and Laplacians; maximum 2,048 nodes]
              │
-       ┌─────┴──────────────────────┐
-       ▼                            ▼
-┌────────────────────────┐   ┌────────────────────────┐
-│ Control Flow Graph     │   │ Data Flow Graph        │
-│ (CFG)                  │   │ (DFG & Def-Use)        │
-└────────────┬───────────┘   └────────────┬───────────┘
-             │                            │
-             └─────────────┬──────────────┘
-                           │
-                           ▼
-             ┌───────────────────────────┐
-             │ Unified Graph Laplacian   │  ──> L = D - A, L_norm
-             │ Field & Memory Hubs       │
-             └─────────────┬─────────────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        ▼                  ▼                  ▼
-┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-│ DIAMOND YANT │   │ PINN HEAT    │   │ TARJAN SCC   │
-│ Modal Wave   │   │ Diffusion    │   │ Cycle & Loop │
-│ Cymatics     │   │ PDE Engine   │   │ Verifier     │
-└───────┬──────┘   └──────┬───────┘   └──────┬───────┘
-        │                 │                  │
-        └─────────────────┼──────────────────┘
-                          │
-                          ▼
-             ┌───────────────────────────┐
-             │ AI / LLM COGNITIVE BRIEF  │  ──> Zero Hallucinations, Pure Physics
-             │ & Interactive Web Studio  │
-             └───────────────────────────┘
+             ├──> Spectral graph metrics
+             ├──> Diffusion-based impact rankings
+             └──> Cycle enumeration and heuristic hazard signals
+                         │
+                         ▼
+                 [API / Web Studio results]
 ```
 
 ---
 
 ## 📚 Strategic Architecture & Documentation
 
-Rezonator includes an exhaustive, defense-grade documentation suite designed for enterprise architects, scientific researchers, and audit teams:
+Rezonator includes project documentation for architecture, experiments, implementation history, and the current roadmap:
 
 | Strategic Document | File Location | Key Contents |
 |:---|:---|:---|
 | **License & Commercial Terms** | [`REZONATOR_LICENSE.md`](file:///c:/Projekty/Rezonator/REZONATOR_LICENSE.md) | Source-available & commercial licensing terms (UK jurisdiction), enterprise bank restrictions, and public healthcare / NHS humanitarian waiver. |
-| **Debugging & Defect Report** | [`REZONATOR_DEBUGGING_REPORT.md`](file:///c:/Projekty/Rezonator/REZONATOR_DEBUGGING_REPORT.md) | Technical audit, root-cause analysis, and proof of remediation across 7 core defects (Smart App Control, decimal parsing, ARPACK shift-invert). |
-| **Comprehensive Test Suite** | [`REZONATOR_TEST_SUITE_REPORT.md`](file:///c:/Projekty/Rezonator/REZONATOR_TEST_SUITE_REPORT.md) | Execution summary of all 33 unit & integration tests (100% pass rate in < 2.0s) covering dialects, security boundaries, and invariant proofs. |
-| **Performance Benchmarks** | [`REZONATOR_BENCHMARKS.md`](file:///c:/Projekty/Rezonator/REZONATOR_BENCHMARKS.md) | End-to-end parsing throughput (260+ progs/sec), sparse Lanczos scaling up to $N=10,000$ vertices, and Hypothesis $H_1$ mutation battery. |
-| **Verification & Validation** | [`REZONATOR_VERIFICATION_AND_VALIDATION.md`](file:///c:/Projekty/Rezonator/REZONATOR_VERIFICATION_AND_VALIDATION.md) | Formal IEEE 1012 / ISO 25010 assessment, ANSI-85 / IBM COBOL compliance, traceability matrix, and hazard mitigations. |
-| **Strategic Roadmap** | [`REZONATOR_ROADMAP.md`](file:///c:/Projekty/Rezonator/REZONATOR_ROADMAP.md) | Audit of completed phases (F0–F4) and future milestones (F4.3 hybrid bridge, F5 JCL hypergraphs, F6 Cheeger spectral cuts). |
-| **Development Milestones** | [`REZONATOR_DEVELOPMENT_MILESTONES.md`](file:///c:/Projekty/Rezonator/REZONATOR_DEVELOPMENT_MILESTONES.md) | Chronological evolution of Rezonator from M0 prototype to production v1.0.0 and hardened M7 state. |
-| **Mathematical Foundations** | [`docs/REZONATOR_MATHEMATICAL_FOUNDATIONS.md`](file:///c:/Projekty/Rezonator/docs/REZONATOR_MATHEMATICAL_FOUNDATIONS.md) | Exhaustive scientific whitepaper: Fan Chung Laplacians, NetLSD heat trace kernels, continuous Markov generators, and Cheeger bounds. |
+| **Debugging & Defect Report** | [`REZONATOR_DEBUGGING_REPORT.md`](file:///c:/Projekty/Rezonator/REZONATOR_DEBUGGING_REPORT.md) | Historical technical audit and root-cause notes for reported defects; not an independent proof or current certification. |
+| **Test Suite Report** | [`REZONATOR_TEST_SUITE_REPORT.md`](file:///c:/Projekty/Rezonator/REZONATOR_TEST_SUITE_REPORT.md) | Snapshot of 33 focused unit and integration tests; not a statement of code coverage or certification. |
+| **Performance Benchmarks** | [`REZONATOR_BENCHMARKS.md`](file:///c:/Projekty/Rezonator/REZONATOR_BENCHMARKS.md) | Recorded parser and synthetic sparse-kernel measurements plus the Hypothesis $H_1$ experiment. See the roadmap for end-to-end scaling limits. |
+| **Verification & Validation Notes** | [`REZONATOR_VERIFICATION_AND_VALIDATION.md`](file:///c:/Projekty/Rezonator/REZONATOR_VERIFICATION_AND_VALIDATION.md) | Project checks inspired by V&V practices; not an IEEE/ISO conformity assessment or independent certification. |
+| **Strategic Roadmap** | [`REZONATOR_ROADMAP.md`](file:///c:/Projekty/Rezonator/REZONATOR_ROADMAP.md) | Code-grounded baseline, delivery gates, and 2027/2028/2031 strategic horizons. |
+| **Sokół Architecture** | [`docs/SOKOL_ARCHITECTURE.md`](file:///c:/Projekty/Rezonator/docs/SOKOL_ARCHITECTURE.md) | Proposed read-only AI observer, evidence labels, versioned memory, controlled traces, privacy boundary, and delivery gates; not implemented yet. |
+| **Development Milestones** | [`REZONATOR_DEVELOPMENT_MILESTONES.md`](file:///c:/Projekty/Rezonator/REZONATOR_DEVELOPMENT_MILESTONES.md) | Historical implementation notes; read alongside the current code-grounded roadmap. |
+| **Mathematical Foundations** | [`docs/REZONATOR_MATHEMATICAL_FOUNDATIONS.md`](file:///c:/Projekty/Rezonator/docs/REZONATOR_MATHEMATICAL_FOUNDATIONS.md) | Mathematical reference for graph operators and spectral methods, with explicit implementation-scope caveats. |
 
 ---
 
 ## 🔬 Core Physics & Mathematical Solvers
 
 ### 1. 💎 Diamond Yant Modal Spectral Engine
-- Solves the exact eigensystem of the Graph Laplacian:
+- Computes graph modes with dense eigensolvers for small inputs and sparse shift-invert methods for larger sparse inputs:
   $$L v_k = \lambda_k v_k, \quad 0 = \lambda_0 \le \lambda_1 \le \dots \le \lambda_{N-1}$$
-- **Fiedler Value ($\lambda_1$)**: Algebraic connectivity measuring structural cohesion. If $\lambda_1 = 0$, unreachable code or disconnected sinks exist.
-- **Fiedler Vector ($v_1$)**: Cheeger spectral bi-partitioning into natural domain logic vs. ancillary routines.
+- **Fiedler Value ($\lambda_1$)**: A structural connectivity metric for the modeled graph. A zero value warrants checking component and isolated-node counts; it does not prove that code is unreachable.
+- **Fiedler Vector ($v_1$)**: a mathematical input for future partition analysis; the application does not yet produce or validate service boundaries.
 - **NetLSD Multi-Scale Heat Trace Signature**:
   $$\Phi(t) = \text{Tr}\left(\exp(-t \mathcal{L}_{\text{norm}})\right) = \sum_{k} \exp(-t \lambda_k)$$
   Provides graph-size invariant topological distance across 25 log time scales $t \in [10^{-2}, 10^2]$.
-- **Sparse Shift-Invert Lanczos Scaling**:
-  Uses negative spectral shift $\sigma = -10^{-4}$ with `scipy.sparse.linalg.eigsh`, achieving an **1,800x speedup** on large matrices ($N \ge 1,000$).
+- **Sparse Shift-Invert Lanczos**:
+  Uses a negative spectral shift with `scipy.sparse.linalg.eigsh`. The benchmark report records a speedup against a historical dense baseline; results depend on the graph, hardware, and comparison method.
 
-### 2. 🌡️ PINN Graph Heat Diffusion Engine
-- Solves parabolic data/taint propagation across variables and routines:
+### 2. 🌡️ Graph Heat Diffusion Engine
+- Computes graph diffusion over the modeled adjacency/Laplacian operators; this is not a source-level taint proof:
   $$\frac{\partial u}{\partial t} = -\alpha L u \implies u(t) = \exp(-\alpha L t) u_0$$
 - Injects impulse into any variable (e.g. `WS-ACCOUNT-BALANCE`) to observe downstream dispersion.
 - Computes directed forward blast radius via continuous Markov generator $Q = P^T - I$:
   $$u(t) = \exp((P^T - I)t) u_0$$
-- Scales to $N = 10,000$ vertices in **83 ms** using Krylov subspace `expm_multiply`.
+- Sparse diffusion kernels have been benchmarked separately on synthetic graphs. The ordinary `GraphField` path still materializes dense matrices and has a 2,048-node limit; see the roadmap before interpreting kernel timings as end-to-end capacity.
 
-### 3. 🛡️ Formal Cycle, Recursion & Deadlock Verifier (Tarjan SCC)
-- Computes Strongly Connected Components (SCC) on the directed Control Flow Graph $\mathcal{G}_{\text{CFG}}$.
-- Distinguishes valid acyclic business logic from hazardous recursive `PERFORM` cycles.
-- Analyzes loop termination guards and invariants to mathematically guarantee exit reachability (`STOP RUN` / `GOBACK`).
-- Flags infinite recursion traps with 100% precision (e.g. `ATM-DEADLOCK` correctly identified as `CRITICAL_INFINITE_LOOP`).
+### 3. Cycle and Control-Flow Analysis
+- Enumerates control-flow cycles with NetworkX and reports selected trapped-cycle and unmodified-guard hazards.
+- A cycle is evidence of a possible repeated execution path; it does not, by itself, prove nontermination. The current analysis does not formally prove general COBOL termination.
+- The canonical `ATM-DEADLOCK` fixture is detected by current heuristics. Results should be reviewed as analysis signals with stated assumptions.
 
 ---
 
@@ -122,19 +98,19 @@ python verify_experiment.py
 
 ### 2. Launch the Interactive Web Studio
 ```bash
-# Default: Secure local diagnostic mode (127.0.0.1, no auth needed)
+# Default: local diagnostic mode bound to 127.0.0.1
 python main.py --serve --port 8080
 
-# Hardened Remote Mode: Requires bearer token authentication
+# Remote mode: bearer token over HTTP; deploy behind a trusted TLS boundary
 python main.py --serve --remote --token YOUR_SECURE_TOKEN --port 8080
 ```
 Open **[http://127.0.0.1:8080](http://127.0.0.1:8080)** in any modern browser to access:
 - **Interactive Graph Topology Canvas (CFG + DFG)** with dynamic heat glowing.
 - **Diamond Yant 2D Chladni Cymatics Oscilloscope** running 60 FPS standing wave simulations.
 - **PINN Heat Diffusion Timeline Scrubber** with variable impulse injection.
-- **Tarjan SCC Cycle & Deadlock Radar** with formal termination verification.
+- **Control-flow cycle and hazard summary** based on the current static heuristics.
 - **Side-by-Side Differential Anomaly Scorecard** (V1 vs V2).
-- **One-Click LLM Cognitive Brief Generation**.
+- **Deterministic Markdown analysis brief**; the current implementation does not call an LLM.
 
 ### 3. Compare Custom COBOL Files
 ```bash
@@ -145,7 +121,7 @@ python main.py --compare examples/bank_demo_v1.cbl examples/bank_demo_v2.cbl
 ```bash
 python -m unittest discover -s tests -p "test_*.py"
 ```
-*(33 tests verify golden AST graph isomorphism, runtime execution, mutation ground-truth, Laplacian symmetry, eigensolver, NetLSD diffusion, cycle/deadlock detection, sparse Lanczos scaling, copybook expansion, embedded CICS/SQL statements, zero-trust HTTP hardening, and backward compatibility).*
+*(The 33 focused tests exercise golden graphs, runtime examples, mutation experiments, selected numerical invariants, cycle analysis, sparse kernels, copybook expansion, selected CICS/SQL forms, HTTP access controls, provenance fields, and compatibility shims. They are not exhaustive COBOL conformance or production certification.)*
 
 ### 5. Run the Full Benchmark Suite
 ```bash
@@ -154,25 +130,28 @@ python REZONATOR_run_benchmarks.py
 
 ---
 
-## 🔒 Security Hardening & Zero-Trust Architecture
+## 🔒 Local API Safeguards
 
-Rezonator adheres to a defensive, zero-trust posture designed for sensitive enterprise codebases:
+Rezonator currently provides basic local API safeguards. They are not a zero-trust architecture or a security certification:
 
 1. **Local-by-Default Binding**: Binds strictly to loopback interface `127.0.0.1`. Remote binding (`--remote`) requires an explicit secret token (`--token <TOKEN>`). Unauthenticated requests fail closed with `HTTP 401 Unauthorized`.
-2. **Explicit HTTP/1.0 & Connection Termination**: Emits explicit `HTTP/1.0` with mandatory `Connection: close`, preventing connection reuse attacks, smuggling, and lingering socket leaks.
+2. **Request/response isolation**: Uses `HTTP/1.0` and `Connection: close` for a simple connection lifecycle. These settings do not by themselves prevent request smuggling or make an exposed service safe.
 3. **Payload & Resource Limits**:
    - `MAX_PAYLOAD_BYTES = 10 MB`: Requests exceeding 10 MB are rejected immediately with `HTTP 413 Payload Too Large`.
    - `MAX_SOURCE_BYTES = 10 MB`: Source files exceeding 10 MB raise `ResourceLimitError`.
-   - `MAX_DENSE_MATRIX_NODES = 1,000`: Dense matrix representations reject allocations $> 1,000$ nodes with `GraphLimitError`, requiring sparse Lanczos solvers.
+   - `MAX_DENSE_MATRIX_NODES = 2,048`: `GraphField` rejects larger graphs because it currently materializes dense matrices; sparse solver primitives are not yet wired through this whole path.
    - `MAX_GRAPH_NODES = 50,000`: Hard ceiling on graph size to prevent memory exhaustion.
-   - `MAX_RUNTIME_STEPS = 10,000`: Execution step limit in simulation runtime.
-4. **CORS Allowlist & Preflight Protection**: Replaces permissive wildcard CORS (`*`) with configurable origin allowlisting (`ALLOWED_ORIGINS`) and preflight `OPTIONS` handling. Unauthorized origins receive `HTTP 403 Forbidden`.
+   - `MAX_RUNTIME_STEPS = 100,000`: Upper bound for simulation steps.
+4. **CORS Origin Allowlist**: Uses an origin allowlist and handles browser preflight requests. CORS is not authentication and does not restrict non-browser clients.
 5. **Hermetic AST Expression Evaluator (Zero `eval()`)**: Evaluates expressions in runtime conditions strictly via an Abstract Syntax Tree whitelist (basic arithmetic and boolean operators). Escapes attempting arbitrary code execution (e.g. `__import__`, `os.system`) fail closed safely.
-6. **Cryptographic Provenance Envelope**: Every analysis result includes a provenance block:
+6. **Basic Provenance Fields**: Analyze/compare results include metadata for the source text:
    - `source_sha256`: Cryptographic digest of the analyzed source code.
    - `solver_seed`: Fixed deterministic solver seed (`42`).
    - `rezonator_version`: Package semantic version (`1.0.0`).
    - `timestamp_utc`: ISO 8601 UTC timestamp.
+   The current digest does not yet bind copybook contents, analysis options, dependency versions, or the serialized result.
+
+Remote mode accepts a bearer token over plain HTTP. Use it only behind a trusted TLS-terminating boundary until encrypted transport is provided by deployment infrastructure.
 
 ---
 
@@ -209,12 +188,12 @@ C:\Projekty\Rezonator\
 │   ├── cobol_parser.py        # Front-End Parser Adapter
 │   ├── cobol_runtime.py       # Deterministic Operational Semantics (AST Evaluator)
 │   ├── copybooks.py           # Nested COPYBOOK inlining & REPLACING preprocessor
-│   ├── cycle_detector.py      # Tarjan SCC Cycle & Recursion Verifier
+│   ├── cycle_detector.py      # CFG cycle enumeration and heuristic hazard analysis
 │   ├── diamond_yant.py        # Shift-Invert Lanczos & NetLSD Signatures
 │   ├── diffusion_ranker.py    # Continuous Impact & Blast Radius Ranker
 │   ├── graph_field.py         # Tensorization & Fan Chung Laplacian
 │   ├── limits.py              # Defense-in-depth resource & size limits
-│   ├── llm_synthesizer.py     # Cognitive Markdown Prompt Generator
+│   ├── llm_synthesizer.py     # Deterministic analysis brief (legacy module name)
 │   ├── mutation_benchmark.py  # Mutation Testing Engine (Hypothesis H1)
 │   ├── pinn_diffusion.py      # Krylov Matrix Exponential Diffusion
 │   ├── program_comparator.py  # Topological NetLSD & Fidelity Evaluator
@@ -244,7 +223,7 @@ C:\Projekty\Rezonator\
 │   ├── test_f4_enterprise_statements.py # Embedded CICS & DB2 SQL Dialects (3 tests)
 │   └── test_security_hardening.py# HTTP, AST sandbox, limits, provenance (5 tests)
 ├── docs/                      # Scientific Documentation
-│   ├── REZONATOR_MATHEMATICAL_FOUNDATIONS.md # Formal Whitepaper
+│   ├── REZONATOR_MATHEMATICAL_FOUNDATIONS.md # Graph-math reference and implementation scope
 │   └── MATHEMATICAL_FOUNDATIONS.md           # Companion Foundations
 ├── Cargo.toml                 # Rust Package Definition
 ├── requirements.txt           # Python Dependency Specification
@@ -270,7 +249,7 @@ If you use Rezonator in your research or enterprise modernization work, please c
 ```bibtex
 @software{rezonator2026,
   author = {Błyskawica & Rezonator Team},
-  title = {Rezonator: Continuous Topological Manifolds, Spectral Graph Theory, and Formal Verification for Mainframe Code Intelligence},
+  title = {Rezonator: Finite Program Graphs, Spectral Methods, and Static Analysis for Mainframe Code},
   year = {2026},
   url = {https://github.com/V1B3hR/Rezonator}
 }

@@ -1,15 +1,15 @@
 # MATHEMATICAL FOUNDATIONS OF REZONATOR
-## Continuous Topological Manifolds, Spectral Graph Theory, and Formal Verification for Mainframe Code Intelligence
+## Finite Program Graphs, Spectral Methods, and Static Analysis for Mainframe Code
 
 ---
 
 ### Abstract & Intuitive Physical Paradigm
 
-Mainframe core banking and insurance systems (processing over 95% of worldwide ATM transactions and 43% of core banking operations) are governed by strict, deterministic mechanics. In an imperative COBOL monolith, variables reside in fixed, contiguous binary offsets, execution flows sequentially through paragraphs, and global `WORKING-STORAGE` records couple disparate routines together.
+Legacy core-banking and insurance systems often contain long-lived COBOL programs with control-flow and shared-data dependencies spread across paragraphs, files, and copybooks. Reconstructing those dependencies from source alone can be labor-intensive.
 
-Standard linguistic Large Language Models (LLMs) treat source code as flat streams of natural language tokens. Consequently, they hallucinate control transfers across non-local `PERFORM ... THRU` spans, miss subtle data races, and fail to track data mutation cascades across global memory hubs.
+Text-only inspection or summarization can miss non-local `PERFORM ... THRU` relationships and data dependencies through shared `WORKING-STORAGE`. Rezonator aims to make selected relationships explicit by parsing a supported source subset into a graph; parser coverage limits still apply.
 
-**Rezonator** fundamentally rejects the text-token paradigm. Instead, it models software as a **continuous physical manifold** and a **discrete topological field**:
+**Rezonator** represents supported program constructs as a **finite graph** and applies discrete graph operators. The following hydraulic picture is only an explanatory analogy:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -20,11 +20,13 @@ Standard linguistic Large Language Models (LLMs) treat source code as flat strea
 │  • Working-Storage Data Items are pressurized fluid reservoirs.                       │
 │  • A User Transaction (Deposit/Withdrawal) is a pressure impulse injected at t=0.      │
 │  • Control Flow branches (IF/ELSE) are fluid bifurcation junctions.                   │
-│  • Infinite Loops (Deadlocks) are circulatory resonance vortices trapping energy.      │
+│  • A reported CFG cycle is a possible loop, not proof of infinite execution.           │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-By formalizing software as an algebraic graph field, we can differentiate, integrate, and spectrally decompose programs using the mathematical tools of **differential geometry, spectral graph theory, and partial differential equations (PDEs)**.
+The implemented core represents a parsed program as a finite graph and applies graph operators, spectral methods, and diffusion equations to that representation. The hydraulic and physical language in this document is an explanatory analogy; the current software does not construct a continuous manifold or prove full source-program semantics.
+
+> **Implementation scope:** The parser handles a supported subset of COBOL. The current cycle analyzer enumerates simple cycles with NetworkX and applies heuristics; it does not implement Tarjan SCC or prove termination. Comparative spectral scores describe parsed graph structure, not behavioral equivalence or migration safety. Consult [REZONATOR_ROADMAP.md](../REZONATOR_ROADMAP.md) for implementation status and planned validation.
 
 ---
 
@@ -92,7 +94,7 @@ $$\mathcal{L}_{\text{norm}}[i, j] = \begin{cases}
 1. **Normalized Spectrum**: All eigenvalues $\lambda_k$ of $\mathcal{L}_{\text{norm}}$ lie strictly in the range:
    $$0 = \lambda_0 \le \lambda_1 \le \lambda_2 \le \dots \le \lambda_{N-1} \le 2$$
 2. **Connected Components**: The multiplicity of the zero eigenvalue ($\lambda = 0$) is exactly equal to the number of connected components in the graph.
-3. **Algebraic Connectivity (Fiedler Value $\lambda_1$)**: The first non-zero eigenvalue $\lambda_1$ measures how easily the program can be cut into disconnected pieces. If $\lambda_1 = 0$, isolated subroutines or unreferenced variables exist.
+3. **Algebraic Connectivity (Fiedler Value $\lambda_1$)**: The Fiedler value describes connectivity of the represented graph and can motivate review of candidate cuts. A zero value indicates multiple modeled components under the current operator; it does not by itself identify isolated business logic or unreferenced variables.
 
 ---
 
@@ -103,7 +105,7 @@ The **conductance** $\phi(S)$ of a set of statements $S \subset V$ measures the 
 $$\phi(S) = \frac{|\partial(S)|}{\min(\text{vol}(S), \text{vol}(\bar{S}))}, \quad \text{where } \text{vol}(S) = \sum_{i \in S} D_{ii}$$
 By **Cheeger's Inequality**, the normalized Fiedler value $\lambda_1$ bounds the optimal program partitioning:
 $$\frac{\lambda_1}{2} \le \min_{S \subset V} \phi(S) \le \sqrt{2 \lambda_1}$$
-A low $\lambda_1$ indicates clean, highly modular code that can be easily refactored into microservices. A high $\lambda_1$ indicates tight coupling (spaghetti code).
+A low $\lambda_1$ indicates weak connectivity in this weighted, symmetrized graph model. It can motivate review of candidate partitions, but does not by itself establish clean business modules or viable microservice boundaries.
 
 #### 3.2 NetLSD Multi-Scale Heat Trace
 Comparing two programs $A$ and $B$ by zero-padding raw eigenvalue lists creates artificial distance artifacts when $N_A \neq N_B$. 
@@ -166,7 +168,7 @@ To compute $u(t) = \exp(Q t) u_0$ without materializing dense $N \times N$ matri
 $$\mathcal{K}_m(Q, u_0) = \text{span}\{u_0, Q u_0, Q^2 u_0, \dots, Q^{m-1} u_0\}$$
 Using the Arnoldi iteration, $Q V_m = V_m H_m + h_{m+1, m} v_{m+1} e_m^T$, the matrix exponential is approximated by:
 $$\exp(Q t) u_0 \approx \|u_0\|_2 V_m \exp(H_m t) e_1$$
-This evaluates multi-step trajectories on $N = 10,000$ vertices in **83.98 ms** with $O(k \cdot E)$ memory.
+The benchmark report records a 10-step trajectory on a synthetic sparse operator at $N = 10,000$ in **83.98 ms**. This kernel benchmark is not an end-to-end COBOL analysis result; the current GraphField path is dense and capped at 2,048 nodes.
 
 #### 5.3 Hutchinson Stochastic Trace Estimator
 For extreme-scale graphs ($N > 2,000$), computing the exact NetLSD sum $\sum_k e^{-t \lambda_k}$ is replaced with Hutchinson's trace estimator:
@@ -175,35 +177,28 @@ where $v_m \in \{-1, +1\}^N / \sqrt{N}$ are random Rademacher vectors. Since $\m
 
 ---
 
-### 6. Formal Cycle & Termination Verification (Tarjan SCC)
+### 6. CFG Cycles and Static Hazard Signals
 
 Let $\mathcal{G}_{\text{cfg}} = (V_{\text{stmt}}, E_{\text{cfg}})$ be the directed Control Flow Graph.
 
-#### 6.1 Strongly Connected Components
-A subgraph $S \subseteq V_{\text{stmt}}$ is strongly connected if every vertex in $S$ is reachable from every other vertex in $S$. Rezonator runs **Tarjan's SCC Algorithm** in $O(|V| + |E|)$ time:
-$$\text{SCC}(\mathcal{G}_{\text{cfg}}) = \{S_1, S_2, \dots, S_k\}$$
+Strongly connected components (SCCs) are a useful graph-theoretic way to group mutually reachable nodes; Tarjan's algorithm computes them in $O(|V| + |E|)$. The current Rezonator implementation does **not** run Tarjan: `rezonator/cycle_detector.py` calls NetworkX simple-cycle enumeration.
 
-#### 6.2 Deadlock & Infinite Loop Criterion
-A program is provably non-terminating (contains an infinite cycle) if and only if:
-$$\exists S_i \in \text{SCC}(\mathcal{G}_{\text{cfg}}) \quad \text{such that} \quad |S_i| \ge 2 \quad \lor \quad (v, v) \in E_{\text{cfg}}$$
-- If all $|S_i| = 1$ and no self-loops exist, the CFG is a **Directed Acyclic Graph (DAG)**. Termination at `STOP RUN` or `GOBACK` is guaranteed.
-- If $|S_i| \ge 2$, mutual recursion exists (e.g. `2000-PROCESS-ATM` calls `3000-RETRY-LOOP` which calls `2000-PROCESS-ATM`). The engine flags `CRITICAL_INFINITE_LOOP`.
+A directed cycle in the parsed CFG establishes that the graph model contains a possible repeated path. It does not establish that the path is feasible for program data, that its guards remain true, or that execution repeats forever. Likewise, an acyclic parsed CFG only establishes absence of cycles in the represented graph; unsupported syntax and unresolved external calls limit any conclusion about the full program.
+
+The current analyzer marks selected cases as critical when a cycle is trapped from the modeled terminal nodes or when a recursive cycle contains a branch whose read variables are not written within that cycle. This is a heuristic hazard signal, not a termination proof. The roadmap calls for linear-time SCC analysis and explicit result categories while preserving this distinction.
 
 ---
 
 ### 7. Comparative Refactoring Divergence Metrics
 
-When comparing Program A (original) with Program B (refactored), Rezonator evaluates a composite metric vector:
-$$\mathbf{M}(A, B) = \left(D_{\text{NetLSD}}, \Delta \lambda_1, \Delta \lambda_1^{\text{norm}}, \text{Resonance Similarity}, \Delta \text{SCC}\right)$$
+When comparing Program A (original) with Program B (refactored), the API reports structural metrics including NetLSD distance, Fiedler-value differences, Chladni-surface similarity, diffusion half-life difference, node growth, and the current cycle-hazard flags. These values describe the parsed graph model.
 
-#### 7.1 Refactoring Fidelity Score ($F$)
-To provide human architects with an intuitive confidence index ($0$ to $100$):
-$$F = 100 \times \max\left(0.0, 1.0 - \left[2.5 \cdot D_{\text{NetLSD}} + 1.2 \cdot |\Delta \lambda_1^{\text{norm}}| + 0.5 \cdot \mathbf{1}_{\Delta \text{Deadlock}}\right]\right)$$
+#### 7.1 Current Structural Score and Its Limits
+The current comparator calculates a base score from NetLSD distance:
+$$F_{\text{base}} = \max(0, \min(100, 100(1 - 2.5 D_{\text{NetLSD}})))$$
+It sets the score to zero if Program B receives the heuristic deadlock flag while A does not; if B has that flag in both inputs, it caps the score at 20% of the base. Otherwise it returns the base score. The implemented formula does not include the Fiedler delta or cymatic similarity.
 
-#### 7.2 Decision Table:
-- **$F \ge 80$ & $\Delta \text{Deadlock} = 0$**: `SAFE_MODULAR_EXTENSION` (High topological fidelity, logic safely extended).
-- **$50 \le F < 80$ & $\Delta \text{Deadlock} = 0$**: `STRUCTURAL_REFACTORING` (Significant topology shifts, comprehensive testing required).
-- **$\Delta \text{Deadlock} > 0$**: `CRITICAL_HAZARD_DEADLOCK_INTRODUCED` (Infinite cycle introduced, reject refactoring).
+The API currently emits labels including `SAFE_MODULAR_EXTENSION` and `CRITICAL_REGRESSION`. These are heuristic structural labels, not calibrated confidence, functional-equivalence results, or safety certificates. Differential tests and domain invariants are required to assess behavioral preservation.
 
 ---
 
@@ -212,9 +207,9 @@ $$F = 100 \times \max\left(0.0, 1.0 - \left[2.5 \cdot D_{\text{NetLSD}} + 1.2 \c
 | Mathematical Concept | Formal Notation | Operational Role in Rezonator |
 |:---|:---:|:---|
 | **Normalized Laplacian** | $\mathcal{L}_{\text{norm}} = I - D^{-1/2} A D^{-1/2}$ | Invariant spectral field; bounded spectrum $[0, 2]$. |
-| **Algebraic Connectivity** | $\lambda_1(\mathcal{L}_{\text{norm}})$ | Measures code cohesiveness; $\lambda_1 = 0$ exposes dead variables. |
+| **Algebraic Connectivity** | $\lambda_1(\mathcal{L}_{\text{norm}})$ | Measures connectivity in the modeled graph; it does not by itself prove code is dead or unreachable. |
 | **NetLSD Signature** | $h(t) = \frac{1}{N}\text{Tr}(\exp(-t \mathcal{L}_{\text{norm}}))$ | Multiscale topological fingerprint; invariant to size & reordering. |
 | **Directed Markov Generator**| $Q = P^T - I$ | Continuous causal operator for forward impact tracking. |
 | **Blast Radius Trajectory**| $u(t) = \exp(Q t) u_0$ | Pinpoints affected downstream code following a mutation. |
 | **Shift-Invert Lanczos** | $(L - \sigma I)^{-1} v = \mu v, \; \sigma < 0$ | High-speed ($1.5\text{ ms}$) sparse modal solver for $N \ge 1,000$. |
-| **Tarjan SCC** | $\text{SCC}(\mathcal{G}_{\text{cfg}})$ | Formally proves program termination or flags recursive deadlocks. |
+| **CFG cycle analysis** | Directed cycles in the parsed CFG | Reports possible recurring paths and heuristic hazards; does not prove general program termination. |

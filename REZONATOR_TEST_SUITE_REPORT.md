@@ -1,16 +1,18 @@
-# REZONATOR: COMPREHENSIVE TEST SUITE REPORT
-## Execution Summary, Invariant Verifications, and Ground-Truth Benchmarks
+# REZONATOR: TEST SUITE SNAPSHOT
+## Focused Test Inventory and Recorded Results
 
 ---
 
 ### Executive Overview
 
-The **Rezonator** test harness provides automated, deterministic verification across the entire analytical stack. Every run validates syntactic parsing, AST node generation, Graph Laplacian symmetry, NetLSD spectral traces, forward impact diffusion trajectories, Tarjan Strongly Connected Components (SCC) cycle analysis, enterprise CICS/SQL statements, copybook preprocessing, cryptographic provenance, and zero-trust HTTP hardening.
+The **Rezonator** test harness exercises selected parser fixtures, graph invariants, spectral and diffusion routines, cycle reporting, embedded CICS/SQL forms, copybook preprocessing, provenance fields, and local/remote HTTP access controls. This report is a test snapshot, not a code-coverage measurement, complete COBOL conformance result, security certification, or proof of production readiness.
 
 - **Total Test Cases**: 33
-- **Pass Rate**: 100% (33 Passed, 0 Failed, 0 Skipped, 0 Errors)
-- **Suite Execution Time**: 1.94 seconds (all tests run hermetically in under 2 seconds)
-- **Coverage**: Front-End AST, Spectral Eigensolvers, PINN Diffusion, Slicing & Ranking, Cycle/Deadlock Verification, Enterprise Statements (CICS / SQL), Copybook Inlining, Security Boundaries & Zero-Trust HTTP, Cryptographic Provenance, REST API, Backward Compatibility.
+- **Recorded Run**: 33 Passed, 0 Failed, 0 Skipped, 0 Errors (100% for that run)
+- **Recorded Suite Time**: 1.939 seconds in the captured environment; this is not a performance guarantee.
+- **Areas Exercised**: Front-End AST fixtures, spectral and diffusion routines, slicing/ranking, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, provenance fields, REST API, and backward compatibility.
+
+The source revision and run date for the recorded result are not captured here. Re-run the suite against the current commit before treating this as current status.
 
 ---
 
@@ -18,15 +20,15 @@ The **Rezonator** test harness provides automated, deterministic verification ac
 
 | Test Suite Module | File Path | Tests | Status | Runtime | Description |
 |:---|:---|:---:|:---:|:---:|:---|
-| **Golden Graph Isomorphism** | `tests/test_golden_graphs.py` | 6 | **PASS** | 0.215 s | Verifies 100% exact isomorphism against ground truth for all 4 canonical COBOL programs. |
-| **Hypothesis H1 Empirical Benchmark** | `tests/test_hypothesis_h1.py` | 4 | **PASS** | 0.130 s | Evaluates mutation generation, dynamic slicing, diffusion ranking, and falsification criteria. |
-| **API & Physics Engines** | `tests/test_api_and_engines.py` | 7 | **PASS** | 0.724 s | Tests mathematical operators, Laplacians, Chladni cymatics, PINN diffusion, and HTTP endpoints. |
-| **Sparse Matrix & Lanczos Scaling** | `tests/test_sparse_scaling.py` | 3 | **PASS** | 0.683 s | Validates shift-invert Lanczos solver and Krylov diffusion scaling on $N=200$ and $N=1,000$ nodes. |
-| **Backward Compatibility** | `tests/test_backward_compat.py` | 2 | **PASS** | 0.005 s | Guarantees identical symbol exports between modern `rezonator` and legacy `mathy` imports. |
+| **Golden Graphs & Runtime Fixtures** | `tests/test_golden_graphs.py` | 6 | **PASS** | 0.215 s | Checks four fixture graphs plus bounded-interpreter traces and one mutation comparison. Exactness is relative to checked fixtures, not COBOL conformance. |
+| **Hypothesis H1 Empirical Benchmark** | `tests/test_hypothesis_h1.py` | 4 | **PASS** | 0.130 s | Exercises forward slicing, ranking, mutation generation, and a benchmark battery; sample results are not general accuracy guarantees. |
+| **API & Analysis Engines** | `tests/test_api_and_engines.py` | 7 | **PASS** | 0.724 s | Exercises parser fixtures, graph operators, spectral/diffusion routines, cycle heuristics, comparison, and HTTP endpoints. |
+| **Sparse Matrix Kernels** | `tests/test_sparse_scaling.py` | 3 | **PASS** | 0.683 s | Exercises separate numerical kernels on synthetic sparse graphs at $N=200$ and $N=1,000$; not the end-to-end COBOL path. |
+| **Backward Compatibility** | `tests/test_backward_compat.py` | 2 | **PASS** | 0.005 s | Checks selected modern `rezonator` and legacy `mathy` exports resolve to identical objects. |
 | **Enterprise Copybook Inlining** | `tests/test_copybook_inliner.py` | 3 | **PASS** | 0.012 s | Validates nested COPYBOOK resolution, REPLACING semantics, and circular dependency detection. |
 | **Enterprise Statements (CICS/SQL)** | `tests/test_f4_enterprise_statements.py` | 3 | **PASS** | 0.025 s | Verifies EXEC SQL and EXEC CICS commands as typed graph nodes with persistent and external flow. |
-| **Security Hardening & Zero-Trust** | `tests/test_security_hardening.py` | 5 | **PASS** | 0.145 s | Validates CORS allowlisting, 10MB limits, remote bearer auth, AST sandbox (no eval), and SHA-256 provenance. |
-| **TOTAL** | | **33** | **PASS** | **1.939 s** | **Deterministic Pass across Entire Codebase** |
+| **Basic Security Controls** | `tests/test_security_hardening.py` | 5 | **PASS** | 0.145 s | Exercises CORS allowlisting, 10MB limits, remote bearer auth, bounded AST evaluation, and SHA-256 source provenance. |
+| **TOTAL** | | **33** | **PASS** | **1.939 s** | **All listed tests passed in the recorded run** |
 
 ---
 
@@ -43,7 +45,7 @@ Enforces strict mathematical equivalence and invariant preservation on canonical
     - Zero variable diff against `BANK_DEMO_V1_VARS` (`set()`).
     - Laplacian symmetry ($L = L^T$ and $\mathcal{L}_{\text{norm}} = \mathcal{L}_{\text{norm}}^T$).
     - Zero dangling edges (all edge sources and targets exist in vertex set).
-    - Tarjan cycle count = 0 (acyclic control flow).
+    - Cycle count = 0 in this fixture's parsed control-flow graph.
   - **Result**: **PASS**
 
 - `test_02_bank_demo_v2_golden_isomorphism`:
@@ -57,8 +59,8 @@ Enforces strict mathematical equivalence and invariant preservation on canonical
   - **Subject**: `examples/atm_deadlock.cbl` (9 nodes, 10 edges, 3 variables).
   - **Invariants Checked**:
     - Exact isomorphism against `ATM_DEADLOCK` ground truth.
-    - Formally identifies exactly 1 non-trivial SCC cycle ($|SCC| \ge 2$).
-    - Flags `has_deadlock = True` and verdict `CRITICAL_INFINITE_LOOP`.
+    - Current cycle heuristics report the known repeated-control-flow pattern in this fixture.
+    - Flags `has_deadlock = True` and verdict `CRITICAL_INFINITE_LOOP`; this label is not a formal termination proof.
   - **Result**: **PASS**
 
 - `test_04_batch_interest_golden_isomorphism`:
@@ -69,18 +71,14 @@ Enforces strict mathematical equivalence and invariant preservation on canonical
     - Algebraic connectivity $\lambda_1 = 0.0$ (reflecting isolated node).
   - **Result**: **PASS**
 
-- `test_05_runtime_state_preservation`:
-  - **Subject**: `rezonator/cobol_runtime.py` interpreter on `BANK-DEMO-V1`.
-  - **Invariants Checked**:
-    - Simulates execution of `01 WS-ACCOUNT-BALANCE = 5000.00` with withdrawal of `500.00`.
-    - Asserts resulting balance is exactly `4500.00` and `WS-STATUS-CODE = "OKAY"`.
+- `test_05_runtime_execution_traces`:
+  - **Subject**: The bounded `CobolRuntime` interpreter on four checked examples.
+  - **Invariants Checked**: Termination/step-limit state and selected final variable values for bank, ATM-loop, and batch-interest fixtures. These are interpreter-fixture checks, not native COBOL execution evidence.
   - **Result**: **PASS**
 
-- `test_06_deadlock_detection_accuracy`:
-  - **Subject**: Comparison between terminating `BANK-DEMO-V1` vs non-terminating `ATM-DEADLOCK`.
-  - **Invariants Checked**:
-    - Asserts `BANK-DEMO-V1` has 0 cycles and `has_deadlock == False`.
-    - Asserts `ATM-DEADLOCK` has 1 cycle and `has_deadlock == True`.
+- `test_06_mutation_ground_truth_impact`:
+  - **Subject**: One `SUBTRACT` to `ADD` mutation in `BANK-DEMO-V1`, evaluated by the bounded interpreter.
+  - **Invariants Checked**: The selected output variable changes from the recorded baseline and the node trace diverges. This is fixture-specific behavioral evidence for the interpreter.
   - **Result**: **PASS**
 
 ---
@@ -88,26 +86,26 @@ Enforces strict mathematical equivalence and invariant preservation on canonical
 #### 2. Hypothesis H1 Benchmark Suite (`tests/test_hypothesis_h1.py`)
 Evaluates the scientific hypothesis $H_1$: whether directed continuous heat diffusion $u(t) = \exp((P^T - I)t) u_0$ predicts affected downstream statements significantly better than classical slicing baselines.
 
-- `test_01_corpus_loading`:
-  - Asserts that all 10 COBOL benchmark programs in `examples/` load and parse into valid ASTs.
+- `test_01_program_slicer`:
+  - Exercises forward-slice membership, BFS ordering, and deterministic random ranking on `BANK-DEMO-V1`.
   - **Result**: **PASS**
 
-- `test_02_mutation_generation`:
-  - Asserts that the mutation engine discovers valid statement mutation candidates across arithmetic (`SUBTRACT`, `ADD`, `COMPUTE`) and logic (`IF`, `MOVE`).
-  - Generates 68 mutations total.
+- `test_02_diffusion_ranker`:
+  - Exercises graph diffusion and personalized-PageRank rankings from a selected seed node.
   - **Result**: **PASS**
 
-- `test_03_forward_slicing_and_ranking`:
-  - Validates `ProgramSlicer` forward reachability and compares rank order against `DiffusionRanker` and BFS hop distance.
+- `test_03_mutation_generator`:
+  - Checks that selected arithmetic and condition mutation candidates are produced for `BANK-DEMO-V1`.
   - **Result**: **PASS**
 
-- `test_04_full_benchmark_execution`:
-  - Executes all 47 behavioral ground-truth experiments and computes statistical ranking metrics:
+- `test_04_hypothesis_h1_benchmark_battery`:
+  - Runs the benchmark battery and requires at least 30 valid behavioral experiments. A recorded run contained 47; the test does not guarantee that exact count on every input revision.
+  - Computes ranking metrics, including in one recorded run:
     - Diffusion Precision@1: 48.94% | BFS Precision@1: 48.94%
     - Diffusion Precision@3: 56.74% | BFS Precision@3: 55.32%
     - Diffusion MAP: 0.5542 | BFS MAP: 0.5296
     - Diffusion MRR: 0.7039 | BFS MRR: 0.6968
-  - Verifies that the falsification decision matches the pre-set scientific criterion ($\Delta \ge 10$ percentage points).
+  - Checks that MAP and MRR exceed the BFS baseline and that a verdict is returned. The recorded run did not meet the preregistered Precision@1 improvement threshold; the test is not evidence that diffusion is universally better.
   - **Result**: **PASS**
 
 ---
@@ -115,31 +113,31 @@ Evaluates the scientific hypothesis $H_1$: whether directed continuous heat diff
 #### 3. API & Physics Engines Suite (`tests/test_api_and_engines.py`)
 Validates core mathematical engines and REST endpoints.
 
-- `test_01_graph_field_laplacian_symmetry`:
+- `test_01_cobol_parser`:
+  - Checks program ID and non-trivial node/edge/variable output for `BANK-DEMO-V1`, including that `END-IF` is not treated as a paragraph.
+  - **Result**: **PASS**
+
+- `test_02_graph_laplacian`:
   - Asserts $L = L^T$ within numerical tolerance ($10^{-8}$) and that row sums of unnormalized $L$ equal zero ($\sum_j L_{ij} = 0$).
   - Asserts that normalized Laplacian $\mathcal{L}_{\text{norm}}$ eigenvalues satisfy $\lambda_k \in [0, 2]$.
   - **Result**: **PASS**
 
-- `test_02_spectral_engine_modes`:
+- `test_03_diamond_yant_netlsd_spectrum`:
   - Tests modal decomposition, Fiedler value calculation, spectral gap, and 2D Chladni cymatic surface generation ($32 \times 32$ grid).
   - **Result**: **PASS**
 
-- `test_03_pinn_diffusion_stability`:
+- `test_04_diffusion_and_directed_impact`:
   - Asserts mass conservation in analytical diffusion ($\sum_i u_i(t) \approx 1.0$) and positive non-negative concentrations ($u_i(t) \ge 0$).
   - Validates directed forward blast radius calculation.
   - **Result**: **PASS**
 
-- `test_04_cycle_detector_tarjan`:
-  - Validates Tarjan's Strongly Connected Components algorithm on synthetic DAGs and cyclic graphs.
+- `test_05_cycle_and_deadlock_detection`:
+  - Checks the selected bank and ATM fixtures. The implementation currently uses NetworkX simple-cycle enumeration, not Tarjan SCC; the flag is heuristic.
   - **Result**: **PASS**
 
-- `test_05_program_comparator_metrics`:
+- `test_06_program_comparator_netlsd`:
   - Tests comparative topological analysis of `BANK-DEMO-V1` vs `BANK-DEMO-V2`.
-  - Asserts NetLSD distance $\approx 0.055$, Refactoring Fidelity Score $\approx 86.3/100$, and verdict `SAFE_MODULAR_EXTENSION`.
-  - **Result**: **PASS**
-
-- `test_06_llm_synthesizer_brief`:
-  - Asserts that `LLMSynthesizer` produces structured Markdown briefs containing vertices, spectral gaps, blast radii, and formal deadlock guarantees.
+  - Checks self-comparison and V1/V2/deadlock comparison metrics, including structural score and verdict fields. Those labels are not behavioral-equivalence or safety results.
   - **Result**: **PASS**
 
 - `test_07_http_api_endpoints`:
@@ -236,7 +234,7 @@ Enforces strict security boundaries, AST evaluation sandboxing, resource caps, a
 
 - `test_source_and_dense_graph_limits_fail_closed`:
   - Asserts that sources exceeding `MAX_SOURCE_BYTES` (10 MB) fail-closed with `ResourceLimitError`.
-  - Asserts that graph structures exceeding `MAX_DENSE_MATRIX_NODES` (1,000 nodes for dense representations) fail-closed with `GraphLimitError`, requiring sparse Lanczos solvers.
+  - Asserts that graph structures exceeding `MAX_DENSE_MATRIX_NODES` (2,048 nodes) fail-closed with `GraphLimitError`. Sparse solver primitives are separate; the full GraphField path is still dense.
   - **Result**: **PASS**
 
 - `test_provenance_is_cryptographic_and_versioned`:
@@ -259,4 +257,4 @@ Enforces strict security boundaries, AST evaluation sandboxing, resource caps, a
 
 ### Conclusion & Quality Sign-Off
 
-The Rezonator test suite provides **100% green coverage** over all critical theoretical, enterprise dialect, and security components across **33 deterministic tests**. The suite is fully self-contained, hermetic, requires zero external binary `.pyd` dependencies, and executes in ~1.94 seconds on Windows, Linux, and macOS.
+The recorded run passed all **33 listed tests**. This is not 100% code coverage and does not establish complete dialect, security, or production readiness. The Python project still uses scientific dependencies; the statement about avoiding a native COBOL parser does not mean the entire application has no native binary dependencies. Runtime varies by host.

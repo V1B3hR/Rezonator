@@ -209,7 +209,7 @@ async function triggerAnalysis() {
     renderDiffusion();
     renderGeodesic();
 
-    // Update LLM brief
+    // Update deterministic analysis evidence brief
     document.getElementById('brief-text-content').textContent = data.llm_brief;
 
   } catch (err) {
@@ -279,21 +279,21 @@ function updateSingleViewUI(data) {
     });
   }
 
-  // Geodesic HUD
+  // Illustrative proxy HUD; values are not physical measurements.
   document.getElementById('hud-rplus').textContent = geo.event_horizon_r_plus ? geo.event_horizon_r_plus.toFixed(2) : '--';
   document.getElementById('hud-spin').textContent = geo.spin_a ? geo.spin_a.toFixed(2) : '--';
 
   const trapBox = document.getElementById('geodesic-verdict-box');
   const badgeStatus = document.getElementById('badge-geodesic-status');
   if (geo.fell_into_horizon_trap) {
-    badgeStatus.textContent = 'Event Horizon Crossed';
+    badgeStatus.textContent = 'Heuristic flag: set';
     badgeStatus.className = 'badge badge-gold';
-    trapBox.textContent = 'CRITICAL: Execution trajectory crossed into Event Horizon trap r ≤ r+. Potential infinite loop or unreachable deadlock sink.';
+    trapBox.textContent = 'The static analyzer emitted a heuristic hazard flag. Inspect the underlying cycle details and source before interpreting it; this is not proof of infinite execution.';
     trapBox.style.color = '#ffb800';
   } else {
-    badgeStatus.textContent = 'Trajectory Normal';
+    badgeStatus.textContent = 'No heuristic flag';
     badgeStatus.className = 'badge badge-violet';
-    trapBox.textContent = 'Execution path successfully avoids terminal trap singularity; flow terminates gracefully at STOP RUN sink.';
+    trapBox.textContent = 'No hazard flag was emitted by the current heuristic. The parsed graph may be incomplete; this is not proof of termination.';
     trapBox.style.color = 'var(--text-muted)';
   }
 
@@ -750,7 +750,7 @@ function renderGeodesic() {
   ctx.lineWidth = 2.0;
   ctx.stroke();
 
-  // Ergosphere / Frame-dragging vortex
+  // Illustrative coupling proxy; this is not a physical field.
   const spinA = geo.spin_a || 2;
   ctx.beginPath();
   ctx.arc(cx, cy, (rPlus + spinA * 1.5) * scale, 0, Math.PI * 2);
@@ -759,7 +759,7 @@ function renderGeodesic() {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // 3. Geodesic Trajectory
+  // 3. Illustrative trajectory driven by a compatibility metric.
   const xPts = geo.x_phase || [];
   const yPts = geo.y_phase || [];
 
@@ -785,7 +785,7 @@ function renderGeodesic() {
   // Labels
   ctx.fillStyle = '#ff3366';
   ctx.font = '8px "JetBrains Mono", monospace';
-  ctx.fillText('EVENT HORIZON r+', cx + rPlus * scale + 4, cy);
+  ctx.fillText('ILLUSTRATIVE BOUNDARY', cx + rPlus * scale + 4, cy);
 }
 
 // ==========================================================================

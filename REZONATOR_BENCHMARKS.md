@@ -1,13 +1,15 @@
 # REZONATOR: PERFORMANCE & EMPIRICAL BENCHMARK REPORT
 ## High-Throughput Topology Extraction, Sparse Lanczos Scaling, and Mutation Testing
 
+> Scope note: The first table covers the ten checked-in example programs, not a production banking corpus. The large-N table comes from synthetic path-graph operators, not the parser-to-report pipeline. Timings are observations from one recorded environment, not capacity guarantees.
+
 ---
 
 ### Executive Benchmark Summary
 
 This report documents the performance characteristics, computational complexity, and scientific evaluation of **Rezonator** across three empirical test batteries:
-1. **COBOL Corpus End-to-End Processing**: Measures AST parsing, basic block extraction, Graph Laplacian formation, and spectral eigensolvers across 10 real-world banking programs.
-2. **Sparse Matrix & Lanczos/Krylov Scaling (Phase F3)**: Measures computational scalability from $N = 100$ up to $N = 10,000$ vertices ($30,000$ edges) comparing shift-invert Lanczos eigensolvers against Krylov subspace matrix exponentials.
+1. **Checked-In COBOL Examples**: Measures parsing, graph formation, and spectral analysis across the ten repository examples.
+2. **Synthetic Sparse Operator Scaling (Phase F3)**: Measures separate numerical kernels on path-graph Laplacians from $N = 100$ to $N = 10,000$.
 3. **Hypothesis $H_1$ Mutation Benchmark**: Evaluates continuous heat diffusion ranking $u(t) = \exp((P^T - I)t) u_0$ against classical program slicing baselines (BFS hop distance and random order) on 47 behavioral ground-truth experiments.
 
 All benchmarks were executed on Python 3.12 (64-bit AMD64) and can be reproduced with a single command:
@@ -20,9 +22,9 @@ python REZONATOR_run_benchmarks.py
 ### 1. COBOL Corpus End-to-End Benchmark
 
 Measures wall-clock time for complete ingestion:
-`Source Code (.cbl) -> Hermetic AST -> Program Graph (CFG + DFG) -> Laplacian Field -> NetLSD Spectrum -> Tarjan SCC Cycles`.
+`Source Code (.cbl) -> Supported-Subset Parser -> Program Graph -> Dense GraphField -> Spectrum -> Heuristic Cycle Analysis`.
 
-| Program Name | Statements | Variables | Total Nodes ($N$) | Total Edges ($E$) | Tarjan Cycles | Parse Time | Laplacian Field | Spectral Solver | Total Time |
+| Program Name | Statements | Variables | Total Nodes ($N$) | Total Edges ($E$) | Cycle-Analysis Flags | Parse Time | Laplacian Field | Spectral Solver | Total Time |
 |:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | `atm_deadlock.cbl` | 6 | 3 | 9 | 10 | 1 (Deadlock) | 1.45 ms | 24.17 ms | 0.42 ms | **26.04 ms** |
 | `bank_demo_v1.cbl` | 13 | 4 | 17 | 37 | 0 (Clean) | 0.38 ms | 0.48 ms | 0.25 ms | **1.11 ms** |
@@ -37,15 +39,15 @@ Measures wall-clock time for complete ingestion:
 | **CORPUS TOTALS** | **137** | **74** | **211** | **448** | **1 cycle** | **6.11 ms** | **28.91 ms** | **2.84 ms** | **37.46 ms** |
 
 #### Key Insights:
-- **Throughput**: Rezonator processes **over 260 COBOL programs per second** on a single CPU core.
-- **Hermetic Speed**: The pure-Python parser executes in under **0.6 ms** per program, eliminating external Cython native DLL startup overhead.
-- **Cycle Detection**: Formally isolates the infinite cycle in `atm_deadlock.cbl` while certifying acyclic control flow across all 9 production programs.
+- **Observed parser throughput**: The recorded timing corresponds to roughly 260 of these small examples per second; it is not a representative production-corpus throughput estimate.
+- **Parser timing**: The pure-Python parser took under **0.6 ms** per example in this recorded run.
+- **Cycle analysis**: The current heuristic flags the `atm_deadlock.cbl` fixture. A cycle flag is not a formal proof, and an acyclic parsed graph does not certify full-program termination.
 
 ---
 
 ### 2. Sparse Matrix & Lanczos/Krylov Scaling Benchmark (F3)
 
-To ensure applicability to monolithic enterprise mainframes ($10^3$ to $10^5$ statements), Rezonator implements sparse matrix data structures (`scipy.sparse.csr_matrix`) paired with:
+This isolated numerical experiment uses synthetic path-graph Laplacians to compare sparse solver kernels. It does not establish end-to-end handling of monolithic COBOL programs; the ordinary GraphField path currently uses dense matrices and is capped at 2,048 nodes. The kernels use `scipy.sparse.csr_matrix` with:
 1. **Shift-Invert ARPACK Lanczos Eigensolver** ($\sigma = -10^{-4}$, `which='LM'`) to find modal spectra in $O(k \cdot E)$ time.
 2. **Krylov Subspace Matrix Exponential Multiplier** (`scipy.sparse.linalg.expm_multiply`) to evaluate multi-step diffusion trajectories $u(t) = \exp(-\alpha L t) u_0$ without materializing dense $N \times N$ matrices.
 
@@ -65,7 +67,7 @@ To ensure applicability to monolithic enterprise mainframes ($10^3$ to $10^5$ st
 └──────────────┴──────────────┴────────────────────────┴─────────────────────────────────┘
 ```
 
-#### Dense vs. Sparse Complexity Comparison:
+#### Dense vs. Sparse Comparison (Analytic Estimates):
 - **Dense Eigendecomposition ($O(N^3)$)**:
   - At $N = 1,000$: Dense memory $\approx 8\text{ MB}$, solve time $\approx 180\text{ ms}$.
   - At $N = 10,000$: Dense memory $\approx 800\text{ MB}$, solve time $\approx 45\text{ seconds}$ (or Out-Of-Memory failure).
@@ -105,12 +107,12 @@ To ensure applicability to monolithic enterprise mainframes ($10^3$ to $10^5$ st
 $$\text{Delta Precision@1} = +0.00\text{ p.p.} < +10.00\text{ p.p.} \implies \mathbf{FALSIFIED\_CRITERION\_NOT\_MET}$$
 
 #### In-Depth Engineering Analysis:
-1. **Why Diffusion Beats BFS on Multi-Hop Chains**:
-   In complex programs with multiple converging paths (e.g. `BANK-DEMO-V2`, `INSURANCE-CLAIM`), continuous diffusion accounts for the number of alternate paths, achieving higher MAP ($0.5542$ vs $0.5296$) and Precision@3 ($56.74\%$ vs $55.32\%$).
+1. **Observed H1 metric differences in this checked sample**:
+   On the evaluated fixtures, continuous diffusion had higher MAP ($0.5542$ vs $0.5296$) and Precision@3 ($56.74\%$ vs $55.32\%$) than BFS. These sample metrics do not establish general superiority; the preregistered Precision@1 improvement criterion was not met.
 2. **Why the $\ge 10$ p.p. Threshold Was Not Reached**:
    In small, linear COBOL paragraphs ($N \le 30$), the forward static slice is already compact ($\approx 5$ to $12$ nodes). Most statements in the slice are direct sequential successors where BFS hop 1 and diffusion impact 1 coincide.
-3. **Scientific Value**:
-   Rather than quietly burying the result, Rezonator adheres strictly to scientific Popperian falsification: the exact delta is documented, proving that while diffusion provides a slight ranking benefit on multi-path programs, discrete slicing remains a solid, lightweight baseline for simple linear scripts.
+3. **Interpretation**:
+   In this benchmark, diffusion did not meet the pre-set Precision@1 improvement criterion. Its reported MAP was higher than BFS, while Precision@1 tied. This result does not establish BFS as optimal outside this benchmark.
 
 ---
 

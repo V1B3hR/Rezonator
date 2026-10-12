@@ -39,13 +39,13 @@
   <!-- Navigation Tab Bar -->
   <nav class="app-nav" aria-label="Engine Navigation">
     <div class="nav-tabs">
-      <button class="tab-btn active" data-tab="single-view" id="tab-single">Single Program Manifold</button>
-      <button class="tab-btn" data-tab="compare-view" id="tab-compare">Differential Anomaly Radar (V1 vs V2)</button>
-      <button class="tab-btn" data-tab="brief-view" id="tab-brief">LLM Cognitive Synthesis</button>
+      <button class="tab-btn active" data-tab="single-view" id="tab-single">Single Program Graph</button>
+      <button class="tab-btn" data-tab="compare-view" id="tab-compare">Structural Comparison</button>
+      <button class="tab-btn" data-tab="brief-view" id="tab-brief">Analysis Evidence Brief</button>
     </div>
     <div class="system-status">
       <span class="status-indicator online"></span>
-      <span class="status-text">Tensor Engine Ready &bull; CUDA Active &bull; Zero State Drift</span>
+      <span class="status-text">Local mode &bull; deterministic core &bull; no AI model connected</span>
     </div>
   </nav>
 
@@ -101,7 +101,7 @@
             <span class="ribbon-val" id="val-halflife">--</span>
           </div>
           <div class="ribbon-card accent-violet">
-            <span class="ribbon-label">Geodesic Mass (M)</span>
+            <span class="ribbon-label">Illustrative graph proxy (M)</span>
             <span class="ribbon-val" id="val-mass">--</span>
           </div>
         </div>
@@ -176,7 +176,7 @@
           </div>
           <div class="diffusion-controls">
             <div class="diffusion-slider-row">
-              <label for="slider-time">Temporal Step (t = <span id="label-current-time">0.00</span>s):</label>
+              <label for="slider-time">Model Time (t = <span id="label-current-time">0.00</span>):</label>
               <input type="range" id="slider-time" min="0" max="2.0" step="0.05" value="0.0" class="custom-range">
             </div>
             <div class="diffusion-action-row">
@@ -194,27 +194,27 @@
           </div>
         </div>
 
-        <!-- Quadrant 4: Relativistic State-Space Geodesic Radar -->
+        <!-- Quadrant 4: Illustrative visualization driven by a heuristic graph flag -->
         <div class="panel quad-card glass-card" id="quad-geodesic">
           <div class="panel-header">
             <div class="header-title-group">
               <span class="icon-chip violet">Q4</span>
-              <h3>STATE-SPACE GEODESIC RADAR (BOYER-LINDQUIST)</h3>
+              <h3>GRAPH HAZARD ANALOGY (ILLUSTRATIVE ONLY)</h3>
             </div>
             <div class="badge-group">
-              <span class="badge badge-violet" id="badge-geodesic-status">Trajectory Normal</span>
+              <span class="badge badge-violet" id="badge-geodesic-status">No heuristic flag reported</span>
             </div>
           </div>
           <div class="canvas-container">
             <canvas id="canvas-geodesic"></canvas>
             <div class="geodesic-hud">
-              <div>Horizon r<sub>+</sub>: <strong id="hud-rplus">--</strong></div>
-              <div>Frame-Dragging a: <strong id="hud-spin">--</strong></div>
-              <div>Escape Velocity: <strong id="hud-escape">Positive</strong></div>
+              <div>Illustrative radius proxy: <strong id="hud-rplus">--</strong></div>
+              <div>Illustrative coupling proxy: <strong id="hud-spin">--</strong></div>
+              <div>Indicator: <strong id="hud-escape">not a physical quantity</strong></div>
             </div>
           </div>
           <div class="geodesic-explanation" id="geodesic-verdict-box">
-            Execution path successfully avoids terminal trap singularity; flow terminates gracefully at STOP RUN sink.
+            This visualization is an analogy driven by a static heuristic; it is not a physical simulation or proof about execution.
           </div>
         </div>
 
@@ -248,9 +248,9 @@
               <span class="score-subtext">Topological cosine correlation</span>
             </div>
             <div class="score-box">
-              <span class="score-title">Refactoring Health Index</span>
+              <span class="score-title">Structural Similarity (Heuristic)</span>
               <span class="score-number violet" id="cmp-health-score">-- / 100</span>
-              <span class="score-subtext">Structural preservation & safety score</span>
+              <span class="score-subtext">Not behavioral equivalence or a safety score</span>
             </div>
           </div>
         </div>
@@ -305,21 +305,21 @@
       </div>
     </section>
 
-    <!-- TAB 3: LLM Cognitive Synthesis -->
+    <!-- TAB 3: Deterministic analysis brief -->
     <section class="tab-pane" id="pane-brief-view">
       <div class="brief-container">
         <div class="panel glass-card brief-panel">
           <div class="panel-header">
             <div class="header-title-group">
-              <span class="icon-chip violet">AI</span>
-              <h2>STRUCTURED LLM MATHEMATICAL PROMPT & AUDIT BRIEF</h2>
+              <span class="icon-chip violet">CORE</span>
+              <h2>STRUCTURAL ANALYSIS EVIDENCE BRIEF</h2>
             </div>
             <button class="btn btn-primary" id="btn-copy-brief">Copy Markdown to Clipboard</button>
           </div>
           <div class="brief-description">
-            This brief translates the continuous topological tensors, modal frequencies, and diffusion half-lives into a formal mathematical representation. Provide this directly to LLMs (Claude, GPT, Gemini, Qwen) to bypass lexical hallucinations in archaic COBOL syntax.
+            This deterministic summary reports metrics and heuristic signals from the parsed graph. It does not call an AI model, prove COBOL behavior, or validate any model response. Review parser limitations and your data-handling policy before sharing the brief externally.
           </div>
-          <pre class="brief-output" id="brief-text-content">Generating cognitive brief...</pre>
+          <pre class="brief-output" id="brief-text-content">The deterministic brief will appear after analysis.</pre>
         </div>
       </div>
     </section>
@@ -329,7 +329,7 @@
   <!-- Global Footer -->
   <footer class="app-footer">
     <div class="footer-left">
-      <span>BŁYSKAWICA MATHY &bull; Spectral Graph Theory &bull; Physics-Informed Neural Networks &bull; General Relativity Geodesics</span>
+      <span>REZONATOR &bull; Graph Spectral Analysis &bull; Static Heuristic Signals</span>
     </div>
     <div class="footer-right">
       <span>Repository: <a href="https://github.com/V1B3hR/Blyskawica" target="_blank" rel="noopener">V1B3hR/Blyskawica</a></span>

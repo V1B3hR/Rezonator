@@ -1,76 +1,100 @@
 """
-LLM Mathematical Bridge: Translates Rezonator Spectral, Diffusion, and Cycle Tensors
-into high-density, structured cognitive prompts for AI models and auditors.
+Deterministic Markdown formatter for Rezonator metrics and cycle-analysis results.
+This module formats a brief; it does not call an LLM.
 """
 
+import math
 from typing import Dict, Any
 
 
 class LLMSynthesizer:
-    """
-    Transforms quantitative physical/topological metrics into
-    concise, mathematically verifiable markdown explanations for LLMs and human auditors.
-    """
+    """Transforms available graph metrics into a concise Markdown summary."""
+
+    @staticmethod
+    def _format_metric(value: Any, precision: int = 4) -> str:
+        try:
+            number = float(value)
+        except (TypeError, ValueError, OverflowError):
+            return "not reported"
+        if not math.isfinite(number):
+            return "not finite"
+        return f"{number:.{precision}f}"
 
     @staticmethod
     def generate_cognitive_brief(analysis_data: Dict[str, Any]) -> str:
-        prog_id = analysis_data.get("program_id", "COBOL-PROGRAM")
+        prog_id = " ".join(str(analysis_data.get("program_id", "COBOL-PROGRAM")).split())[:120]
+        if not prog_id:
+            prog_id = "COBOL-PROGRAM"
         stats = analysis_data.get("stats", {})
         spectrum = analysis_data.get("spectrum", {})
         diff = analysis_data.get("diffusion", {})
         impact = analysis_data.get("directed_impact", {})
         cycles = analysis_data.get("cycles", {})
+        provenance = analysis_data.get("provenance", {})
 
-        evals_str = ", ".join(f"{x:.4f}" for x in spectrum.get("eigenvalues", [])[:6])
-        fiedler = spectrum.get("fiedler_value", 0.0)
-        fiedler_norm = spectrum.get("fiedler_norm", 0.0)
-        half_life = diff.get("diffusion_half_life", float("inf"))
-        num_comp = stats.get("num_components", 1)
-        iso_nodes = stats.get("isolated_nodes", [])
+        eigenvalues = spectrum.get("eigenvalues", [])
+        eigenvalues_text = ", ".join(
+            LLMSynthesizer._format_metric(value) for value in eigenvalues[:6]
+        ) or "not available"
+        fiedler = spectrum.get("fiedler_value")
+        fiedler_norm = spectrum.get("fiedler_norm")
+        half_life = diff.get("diffusion_half_life")
+        half_life_metric = LLMSynthesizer._format_metric(half_life, precision=3)
+        if half_life_metric not in {"not reported", "not finite"}:
+            half_life_text = f"{half_life_metric} model time units"
+        else:
+            half_life_text = "not finite or not available; no runtime duration is implied"
 
-        has_deadlock = cycles.get("has_deadlock", False)
-        is_recursive = cycles.get("is_recursive", False)
-        cycle_count = cycles.get("cycle_count", 0)
-        reaches_term = cycles.get("reaches_terminal", True)
-        verdict = cycles.get("risk_verdict", "DIRECTED_ACYCLIC_FLOW")
+        heuristic_flag = bool(cycles.get("has_deadlock", False))
+        terminal_count = len(cycles.get("terminal_nodes", []))
+        reaches_terminal = cycles.get("reaches_terminal")
+        if reaches_terminal is True:
+            terminal_text = "At least one path in the parsed CFG reaches a represented terminal node."
+        elif reaches_terminal is False:
+            terminal_text = "No path from the modeled entry to a represented terminal was reported."
+        else:
+            terminal_text = "Not reported by the analyzer."
 
-        top_impacted = [
-            f"idx {item['node_idx']} (impact {item['impact_score']:.3f})"
-            for item in impact.get("impact_ranking", [])[:4]
+        ranked_nodes = [
+            f"graph index {item.get('node_idx')}: {LLMSynthesizer._format_metric(item.get('impact_score'), precision=3)}"
+            for item in impact.get("impact_ranking", [])[:5]
         ]
-        top_impact_str = ", ".join(top_impacted) if top_impacted else "N/A"
+        ranking_text = "; ".join(ranked_nodes) or "not available"
+        source_hash = provenance.get("source_sha256", "not recorded")
+        version = provenance.get("rezonator_version", "not recorded")
+        seed = provenance.get("solver_seed", "not recorded")
+        timestamp = provenance.get("timestamp_utc", "not recorded")
 
-        prompt = f"""# REZONATOR COGNITIVE INTELLIGENCE BRIEF: {prog_id}
-**System**: Rezonator (Physics & Spectral Graph Topology Engine for Code Intelligence)
-**Target Language**: COBOL / Mainframe Core Banking Monolith
+        return f"""# Rezonator structural analysis brief: {prog_id}
 
-### 1. Structural Field Topology
-- **Vertices (Statements & Control Transfers)**: {stats.get('num_nodes', 0)}
-- **Edges (Control Flow & Data Dependencies)**: {stats.get('num_edges', 0)}
-- **State Variables (Working-Storage Hubs)**: {stats.get('num_variables', 0)}
-- **Connected Components**: {num_comp}
-- **Isolated / Unreferenced Variables**: {iso_nodes if iso_nodes else "None (all variables referenced)"}
+This is a deterministic summary of fields returned by Rezonator. Here, [OBSERVED] means “reported by this analyzer for its parsed snapshot,” not complete truth about the source program. This is not generated by an AI model, a COBOL conformance report, a proof of termination, or a safety assessment.
 
-### 2. Spectral Resonance & NetLSD Signature
-- **Fundamental Modal Frequencies (λ_0 ... λ_5)**: [{evals_str}]
-- **Algebraic Connectivity (Fiedler λ_1)**: {fiedler:.4f} (Normalized: {fiedler_norm:.4f})
-- **Structural Modularity**: {"HIGHLY INTERCONNECTED" if fiedler > 0.3 else "MODULAR / PARTITIONABLE" if fiedler > 0.05 else "DISCONNECTED CLUSTERS"}
-- **Spectral Gap (λ_2 - λ_1)**: {spectrum.get('spectral_gap', 0.0):.4f}
+## [OBSERVED] Core-reported graph and metrics
+- Parsed graph nodes: {stats.get('num_nodes', 'not reported')}
+- Parsed graph edges: {stats.get('num_edges', 'not reported')}
+- Modeled connected components: {stats.get('num_components', 'not reported')}
+- Isolated modeled nodes: {stats.get('num_isolated_nodes', 'not reported')}
+- Fiedler value: {LLMSynthesizer._format_metric(fiedler, precision=6)}
+- Normalized Fiedler value: {LLMSynthesizer._format_metric(fiedler_norm, precision=6)}
+- First reported eigenvalues: {eigenvalues_text}
+- Diffusion half-life: {half_life_text}
+- Diffusion-ranked graph indices and model scores: {ranking_text}
 
-### 3. Directed Impact Propagation & Diffusion
-- **Diffusion Equilibrium Half-Life (τ_1/2)**: {f'{half_life:.3f} time units' if not float('inf') == half_life else 'INFINITE (Disconnected partitions or unreferenced variables present)'}
-- **Forward Impact Blast Radius (Entry Perturbation)**: {impact.get('reachable_count', 0)} nodes reachable
-- **Top Downstream Nodes by Impact**: {top_impact_str}
+## [OBSERVED] Parsed control-flow signals
+- Cycles enumerated in the parsed CFG: {cycles.get('cycle_count', 'not reported')}
+- Recursive transfer flag: {'yes' if cycles.get('is_recursive') else 'no'}
+- Heuristic hazard flag emitted by the current analyzer: {'set' if heuristic_flag else 'not set'}
+- Represented terminal nodes: {terminal_count}
+- Terminal reachability: {terminal_text}
 
-### 4. Formal Control Flow & Termination Verification
-- **CFG Cycles Detected**: {cycle_count}
-- **Recursive PERFORM Calls**: {"YES" if is_recursive else "NO"}
-- **Terminal State Reachability (STOP RUN / GOBACK)**: {"GUARANTEED" if reaches_term else "UNREACHABLE"}
-- **Deadlock / Infinite Loop Hazard**: {"CRITICAL HAZARD: " + cycles.get('risk_description', '') if has_deadlock else "CLEAN: " + verdict}
+The cycle and hazard fields are static heuristics over the parsed subset. A cycle is not proof of an infinite execution; no reported hazard is not proof of termination. Reachability means at least one modeled path, not that every execution reaches an exit. Spectral and diffusion values describe this graph model; they do not establish behavioral equivalence or actual business impact.
 
-### Guidance for AI Reasoning:
-This program is mathematically mapped to a {stats.get('num_nodes', 0)}-node dependency manifold.
-When analyzing or proposing refactorings, respect the directed impact ranking to avoid regressions in downstream routines.
-Deadlock status is formally verified via Tarjan SCC cycle analysis on the control flow graph.
+## Provenance
+- Source SHA-256: {source_hash}
+- Rezonator version: {version}
+- Solver seed: {seed}
+- Analysis timestamp (UTC): {timestamp}
+
+## Scope limits
+The parser supports a subset of COBOL, and unsupported constructs may be absent from the graph. Review parser coverage and source evidence before drawing conclusions. This brief contains no runtime trace and makes no claim that source or runtime data has been redacted for external sharing.
 """
-        return prompt

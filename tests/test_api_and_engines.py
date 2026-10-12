@@ -5,7 +5,7 @@ Tests:
 2. GraphField Laplacian construction & Fan Chung normalized Laplacian
 3. Diamond Yant modal eigensolver & NetLSD multi-scale heat trace
 4. PINN Heat Diffusion engine (analytical & forward directed impact propagation)
-5. CycleDetector (Tarjan SCC, recursion detection, deadlock verification)
+5. CycleDetector (cycle enumeration and heuristic hazard reporting)
 6. ProgramComparator (NetLSD differentiation, refactoring fidelity, deadlock regression)
 7. HTTP Server API endpoints (hermetic via in-process server thread)
 """

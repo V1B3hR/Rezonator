@@ -5,7 +5,7 @@
 
 ### 1. Introduction & V&V Scope
 
-This document defines the formal **Verification & Validation (V&V)** framework for **Rezonator** (formerly *Błyskawica Mathy*), following the principles of **IEEE Std 1012-2016** (System and Software Verification and Validation) and **ISO/IEC 25010** (System and Software Quality Models).
+This document records project-level verification and validation checks informed by concepts in **IEEE Std 1012-2016** and **ISO/IEC 25010**. It is not a standards conformity assessment, independent audit, or certification. The parser and semantic analyses cover only the constructs currently implemented and tested.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -29,8 +29,8 @@ This document defines the formal **Verification & Validation (V&V)** framework f
 
 ### 2. Verification Framework (Mathematical & Algorithmic Correctness)
 
-#### V-01: Grammatical & Structural Isomorphism
-- **Objective**: Verify that the COBOL AST front-end creates exact, typed Program Graphs without loss of control flow or variable reference dependencies.
+#### V-01: Supported-Subset Graph Fixtures
+- **Objective**: Verify that the current parser creates expected graphs for the supported constructs present in the small checked-in fixtures. This does not establish complete COBOL grammar coverage.
 - **Specification Standards**: ANSI X3.23-1985 (COBOL-85) and IBM Enterprise COBOL for z/OS v6.x.
 - **Invariant Proofs**:
   1. **Node Completeness**: Every statement verb (`PERFORM`, `IF`, `MOVE`, `ADD`, `SUBTRACT`, `COMPUTE`, `STOP RUN`, `GOBACK`) maps to a distinct vertex $v \in V_{\text{stmt}}$ with precise 1-indexed source code location metadata.
@@ -57,28 +57,28 @@ This document defines the formal **Verification & Validation (V&V)** framework f
 #### V-04: Shift-Invert Lanczos Numerical Stability
 - **Objective**: Verify that sparse ARPACK eigensolvers with negative spectral shift ($\sigma = -10^{-4}$) converge to true analytical eigenvalues.
 - **Benchmark Subject**: 1D path graph of size $N$ with known analytical spectrum $\lambda_k = 2 - 2\cos\left(\frac{k \pi}{N}\right)$.
-- **Verification Evidence**: `tests/test_sparse_scaling.py` validates $\lambda_0 = 0.0000$ and $\lambda_1 = 9.8696 \times 10^{-6}$ for $N=1,000$ within $10^{-6}$ relative error in 1.5 milliseconds.
+- **Verification Evidence**: `tests/test_sparse_scaling.py` checks the sparse eigensolver on a synthetic N=200 path graph. The N=1,000 case in that file exercises diffusion, not eigensolver eigenvalue accuracy.
 
 ---
 
 ### 3. Validation Framework (Domain & Business Requirements)
 
-#### VAL-01: Empirical Deadlock & Infinite Loop Identification
-- **Requirement**: The system must formally distinguish terminating programs from infinite loops and circular control flows without human intervention.
+#### VAL-01: Cycle and Hazard Reporting on a Canonical Fixture
+- **Requirement**: The system should identify the known repeated-control-flow pattern in the checked fixture and report the assumptions behind any hazard label.
 - **Validation Test**: `examples/atm_deadlock.cbl` contains a mutual recursion between `2000-PROCESS-ATM` and `3000-RETRY-LOOP`.
 - **Validation Result**:
-  - `CycleDetector` isolates the Strongly Connected Component with vertices `['2000-PROCESS-ATM:L28_PERFORM', '3000-RETRY-LOOP:L34_PERFORM']`.
+  - `CycleDetector` reports the fixture's repeated-control-flow pattern. It enumerates simple cycles; it does not compute SCCs.
   - Computes `has_deadlock = True` and verdict `CRITICAL_INFINITE_LOOP`.
-  - Rezonator successfully issues automated refactoring alerts before deployment.
+  - This fixture result is evidence that the example is detected; it is not a general proof of program nontermination or deployment safety.
 
-#### VAL-02: Structural Refactoring Divergence Certification
-- **Requirement**: The system must provide automated metrics certifying whether a software update is a safe, conservative logic extension or an architectural disruption.
+#### VAL-02: Structural Refactoring Comparison
+- **Requirement**: The system reports structural metrics that help a reviewer compare two graph representations. These metrics do not certify behavioral equivalence or migration safety.
 - **Validation Test**: `examples/bank_demo_v1.cbl` (17 nodes) updated to `examples/bank_demo_v2.cbl` (27 nodes with fraud check and audit logging).
 - **Validation Result**:
   - NetLSD Topological Distance: $0.0550$ (well below divergence alert threshold of $0.250$).
   - Deadlock Introduced: **NO** (0 cycles detected).
   - Refactoring Fidelity Score: **86.3 / 100**.
-  - Final Verdict: `SAFE_MODULAR_EXTENSION` (High topological fidelity maintained with conservative logic extension).
+  - The current API emits `SAFE_MODULAR_EXTENSION` for this structural-score threshold. That label is heuristic and does not certify a safe logic extension.
 
 #### VAL-03: Isolation of Dead State & Unreferenced Data Hubs
 - **Requirement**: The system must detect unreferenced memory fields in legacy COBOL programs that consume mainframe buffers without contributing to transactions.
@@ -107,11 +107,11 @@ This document defines the formal **Verification & Validation (V&V)** framework f
 │ REQ-02 │ Unified Graph Laplacian Field  │ `rezonator/graph_field.py` │ `test_api_and_engines.py`│
 │ REQ-03 │ Modal Cymatics & NetLSD Trace  │ `rezonator/diamond_yant.py`│ `test_sparse_scaling.py` │
 │ REQ-04 │ Continuous PINN Heat Diffusion │ `rezonator/pinn_diffusion.py`│ `test_api_and_engines.py`│
-│ REQ-05 │ Cycle & Deadlock SCC Analysis  │ `rezonator/cycle_detector.py`│ `test_golden_graphs.py`  │
+│ REQ-05 │ CFG cycle and hazard reporting │ `rezonator/cycle_detector.py`│ `test_golden_graphs.py`  │
 │ REQ-06 │ Program Comparative Diffing    │ `rezonator/program_comparator.py`│ `test_api_and_engines.py`│
 │ REQ-07 │ Forward Impact Diffusion Rank  │ `rezonator/diffusion_ranker.py`│ `test_hypothesis_h1.py`  │
 │ REQ-08 │ Mutation Testing Battery (H1)  │ `rezonator/mutation_benchmark.py`│ `test_hypothesis_h1.py`│
-│ REQ-09 │ Sparse Scaling for N=10,000    │ `rezonator/diamond_yant.py`│ `test_sparse_scaling.py` │
+│ REQ-09 │ Sparse kernels on synthetic test sizes │ `diamond_yant.py` / `pinn_diffusion.py` │ `test_sparse_scaling.py` │
 │ REQ-10 │ Backward Compat for `mathy`    │ `mathy/*.py` shims         │ `test_backward_compat.py`│
 └────────┴────────────────────────────────┴────────────────────────────┴──────────────────────────┘
 ```
@@ -124,12 +124,14 @@ This document defines the formal **Verification & Validation (V&V)** framework f
 |:---|:---|:---:|:---:|:---|:---:|
 | **HAZ-01** | OS Smart App Control blocks native Cython `.pyd` binaries. | CRITICAL | HIGH | Pure-Python hermetic AST fallback parser embedded directly in source tree. | **MITIGATED** |
 | **HAZ-02** | Ill-conditioned Laplacian eigenvalues stall Lanczos iterations. | HIGH | MEDIUM | Negative shift-invert transformation ($\sigma = -10^{-4}$, `which='LM'`). | **MITIGATED** |
-| **HAZ-03** | Dense $O(N^3)$ matrix exponentiation causes Out-Of-Memory. | HIGH | MEDIUM | Sparse CSR matrices with Krylov subspace `expm_multiply`. | **MITIGATED** |
-| **HAZ-04** | Hidden infinite loop in mainframe batch job. | CRITICAL | LOW | Automated Tarjan Strongly Connected Components cycle detection on CFG. | **MITIGATED** |
+| **HAZ-03** | Dense graph matrices can exhaust memory on larger inputs. | HIGH | MEDIUM | Sparse kernels exist, but the end-to-end GraphField path is still dense. | **PARTIAL** |
+| **HAZ-04** | Hidden infinite loop in mainframe batch job. | CRITICAL | LOW | Current cycle enumeration reports selected hazards; it does not prove general termination. | **PARTIAL** |
 | **HAZ-05** | Namespace breaking changes during repo rename. | MEDIUM | HIGH | Automated forwarding shims in `mathy/` with unit test validation. | **MITIGATED** |
 
 ---
 
-### 6. Formal Sign-Off
+### 6. Scope and Sign-Off
 
-The **Rezonator** software release v1.0.0 has been subjected to complete verification and validation. All functional, numerical, and structural requirements have been verified without open defects. The engine is certified for production deployment in enterprise mainframe code intelligence, modernization, and automated refactoring pipelines.
+The current CycleDetector enumerates simple cycles through NetworkX; it does not implement Tarjan SCC. The sparse solver test file currently exercises spectral solving at N=200, diffusion at N=1,000, and directed ranking at N=200. GraphField itself remains dense and rejects graphs above 2,048 nodes. These are material scope limits for interpreting the earlier traceability and hazard tables.
+
+This report is a repository-level self-assessment of selected tests and numerical checks. It does not claim complete verification, absence of defects, standards compliance, or production certification. Before a production pilot, parser coverage, cycle-analysis soundness, sparse end-to-end behavior, security deployment controls, and representative-corpus results remain to be established as described in [REZONATOR_ROADMAP.md](REZONATOR_ROADMAP.md).

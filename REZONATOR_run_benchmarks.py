@@ -3,7 +3,7 @@ REZONATOR: Comprehensive Performance & Scaling Benchmark Suite.
 Measures:
 1. End-to-end AST Graph Construction & Topological Spectral Solvers across all 10 COBOL examples.
 2. Mutation Testing & Hypothesis H1 Evaluation (Directed Diffusion vs. Slicing Baselines).
-3. Sparse Matrix & Lanczos/Krylov Scaling (N = 100, N = 1,000, N = 10,000 nodes).
+3. Sparse Matrix & Lanczos/Krylov kernels on synthetic path graphs (N = 100 to 10,000).
 """
 
 import time
@@ -103,7 +103,7 @@ def benchmark_sparse_scaling():
         print(f" N = {n:<12} | E = {nnz:<10} | {t_spec:18.2f} ms | {t_diff:18.2f} ms")
 
     print("-" * 76)
-    print(" Sub-second linear-complexity O(k * E) scaling verified up to N = 10,000 nodes!\n")
+    print(" Synthetic sparse-kernel timings recorded through N = 10,000; this is not end-to-end COBOL capacity.\n")
 
 
 def benchmark_mutation_hypothesis():

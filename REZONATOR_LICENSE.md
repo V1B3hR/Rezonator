@@ -8,7 +8,7 @@
 
 ### 1. Preamble & Guiding Principles
 
-**Rezonator** is a deterministic, mathematical code intelligence engine for legacy enterprise systems. It provides continuous topological manifolds, spectral graph theory, and formal verification for monolithic codebases.
+**Rezonator** is a research-oriented static-analysis workbench for legacy enterprise systems. It maps a supported subset of source constructs to finite graphs and computes structural metrics; it does not provide formal verification or certify program behavior.
 
 This license establishes a three-tier model:
 1. **Academic & Research Tier**: Free, transparent, source-available evaluation for students, researchers, and security auditors.

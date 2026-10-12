@@ -177,6 +177,7 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
 
         comparator = ProgramComparator(lattice_size=32)
         result = comparator.analyze_single(code)
+        # Keep the legacy response key for existing clients; this is not model output.
         result["llm_brief"] = LLMSynthesizer.generate_cognitive_brief(result)
         self._send_json(result)
 

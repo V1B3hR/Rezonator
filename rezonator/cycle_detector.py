@@ -1,7 +1,7 @@
 """
-Cycle, Recursion & Termination Analyzer for COBOL Control Flow Graphs.
-Applies graph-theoretic SCC (Strongly Connected Components), cycle enumeration,
-and reachability to formally verify termination and detect infinite recursion / deadlock traps.
+Static cycle and hazard reporting for parsed COBOL control-flow graphs.
+Uses NetworkX simple-cycle enumeration and reachability heuristics. It does not
+compute Tarjan SCCs or prove general program termination.
 """
 
 from typing import Dict, List, Set, Any, Optional
@@ -10,8 +10,8 @@ import networkx as nx
 
 class CycleDetector:
     """
-    Rigorously detects loops, recursions, and terminal trapping states in COBOL CFG.
-    Replaces heuristic pseudo-physics with exact graph-theoretic formal verification.
+    Reports cycle structure, recursive transfers, and selected heuristic hazards
+    in the CFG produced by the supported-subset parser.
     """
 
     def __init__(self, parsed_data: Dict[str, Any]):

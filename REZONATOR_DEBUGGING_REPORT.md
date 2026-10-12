@@ -1,5 +1,7 @@
-# REZONATOR: FORMAL DEBUGGING & REMEDIATION REPORT
-## Comprehensive Technical Audit, Defect Analysis, and Verification Proof
+# REZONATOR: HISTORICAL DEBUGGING & REMEDIATION NOTES
+## Technical Audit Snapshot, Defect Analysis, and Recorded Checks
+
+> Historical report: its terminology and test count describe the state at the time of writing. It is not a current test result, independent verification, or certification; see the roadmap and current validation notes for present scope.
 
 ---
 
@@ -9,10 +11,10 @@ During the development, hardening, and repository restructuring of **Rezonator**
 1. **COBOL AST Front-End & Lexer Pipeline**
 2. **Spectral Graph Laplacian & Diamond Yant Modal Engine**
 3. **Physics-Informed Neural Network (PINN) Heat Diffusion & Impact Ranker**
-4. **Tarjan Strongly Connected Components (SCC) Cycle & Deadlock Verifier**
+4. **Control-flow cycle reporting and heuristic hazard checks**
 5. **Backward Compatibility Layer & Module Renaming (`mathy` -> `rezonator`)**
 
-All identified defects have been systematically diagnosed, resolved at the root-cause level, and verified with deterministic regression tests. The test suite now passes with **22 out of 22 tests OK (0 failures, 0 errors, 100% pass rate in < 1.0 second)**.
+The report records fixes and checks performed at that historical point, including a run of **22 tests**. Those results are not a claim about the current checkout or complete coverage.
 
 ---
 

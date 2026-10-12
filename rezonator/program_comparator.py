@@ -1,7 +1,7 @@
 """
-Program Comparator: Mathematical Divergence & Anomaly Radar.
-Computes NetLSD spectral distance, algebraic connectivity shifts,
-directed impact diffusion, and formal cycle/deadlock verification.
+Program Comparator: Structural graph comparison and analysis signals.
+Computes spectral distances, graph metrics, impact diffusion, and heuristic
+cycle-hazard comparisons over the parsed graph representations.
 """
 
 from typing import Dict, List, Any
@@ -18,8 +18,8 @@ from rezonator.provenance import comparison_provenance, source_provenance
 
 class ProgramComparator:
     """
-    Rigorously compares two COBOL programs via NetLSD spectral topology,
-    directed impact propagation, and formal cycle/deadlock detection.
+    Compares two parsed graph representations. Its structural score and verdict
+    labels are heuristics; they do not establish behavioral equivalence or safety.
     """
 
     def __init__(self, lattice_size: int = 32):
@@ -28,7 +28,7 @@ class ProgramComparator:
         self.diffusion_engine = PINNGraphDiffusionEngine(alpha=0.5)
 
     def analyze_single(self, source_code: str) -> Dict[str, Any]:
-        """Runs the complete multi-modal mathematical pipeline on a COBOL program."""
+        """Runs the available analysis pipeline on the supported parsed subset."""
         validate_source_size(source_code)
         # 1. Parse into graph
         parsed = self.parser.parse(source_code)
@@ -47,7 +47,7 @@ class ProgramComparator:
         diffusion = self.diffusion_engine.solve_analytical(field.L, u0, time_steps=20, t_max=2.0)
         directed_impact = self.diffusion_engine.solve_directed_impact(field.A_dir, source_idx=0, t=1.5)
 
-        # 5. Formal Cycle, Recursion & Deadlock Verification
+        # 5. Static cycle and heuristic hazard analysis
         cycle_analysis = CycleDetector(parsed).analyze()
 
         return {
@@ -71,7 +71,7 @@ class ProgramComparator:
         }
 
     def compare(self, source_a: str, source_b: str) -> Dict[str, Any]:
-        """Performs rigorous comparative analysis between Program A and Program B."""
+        """Compares structural metrics for Program A and Program B."""
         validate_source_size(source_a)
         validate_source_size(source_b)
         res_a = self.analyze_single(source_a)
@@ -101,12 +101,12 @@ class ProgramComparator:
         hl_b = res_b["diffusion"]["diffusion_half_life"]
         hl_delta = float(hl_b - hl_a) if (not np.isinf(hl_a) and not np.isinf(hl_b)) else 0.0
 
-        # 5. Cycle & Deadlock Regression Check
+        # 5. Heuristic cycle-hazard comparison
         deadlock_a = res_a["cycles"]["has_deadlock"]
         deadlock_b = res_b["cycles"]["has_deadlock"]
 
-        # 6. Refactoring Fidelity Score (0 - 100)
-        # Based on NetLSD distance and penalty for introducing deadlocks
+        # 6. Structural similarity score (0 - 100), not behavioral fidelity
+        # Based on NetLSD distance and penalty for a heuristic cycle-hazard flag.
         base_fidelity = max(0.0, min(100.0, 100.0 * (1.0 - netlsd_dist * 2.5)))
         if deadlock_b and not deadlock_a:
             refactoring_score = 0.0  # Critical defect introduced

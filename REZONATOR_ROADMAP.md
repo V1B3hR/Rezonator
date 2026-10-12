@@ -1,161 +1,127 @@
-# REZONATOR: POST-DEBUGGING STRATEGIC ROADMAP
-## Evolution Path: From Mathematical Foundations to Enterprise Mainframe Modernization
+# Rezonator Roadmap
 
----
+## Code-grounded plan, updated 2026-10-10
 
-### Executive Overview
+This roadmap combines the long-range vision in the accompanying strategy note with a review of the repository as it exists today. It treats the current implementation as a research and audit-workbench prototype. Passing unit tests and mathematically defined graph metrics are useful evidence; they do not certify COBOL compatibility, functional equivalence, safety, or production readiness.
 
-With the completion of the rigorous debugging, hermetic parser implementation, and sparse linear algebra scaling passes, **Rezonator v1.0.0** has achieved a fully verified, mathematically sound core.
+Rezonator's direction remains compelling: make legacy software structure inspectable as a graph, use graph and spectral methods to guide investigation, and let a future AI observer explain evidence while humans and independent checks retain decision authority. The fastest credible route is to make one end-to-end analysis trustworthy before expanding to entire portfolios or additional languages.
 
-This post-debugging roadmap outlines the transition from the completed foundation phases (**F0–F3**) to the upcoming enterprise-scale modernization phases (**F4–F6**).
+## 1. Current baseline: what the repository demonstrates
 
-```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                              REZONATOR STRATEGIC ROADMAP                               │
-├───────────────────────────────────────────────────────┬────────────────────────────────┤
-│ COMPLETED PHASES (v1.0 - Hardened Production)         │ TARGET PHASES (v1.2 - v2.0)    │
-├───────────────────────────────────────────────────────┼────────────────────────────────┤
-│ [F0] Mathematical Rigor & Pseudoscience Purge         │ [F4.3] ProLeap/Tree-Sitter     │
-│      - Deprecated bogus GR event-horizon heuristics   │      - Hybrid dialect bridges  │
-│      - Integrated Tarjan SCC cycle / deadlock engine  │                                │
-│                                                       │ [F5] Multi-Program Hypergraphs │
-│ [F1] Ground-Truth & Golden Graph Isomorphism          │      - Cross-program CALL flow │
-│      - 4 canonical benchmark programs (Bank, ATM, etc)│      - JCL batch pipeline link │
-│      - 100% exact isomorphism verification tests      │      - Multi-dataset dataflow  │
-│                                                       │                                │
-│ [F2] Hermetic Pure-Python AST Parser                  │ [F6] Automated Monolith Cut    │
-│      - Zero external Cython/pyd native dependencies   │      - Cheeger spectral cluster│
-│      - Windows 11 Smart App Control (SAC) resilience  │      - LLM context-slice engine│
-│                                                       │      - Rust native sparse math │
-│ [F3] Sparse Lanczos & Krylov Scaling                  │                                │
-│      - Shift-invert Lanczos eigensolver (1800x faster)│                                │
-│      - Krylov expm trajectory scaling to N=10,000     │                                │
-│                                                       │                                │
-│ [F4] Enterprise Dialects & Security Hardening         │                                │
-│      - F4.1: Embedded EXEC CICS & DB2 EXEC SQL nodes  │                                │
-│      - F4.2: Nested COPYBOOK inlining + REPLACING     │                                │
-│      - Zero-Trust: AST sandbox, CORS, limits, SHA-256 │                                │
-└───────────────────────────────────────────────────────┴────────────────────────────────┘
-```
+| Area | Present in code | Boundary that the roadmap must respect |
+|---|---|---|
+| COBOL ingestion | A deterministic, line-oriented Python parser in `rezonator/ast_graph_builder.py`; golden fixtures cover four small example programs. | It is a supported-subset parser, not a complete ANSI-85 or IBM Enterprise COBOL implementation. It recognizes selected verbs and embedded blocks; unsupported syntax can be missed. There is no broad production corpus or complete parser-coverage report yet. |
+| Embedded CICS and DB2 SQL | Selected `EXEC CICS` and `EXEC SQL` forms become typed graph nodes and resource/data-flow edges. | Extraction is regex-based and tested on a few representative forms. It does not implement the full CICS command set, DB2 grammar, or precompiler semantics. |
+| COPYBOOK | `rezonator/copybooks.py` expands nested copybooks, supports tested `REPLACING` forms, detects cycles, and tracks line origins. | This is a useful preprocessor foundation; production library search rules, dialect edge cases, and large copybook estates still need corpus validation. |
+| Mathematical graph | `GraphField` builds adjacency and Laplacian operators; spectral and diffusion modules can also accept sparse matrices. | The end-to-end `GraphField` currently allocates dense NumPy matrices and rejects graphs over `MAX_DENSE_MATRIX_NODES = 2,048`. Sparse math primitives do not yet make the full parser-to-report path sparse. |
+| Scale evidence | `tests/test_sparse_scaling.py` checks an eigensolver on a synthetic 200-node graph, diffusion on 1,000 nodes, and directed ranking on 200 nodes. `REZONATOR_BENCHMARKS.md` separately reports larger synthetic runs. | Treat larger timings as benchmark observations, not as a tested end-to-end capacity claim. The current dense graph builder is the operational ceiling for ordinary analysis. |
+| Cycle analysis | `rezonator/cycle_detector.py` reports cycles and selected hazards from the CFG. | The implementation calls `networkx.simple_cycles`; it is not Tarjan SCC. A CFG cycle indicates a possible loop, not by itself guaranteed nontermination. Guard analysis is heuristic and cannot prove general program termination. |
+| Program slicing | `ProgramSlicer` computes forward graph reachability and BFS rankings; `DiffusionRanker` ranks impact. | This is not yet a bounded, source-mapped LLM context slicer. The H1 benchmark's predeclared Precision@1 improvement criterion was not met, so diffusion should remain an optional ranking signal rather than a claimed accuracy upgrade. |
+| AI interface | `LLMSynthesizer` formats analysis values into a deterministic Markdown evidence brief; the UI now describes that behavior without claiming a model call. | No model call, project memory, continuous observer, or code generation exists in this repository. A future Sokół must be a read-only consumer of versioned evidence. |
+| Runtime observation | `CobolRuntime` interprets a bounded supported subset, records visited node IDs and final variable state. | It is not a native COBOL/mainframe runtime. It does not yet emit structured per-mutation events or apply a privacy-reviewed trace export policy. |
+| Security and provenance | Local mode binds to loopback; the HTTP handler has payload limits, an Origin allowlist, and optional bearer authentication. Results carry source SHA-256, package version, seed metadata, and UTC time. | Remote mode is plain HTTP with a bearer token, so it needs TLS termination on a trusted boundary before network use. CORS is a browser policy, not authentication. Provenance does not yet cover copybook contents, parser options, dependency versions, or a digest of the result. |
+| Rust and other languages | `Cargo.toml` and `src/main.rs` provide a Rust package scaffold. | The Rust entry point is a placeholder; graph algorithms and Python bindings are not implemented. There are no non-COBOL frontends or shared language-neutral IR yet. |
 
----
+The current hard limits are centralized in `rezonator/limits.py`: 10 MiB source/payload, 50,000 graph nodes, 200,000 edges, 2,048 nodes for the dense `GraphField`, and 100,000 runtime steps. The smaller dense-matrix ceiling is the limiting value for the main analysis path.
 
-### 1. Status of Completed Phases (Phases F0 – F3)
+### Phase status, stated conservatively
 
-#### Phase F0: Mathematical Rigor & Structural Integrity [COMPLETED]
-- **Accomplishments**:
-  - Identified and removed `gr_geodesic.py` from active pipeline; relegated to `experimental/`. Eliminated size-dependent "event horizon" false positives.
-  - Implemented formal cycle and loop verification using **Tarjan's Strongly Connected Components (SCC)** algorithm directly on the Control Flow Graph.
-  - Standardized the Graph Field on the **Fan Chung Symmetric Normalized Laplacian** ($\mathcal{L}_{\text{norm}} = I - D^{-1/2} A D^{-1/2}$), bounding eigenvalue spectra to $[0, 2]$.
-  - Resolved `END-IF` parser bugs where statement terminators were incorrectly consumed as paragraph headers.
+- **F0–F1 — mathematical and golden-graph foundations: implemented for the checked fixtures.** This establishes useful invariants on a small corpus, not general COBOL semantic correctness.
+- **F2 — hermetic parser: prototype implemented.** Keep the pure-Python default, but describe it as a supported subset until corpus coverage and unsupported-syntax reporting are in place.
+- **F3 — sparse solver primitives: implemented in parts.** Sparse algorithms exist, but sparse storage is not connected through the ordinary `GraphField` and comparator path.
+- **F4 — enterprise constructs and basic hardening: partial implementation.** Copybook expansion and selected embedded statements exist; full dialect compatibility and deployment-grade remote security do not.
+- **F5–F6 — portfolio analysis and decomposition: not implemented.** There is no cross-program CALL/JCL graph, Cheeger partitioner, bounded LLM slicer, or migration verifier today.
 
-#### Phase F1: Deterministic Ground Truth & Golden Graphs [COMPLETED]
-- **Accomplishments**:
-  - Developed and verified 4 reference programs representing core mainframe patterns:
-    - `bank_demo_v1.cbl`: Linear transactional flow.
-    - `bank_demo_v2.cbl`: Conservative modular extension with audit and fraud checks.
-    - `atm_deadlock.cbl`: Mutual recursive non-terminating deadlock loop.
-    - `batch_interest.cbl`: Batch job with unreferenced memory fields.
-  - Created `tests/golden_graphs.py` with immutable vertex, edge, and variable specifications.
-  - Implemented `tests/test_golden_graphs.py` asserting exact isomorphism ($0$ node diff, $0$ edge diff, $0$ variable diff).
+### Two-layer architecture: deterministic core and Sokół
 
-#### Phase F2: Hermetic Cross-Platform Parser [COMPLETED]
-- **Accomplishments**:
-  - Solved Windows 11 Smart App Control (SAC) native code integrity block by building a 100% pure-Python ANSI-85 / IBM Enterprise COBOL AST parser.
-  - Supported Working-Storage declarations with decimal values (`PIC 9(7)V99 VALUE 5000.00.`).
-  - Added arithmetic `GIVING` clause rules ensuring destination variables are modified without polluting operand definitions.
-  - Guaranteed zero external binary dependencies and sub-second parsing across all 10 corpus examples.
+The attached Sokół vision fits the project if its boundary is enforced: Layer 1 owns parsing, graph construction, metrics, and controlled traces; Layer 2 consumes evidence read-only and returns explanations or hypotheses. The current evidence brief was corrected in this pass so it no longer presents cycles as formal termination proofs or metrics as business semantics. There is still no AI model, watch service, memory store, JSONL event stream, or spectral regression notifier implemented.
 
-#### Phase F3: Sparse Matrix & Lanczos/Krylov Scaling [COMPLETED]
-- **Accomplishments**:
-  - Converted internal linear algebra engines to `scipy.sparse.csr_matrix`.
-  - Implemented shift-invert Lanczos eigensolver ($\sigma = -10^{-4}$, `which='LM'`), cutting Fiedler vector computation time on $N=1,000$ matrices from **2,870 ms to 1.53 ms** (**1,800x speedup**).
-  - Implemented Krylov subspace matrix exponential multiplier (`spla.expm_multiply`), computing 10-step diffusion trajectories on $N=10,000$ nodes ($30,000$ edges) in **83.98 ms**.
-  - Established empirical scaling benchmarks with $O(k \cdot E)$ linear complexity.
+The epistemic labels are adopted with scoped meanings: `OBSERVED` identifies a fact captured from a named artifact or Rezonator output (and says which parsed snapshot it describes); `INFERRED` is an unconfirmed AI hypothesis; `VERIFIED` is claim-specific and must name its test/assertion and exact snapshot or record an explicit reviewer attestation. Human approval is not silently promoted into a formal proof. The detailed evidence, memory, privacy, and delivery contract is in [Sokół Architecture](docs/SOKOL_ARCHITECTURE.md).
 
----
+## 2. Accelerated delivery path
 
-#### Phase F4: Enterprise Dialects & Security Hardening [COMPLETED]
-- **Accomplishments**:
-  - **F4.1 Embedded Dialects**:
-    - Parsed `EXEC SQL` statements into typed `db_access` nodes with reads/writes mapped to persistent database tables (`db_table:*`) and connected via `dfg_db_read`/`dfg_db_write` edges.
-    - Parsed `EXEC CICS` commands (`LINK`, `SEND MAP`, `RECEIVE MAP`, `SYNCPOINT`, `XCTL`) into typed `external` transactional nodes.
-    - Connected database tables and transaction boundaries directly into the Graph Laplacian, modal spectrum, and PINN heat diffusion engine.
-  - **F4.2 Copybook Inliner**:
-    - Built pure-Python `CopybookInliner` with support for multi-level nested copybook expansion.
-    - Implemented `REPLACING ==old== BY ==new==` syntax with full token boundary fidelity.
-    - Enforced circular copybook reference protection with full cycle-chain traces.
-  - **Zero-Trust Security Hardening**:
-    - Hardened HTTP server: strict `HTTP/1.0`, `Connection: close`, origin CORS allowlisting, and `--remote --token` bearer auth.
-    - Replaced `eval()` with a hermetic AST expression evaluator.
-    - Implemented fail-closed limits (`MAX_SOURCE_BYTES = 10MB`, `MAX_GRAPH_NODES = 50,000`, `MAX_DENSE_MATRIX_NODES = 1,000`).
-    - Added SHA-256 cryptographic provenance metadata.
+The sequence below is designed to reach a useful pre-migration audit pilot sooner by avoiding a large parser rewrite, Rust port, or autonomous translator as prerequisites. Estimates are planning ranges for a focused engineering push with access to representative, legally usable COBOL and copybook fixtures; they are not release commitments.
 
----
+| Increment | Indicative effort | Deliverable and exit evidence |
+|---|---:|---|
+| **A. Truthful parser and cycle results** | 1–2 focused weeks | Publish a supported-syntax matrix; represent or report every unhandled statement instead of silently omitting it; retain source locations through copybook expansion; replace cycle enumeration with linear-time SCC analysis; report `cycle`, `possible loop`, `hazard under stated assumptions`, or `unknown` without claiming a general termination proof. Rename comparator verdicts such as `SAFE_MODULAR_EXTENSION` to neutral structural descriptions; a graph score is not a safety classification. Golden fixtures cover each supported control-flow construct. |
+| **B. Sparse analysis end to end** | 2–4 focused weeks | Move `GraphField` to sparse CSR/array operators and keep the comparator path sparse; avoid dense matrix serialization by default. Preserve current golden graph and numerical invariants. Benchmark generated program graphs through parse → graph → spectrum/diffusion → result, with node/edge, time, and memory limits recorded. |
+| **C. Auditable report and provenance** | 1–2 focused weeks, partly parallel after the result schema is stable | Emit a report that includes parser coverage and warnings, graph scope, copybook origins, cycle-analysis assumptions, metric definitions, and source references. Extend the provenance manifest to hash all analysis inputs and options. Keep each automated finding traceable to source and graph evidence. |
+| **D. Bounded context-slice beta** | 1–2 focused weeks | Turn the existing static slicer into an exportable, source-mapped evidence packet under a configurable token/line budget. Clearly list omitted dependencies when the budget truncates the slice. Evaluate precision and recall against the existing mutation cases plus an independently reviewed fixture set; do not promise a fixed 150-line slice or call it mathematically complete. |
 
-### 2. Strategic Roadmap: Upcoming Phases (Phases F4.3 – F6)
+This focused 5–10 week estimate covers A–D only; it does not include implementation or evaluation of Sokół's persistent memory, runtime event stream, or model adapter. The current brief/UI wording correction is a documentation and presentation cleanup, not a completed AI integration.
 
----
+Parser coverage work and corpus curation can proceed while the sparse graph path is being built, once the graph/result contract is fixed. The audit report and context-slice consumer can follow that contract. This gives early parallel progress without coupling each feature to a different graph representation.
 
-#### Phase F4.3: ProLeap & Tree-Sitter Hybrid Parser Bridge
-**Target Release**: Rezonator v1.2.0
-**Objective**: Optional Java/ANTLR bridge (ProLeap COBOL parser) and tree-sitter grammars for obscure dialect corner cases while retaining the hermetic pure-Python parser as default.
-- Ingestion of real-world 50,000-line banking monoliths containing non-standard precompiler directives.
-- Retain fallback to hermetic pure-Python parser on platforms without JVM or native toolchains.
+### Near-term release gate: pre-migration audit pilot
 
----
+The first meaningful external-facing milestone is a pilot that can analyze a bounded, documented COBOL subset and explain its own limits. Exit criteria:
 
-#### Phase F5: Multi-Program Dependency Hypergraphs & JCL Integration
-**Target Release**: Rezonator v1.2.0  
-**Objective**: Expand analysis beyond single source files to multi-program mainframe application clusters and batch processing pipelines.
+1. Every parsed and unsupported construct has an explicit status and source location; no silent drop is treated as a complete graph.
+2. The source-to-graph path runs sparsely at the declared pilot scale, with reproducible time and memory measurements.
+3. Cycle results distinguish graph facts from semantic conclusions and do not label a mere cycle as a proof of deadlock.
+4. A reviewer can trace each report finding to source lines, graph edges, and the analysis version/options.
+5. Context slices remain within a caller-supplied budget and disclose truncation.
+6. The pilot is evaluated on a representative, permissioned corpus, with false positives, false negatives, and unsupported syntax recorded.
+7. The deterministic analysis brief has a direct regression check for provenance and scope caveats; API compatibility does not mislabel it as AI/model output.
 
-- **Milestone F5.1: Inter-Program Call Flow & Interface Contracts**
-  - Parse `CALL 'SUBPROG' USING ...` and `LINK PROGRAM(...)` statements.
-  - Construct inter-procedural call graphs connecting callers to callee entry points and mapping parameter bindings (`USING BY REFERENCE / BY CONTENT`).
-- **Milestone F5.2: JCL (Job Control Language) Batch Pipeline Linking**
-  - Parse JCL job streams (`//STEP01 EXEC PGM=PROGA`, `//DD1 DSN=FILE.DAT`).
-  - Connect output datasets from Step $k$ to input datasets of Step $k+1$, creating end-to-end dataflow hypergraphs across distinct batch COBOL jobs.
-- **Milestone F5.3: Global VSAM & DB2 Persistent State Manifold**
-  - Unify shared VSAM file clusters and database tables as global memory hubs across multiple programs.
-  - Detect cross-program concurrent access conflicts, write-after-read hazards, and batch serialization bottlenecks.
-- **Deliverables & Acceptance Criteria**:
-  - Global topological visualization of a multi-program banking portfolio in the Rezonator Studio.
-  - End-to-end blast radius tracking: changing a database column in Program A tracks impact to Program B through JCL file transfers.
+### Sokół delivery sequence (after the evidence contract stabilizes)
 
----
+1. **Versioned evidence events:** define JSONL or an equivalent versioned event envelope for source/Git snapshots, analysis results, and controlled runs. Include copybook resolution, parser options, graph digest, and analyzer version; current provenance is not yet complete enough for persistent memory.
+2. **Core readiness and scale:** complete parser coverage reporting and sparse analysis end to end before treating graph output as a comprehensive view. CSR storage is necessary for sparse scale but does not itself establish 10,000–50,000-line throughput; record end-to-end time, peak memory, graph density, and unsupported syntax on specified inputs.
+3. **Controlled runtime trace:** emit structured, source-linked events only from an explicit test harness. The current interpreter is subset-only; label traces as interpreter observations. Omit values by default and use field allowlists/synthetic data. Deterministic redaction is defense-in-depth, not a guarantee that all PII or secrets are removed.
+4. **Versioned project memory:** add facts only after snapshot IDs and remappable source anchors are defined. Current paragraph/line/type node IDs can shift across edits. Bind each fact to source and graph snapshots, mark stale facts on change, and never carry verification to a new snapshot without rerunning the check or recording a new scoped attestation.
+5. **Radar, idioms, and optional model:** first report compatible-metric deltas as review candidates, not claims of broken logic. Keep mined idioms as `INFERRED` until reviewed. Enable a read-only model adapter only after bounded context packets disclose truncation, source coverage, and data-transfer policy; it stays off by default and cannot mutate the core or run commands.
 
-#### Phase F6: Automated Monolith Decomposition & Neural Translation Guidance
-**Target Release**: Rezonator v2.0.0  
-**Objective**: Utilize spectral graph cuts and continuous diffusion to automate legacy modernization, microservice partitioning, and AI-guided migration to modern languages (Java, Go, Rust).
+The spectral radar must not label a Fiedler-value drop as a business-logic failure: it is a metric change in a specific parsed graph. Compare like-for-like parser/configuration snapshots and show the affected source/graph evidence. Likewise, an interpreter trace is not automatically a trace of native COBOL execution.
 
-- **Milestone F6.1: Cheeger Spectral Clustering & Microservice Partitioning**
-  - Utilize the **Fiedler vector** ($\mathbf{v}_1$) of the Normalized Laplacian $\mathcal{L}_{\text{norm}}$ to find the optimal Cheeger bi-partition:
-    $$S = \{i \in V \mid \mathbf{v}_1[i] \ge \tau\}$$
-    minimizing conductance $\phi(S) = \frac{|\partial(S)|}{\min(\text{vol}(S), \text{vol}(\bar{S}))}$.
-  - Automatically identify natural decoupling boundaries to extract modular microservices from monolithic spaghetti code with minimal inter-service RPC overhead.
-- **Milestone F6.2: Context-Efficient LLM Prompt Slicing**
-  - Instead of dumping an entire 50,000-line COBOL file into an LLM context window (which induces hallucination and token exhaustion), use continuous diffusion impact scores to generate high-density, context-optimal slices:
-    $$\text{Slice}(v_0, \theta) = \{v \in V \mid u_v(t) \ge \theta\}$$
-  - Feed mathematically verified slices to LLMs for reliable automated refactoring, code explanation, and translation to Java Spring Boot / Rust.
-- **Milestone F6.3: Rust Native Acceleration Engine (`rezonator-core`)**
-  - Implement the Graph Laplacian and Lanczos eigensolver in Rust using `nalgebra-sparse` and `faer` with Python bindings (`PyO3`), enabling analysis of 100,000+ node hypergraphs in under 500 milliseconds.
-- **Deliverables & Acceptance Criteria**:
-  - One-click "Decompose Monolith" feature in the Web Studio outputting candidate microservice boundaries.
-  - Automated translation assistant generating Java/Rust equivalents with verifiable input/output equivalence proofs.
+## 3. Multi-program analysis and modernization guidance
 
----
+### F5 — application portfolio graph (target horizon: 2027)
 
-### 3. Release Milestones & Target Schedule
+Build a cross-program dependency model incrementally, starting from an explicit project manifest rather than assuming that one repository contains the whole mainframe estate.
 
-| Phase | Target Version | Focus Area | Key Deliverable | Target Timeline |
-|:---:|:---:|:---|:---|:---:|
-| **F0–F3** | **v1.0.0** | **Core Math & Hermetic Engine** | **22/22 unit tests, shift-invert Lanczos, pure-Python parser** | **COMPLETED** |
-| **F4** | **v1.1.0** | **Enterprise Dialects & CICS/SQL** | **Embedded CICS/SQL support, copybook inliner** | **Q1 2027** |
-| **F5** | **v1.2.0** | **Multi-Program Hypergraphs** | **JCL batch linking, cross-program CALL graphs** | **Q2 2027** |
-| **F6** | **v2.0.0** | **Monolith Decomposition & AI** | **Cheeger spectral cuts, context slices, Rust core** | **Q3 2027** |
+1. Resolve static COBOL `CALL`, CICS `LINK`/`XCTL`, program identifiers, and parameter bindings where available; preserve unresolved or dynamic calls as explicit unknown edges.
+2. Add JCL job, step, `PGM`, and DD dataset relationships. Model conditional execution, procedures, overrides, and dataset identity only as their semantics are implemented and tested.
+3. Join shared DB2 table and VSAM/file resources across programs. Distinguish observed names from proven read/write semantics; represent missing catalog information as unknown.
+4. Produce an application-level dependency map and blast-radius report with source evidence and coverage counts.
 
----
+**2027 outcome:** a credible pre-migration audit pilot for a bounded application portfolio, with copybook-aware source references, selected CICS/DB2 support, parser coverage, and reviewable context slices. A Topological Coupling Score (TCS) may be researched during this period, but it becomes a published metric only after its definition is stable and its relationship to expert assessments or observed migration effort has been evaluated on a held-out corpus.
 
-### Conclusion
+### F6 — partition recommendations and migration evidence (target horizon: 2028)
 
-Rezonator has successfully transitioned from an experimental research concept to a hardened, verified mathematical foundation. With phases F0 through F3 completed, the system possesses the stability, performance, and algebraic rigor needed to tackle enterprise-grade mainframe modernization challenges.
+1. Add candidate cuts using Fiedler-vector sweeps and conductance, then incorporate shared state, transaction boundaries, call traffic, and data ownership. A spectral cut is a structural suggestion; it does not by itself produce a valid service boundary or minimize real RPC cost.
+2. Explain each candidate boundary, including crossing edges, shared resources, uncertainty, and the source statements that create the coupling. Keep an architect in the approval loop.
+3. For translated code, compare observable behavior with differential tests, workload traces, and domain invariants. NetLSD similarity and absence of detected cycles are structural signals, not proof of functional equivalence.
+4. Consider a Rust `rezonator-core` only after profiling identifies Python or sparse-kernel overhead as the bottleneck. First define a stable graph interchange format and benchmark the Python baseline. The proposed 10-million-node / sub-500-ms target remains a research hypothesis until measured on a specified workload and machine.
+
+**2028 outcome:** ranked, explainable decomposition candidates and a migration-validation workflow for selected COBOL portfolios. Rezonator recommends and gathers evidence; it does not autonomously rewrite or certify production systems.
+
+## 4. Longer-range direction (target horizon: 2031)
+
+Add language frontends one at a time behind a versioned intermediate graph model. Start with one adjacent representation (for example, a compiler IR or a second language frontend) and require conformance fixtures for control flow, data dependencies, calls, and source mapping before claiming language independence.
+
+The broad vision is reusable structural analysis for banking, aerospace, automotive, and medical software. Graph topology can help find coupling, reachability, and propagation paths; it cannot by itself establish safety compliance or prove the absence of harmful behavior. Any safety-critical use needs language-specific semantics, independent verification, domain hazard analysis, and the applicable certification process. The five-year ambition is therefore a research direction, not a promise of a universal safety gate or “compiler of compilers.”
+
+## 5. Design rules for shortening the path without weakening evidence
+
+- **Build one vertical slice at a time:** real source → parser diagnostics → graph → metric → source-linked report.
+- **Prefer explicit unknowns to guessed semantics:** unsupported syntax and dynamic dependencies must lower a coverage measure, not disappear silently.
+- **Keep the graph model sparse before scaling claims:** test the application path, not only isolated numerical kernels.
+- **Separate findings from recommendations:** expose measured graph facts, assumptions, uncertainty, and human decisions distinctly.
+- **Validate metrics before naming standards:** TCS and any “migration safety” score need empirical baselines and sensitivity analysis.
+- **Use AI as an analyst:** AI may summarize evidence or propose a patch; deterministic checks and human review decide what is accepted.
+- **Keep Sokół read-only:** stream versioned, minimized evidence to it asynchronously; source and trace contents are untrusted data, and any remote model transfer requires explicit policy and consent.
+- **Delay expensive platform work until justified:** no full grammar bridge, Rust port, or multi-language engine until coverage gaps, profiling, and pilot feedback identify the need.
+
+## 6. Documentation alignment notes
+
+The current-facing README, web brief, math references, and roadmap have been aligned to the code observed in this review. Historical milestones, test inventories, and debugging notes intentionally preserve some original terminology under explicit snapshot/scope caveats. Continue to treat those records as historical rather than current guarantees, especially where they mention:
+
+- references to Tarjan SCC, formal termination guarantees, 100% deadlock precision, and production certification;
+- parser claims implying complete ANSI-85 / IBM dialect support;
+- sparse scalability claims that do not distinguish synthetic solver benchmarks from the dense end-to-end graph path;
+- stale resource-limit values (some documents say 1,000 dense nodes and 10,000 runtime steps; the current code says 2,048 and 100,000);
+- “zero-trust” remote HTTP and AI/LLM descriptions that overstate what the current bearer-token server and deterministic brief template provide.
+
+Those distinctions are prerequisites for an audit product that earns trust through inspectable evidence rather than confident labels.

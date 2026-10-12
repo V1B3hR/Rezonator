@@ -1,8 +1,8 @@
 """
 AST-to-Graph Builder for COBOL Programs.
-Constructs formal, typed, directed Control Flow Graphs (CFG) and Data Flow Graphs (DFG)
-adhering to IBM Enterprise COBOL and ANSI-85 semantics.
-Includes a fully hermetic pure-Python AST parser with optional cobolparser integration.
+Constructs typed control-flow and data-flow graph representations for a supported
+COBOL subset. Includes a line-oriented pure-Python parser and an opt-in external
+parser adapter; it is not a complete ANSI-85 or IBM Enterprise COBOL implementation.
 """
 
 import os
@@ -288,7 +288,7 @@ def parse_cobol_source(
 ) -> CobolProgramAST:
     """
     Parses COBOL source code into a CobolProgramAST structure.
-    Hermetic, deterministic ANSI-85 and IBM Enterprise COBOL syntax parser.
+    Deterministic, line-oriented parser for the currently supported COBOL subset.
     """
     validate_source_size(source_code)
     if copybooks is not None or copybook_dirs:
