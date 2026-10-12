@@ -6,6 +6,8 @@ Serves static Web Studio files and provides JSON endpoints for analysis, compari
 import json
 import hmac
 import os
+import socket
+import struct
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
@@ -63,6 +65,16 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
     def setup(self):
         super().setup()
         self.connection.settimeout(REQUEST_TIMEOUT_SECONDS)
+        try:
+            # On Windows Winsock, linger struct uses two unsigned shorts (4 bytes); on Unix two ints (8 bytes).
+            linger_format = "hh" if sys.platform == "win32" else "ii"
+            self.connection.setsockopt(
+                socket.SOL_SOCKET,
+                socket.SO_LINGER,
+                struct.pack(linger_format, 1, 5)
+            )
+        except (AttributeError, OSError):
+            pass
 
     def _origin_allowed(self) -> bool:
         origin = self.headers.get("Origin")
@@ -218,7 +230,9 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body_bytes)))
         self.send_header("Connection", "close")
         self.end_headers()
-        self.wfile.write(body_bytes)
+        chunk_size = 64 * 1024
+        for offset in range(0, len(body_bytes), chunk_size):
+            self.wfile.write(body_bytes[offset:offset + chunk_size])
         self.wfile.flush()
         self.close_connection = True
 

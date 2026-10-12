@@ -233,6 +233,22 @@ class TestRezonatorEngine(unittest.TestCase):
         self.assertIn("metrics", cmp_res)
         self.assertIn("verdict", cmp_res)
 
+        # 5. Full Bank Demo Compare (verifies large ~107 KiB response delivery without reset)
+        payload_full = json.dumps({
+            "code_a": self.code_v1,
+            "code_b": self.code_v2
+        }).encode()
+        post_full = urllib.request.Request(
+            f"{base_url}/api/compare",
+            data=payload_full,
+            headers={"Content-Type": "application/json"}
+        )
+        resp_full = urllib.request.urlopen(post_full)
+        self.assertEqual(resp_full.status, 200)
+        full_res = json.loads(resp_full.read().decode())
+        self.assertIn("metrics", full_res)
+        self.assertIn("verdict", full_res)
+
 
 if __name__ == "__main__":
     unittest.main()
