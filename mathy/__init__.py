@@ -27,6 +27,9 @@ from rezonator import (
     ProgramSlicer,
     context_slice_to_markdown,
     ContextSliceEvaluator,
+    CorpusEvaluator,
+    evaluate_corpus,
+    corpus_evaluation_to_markdown,
 )
 
 __all__ = [
@@ -41,9 +44,12 @@ __all__ = [
     "CobolRuntime",
     "ContextSliceEvaluator",
     "context_slice_to_markdown",
+    "CorpusEvaluator",
+    "corpus_evaluation_to_markdown",
     "CycleDetector",
     "DiamondYantSpectralEngine",
     "DiffusionRanker",
+    "evaluate_corpus",
     "GraphField",
     "LLMSynthesizer",
     "MutationBenchmark",

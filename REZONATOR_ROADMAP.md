@@ -52,8 +52,9 @@ The sequence below is designed to reach a useful pre-migration audit pilot soone
 | **C. Auditable report and provenance** | **Delivered** | `docs/AUDIT_REPORT.md` defines schema and metric boundaries; versioned provenance hashes source and inline copybooks, effective solver/graph/cycle options, dependency versions, and canonical graph topology. `/api/audit` supports JSON and Markdown; unsupported statements, cycle/SCC findings, and assumptions are source-linked. Regression tests cover digest/fingerprint determinism, changed inputs/options, copybook origins, unresolved copybooks, and both HTTP formats. |
 | **D. Bounded context-slice beta** | **Delivered** | `docs/CONTEXT_SLICE_SPEC.md` defines schema 1.0; `ProgramSlicer` extracts source-mapped, bounded evidence packets under configurable line/token budgets in forward, backward, and bidirectional directions; omitted dependencies are disclosed when truncated; reconstructed snippets include omission blocks; `/api/slice` supports JSON and Markdown; `ContextSliceEvaluator` measures precision/recall against behavioral mutation cases; seven focused Increment D tests cover budgets, omission disclosure, copybook origins, backward slicing, and HTTP endpoints. |
 | **Sokół 1. Versioned evidence events** | **Delivered (opt-in export contract only)** | `docs/SOKOL_EVIDENCE_EVENTS.md` specifies `sokol.event.v1`; source/analysis snapshot IDs bind to hashes, options, dependencies, analyzer version, and graph digests; analysis and bounded interpreter-run events omit source and runtime variable values; JSONL serialization/parsing is capped at 1,024 events and 10 MiB. No persistence, replay service, Git watcher, signature/hash chain, HTTP endpoint, or AI integration. |
+| **Corpus Evaluation & Pilot Baseline** | **Delivered** | Representative enterprise corpus in `examples/corpus/` (6 programs, 4 copybooks: batch master file, financial ledger, CICS online portal, DB2 SQL audit, payment clearing retry cycle, table underwriting rules); automated evaluation harness (`rezonator/corpus_evaluator.py`); full audit published in `docs/CORPUS_EVALUATION_REPORT.md` (88.24% aggregate coverage, 79.84 ms total pipeline run, 0 silent drops, 100% Sokół event validation). Seven focused tests in `tests/test_corpus_evaluator.py`. |
 
-This focused 5–10 week estimate covers A–D only; it does not include Sokół persistence/replay, a per-mutation runtime event stream, or model-adapter implementation and evaluation. The current brief/UI wording correction is a documentation and presentation cleanup, not a completed AI integration.
+This focused 5–10 week estimate covers A–D and Pilot Corpus Baseline; it does not include Sokół persistence/replay, a per-mutation runtime event stream, or model-adapter implementation and evaluation. The current brief/UI wording correction is a documentation and presentation cleanup, not a completed AI integration.
 
 Parser coverage work and corpus curation can proceed while the sparse graph path is being built, once the graph/result contract is fixed. The audit report and context-slice consumer can follow that contract. This gives early parallel progress without coupling each feature to a different graph representation.
 
@@ -61,13 +62,13 @@ Parser coverage work and corpus curation can proceed while the sparse graph path
 
 The first meaningful external-facing milestone is a pilot that can analyze a bounded, documented COBOL subset and explain its own limits. Exit criteria:
 
-1. Every parsed and unsupported construct has an explicit status and source location; no silent drop is treated as a complete graph.
-2. The source-to-graph path runs sparsely at the tested scale, with reproducible time and memory measurements; the 50,000-node hard ceiling is not itself a throughput claim.
-3. Cycle results distinguish graph facts from semantic conclusions and do not label a mere cycle as a proof of deadlock.
-4. A reviewer can trace each report finding to source lines, graph edges, and the analysis version/options.
-5. Context slices remain within a caller-supplied budget and disclose truncation.
-6. The pilot is evaluated on a representative, permissioned corpus, with false positives, false negatives, and unsupported syntax recorded.
-7. The deterministic analysis brief has a direct regression check for provenance and scope caveats; API compatibility does not mislabel it as AI/model output.
+1. Every parsed and unsupported construct has an explicit status and source location; no silent drop is treated as a complete graph. (Verified in Increment A & Corpus Evaluation)
+2. The source-to-graph path runs sparsely at the tested scale, with reproducible time and memory measurements; the 50,000-node hard ceiling is not itself a throughput claim. (Verified in Increment B)
+3. Cycle results distinguish graph facts from semantic conclusions and do not label a mere cycle as a proof of deadlock. (Verified in Increment A & CBL005 clearing evaluation)
+4. A reviewer can trace each report finding to source lines, graph edges, and the analysis version/options. (Verified in Increment C)
+5. Context slices remain within a caller-supplied budget and disclose truncation. (Verified in Increment D)
+6. The pilot is evaluated on a representative, permissioned corpus, with false positives, false negatives, and unsupported syntax recorded. (Verified in `docs/CORPUS_EVALUATION_REPORT.md` across 6 enterprise programs)
+7. The deterministic analysis brief has a direct regression check for provenance and scope caveats; API compatibility does not mislabel it as AI/model output. (Verified)
 
 ### Sokół delivery sequence (after the evidence contract stabilizes)
 

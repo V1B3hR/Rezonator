@@ -39,6 +39,9 @@ _LAZY_EXPORTS = {
     "ProgramSlicer": (".program_slicer", "ProgramSlicer"),
     "context_slice_to_markdown": (".program_slicer", "context_slice_to_markdown"),
     "ContextSliceEvaluator": (".program_slicer", "ContextSliceEvaluator"),
+    "CorpusEvaluator": (".corpus_evaluator", "CorpusEvaluator"),
+    "evaluate_corpus": (".corpus_evaluator", "evaluate_corpus"),
+    "corpus_evaluation_to_markdown": (".corpus_evaluator", "corpus_evaluation_to_markdown"),
 }
 
 
@@ -63,9 +66,12 @@ __all__ = [
     "CobolRuntime",
     "ContextSliceEvaluator",
     "context_slice_to_markdown",
+    "CorpusEvaluator",
+    "corpus_evaluation_to_markdown",
     "CycleDetector",
     "DiamondYantSpectralEngine",
     "DiffusionRanker",
+    "evaluate_corpus",
     "GraphField",
     "LLMSynthesizer",
     "MutationBenchmark",

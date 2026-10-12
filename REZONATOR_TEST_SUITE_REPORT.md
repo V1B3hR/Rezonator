@@ -7,12 +7,12 @@
 
 The **Rezonator** test harness exercises selected parser fixtures, graph invariants, spectral and diffusion routines, cycle reporting, embedded CICS/SQL forms, copybook preprocessing, provenance fields, and local/remote HTTP access controls. This report is a test snapshot, not a code-coverage measurement, complete COBOL conformance result, security certification, or proof of production readiness.
 
-- **Total Test Cases**: 62
-- **Latest Run (2026-10-12)**: 62 Passed, 0 Failed, 0 Skipped, 0 Errors.
-- **Latest Suite Time**: 5.094 seconds on the Rezonator worktree; platform and dependency details are recorded by the runtime provenance manifest. This is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
-- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, spectral and diffusion routines, slicing/ranking, bounded context-slice beta with line/token budgets and omission disclosures, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, versioned provenance and graph digests, JSON/Markdown audit reports, bounded versioned Sokół JSONL event envelopes, REST API (/api/audit, /api/slice), neutral comparator verdicts, and backward compatibility.
+- **Total Test Cases**: 69
+- **Latest Run (2026-10-12)**: 69 Passed, 0 Failed, 0 Skipped, 0 Errors.
+- **Latest Suite Time**: 3.693 seconds on the Rezonator worktree; platform and dependency details are recorded by the runtime provenance manifest. This is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
+- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, spectral and diffusion routines, slicing/ranking, bounded context-slice beta with line/token budgets and omission disclosures, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, versioned provenance and graph digests, JSON/Markdown audit reports, bounded versioned Sokół JSONL event envelopes, enterprise corpus evaluation, REST API (/api/audit, /api/slice), neutral comparator verdicts, and backward compatibility.
 
-The recorded suite ran against the main worktree with Increment D and Sokół event-export changes present. Per-module timings below are historical unless marked as latest. Re-run against the exact submitted revision before treating the result as a release gate.
+The recorded suite ran against the main worktree with Increment D, Sokół event-export, and Corpus Evaluator additions present. Per-module timings below are historical unless marked as latest. Re-run against the exact submitted revision before treating the result as a release gate.
 
 ---
 
@@ -33,7 +33,8 @@ The recorded suite ran against the main worktree with Increment D and Sokół ev
 | **Auditable Report & Provenance (Increment C)** | `tests/test_increment_c_auditable_report.py` | 4 | **PASS** | Included in full suite | Verifies canonical graph digest, fingerprint sensitivity/determinism, copybook hashes/origins, source-linked findings, Markdown caveats, and fail-closed unresolved copybooks. HTTP JSON and Markdown formats are additionally checked in the API suite. |
 | **Bounded Context Slices (Increment D)** | `tests/test_increment_d_bounded_slicer.py` | 7 | **PASS** | 0.366 s | Verifies line/token budgets, omission disclosure, backward/bidirectional slicing, seed resolution, and precision/recall evaluation. |
 | **Sokół Evidence Events** | `tests/test_sokol_evidence_events.py` | 5 | **PASS** | Included in full suite | Verifies stable snapshot IDs, JSONL round-trips/checksum rejection, source/value omission, bounded interpreter traces, and invalid-input rejection. |
-| **TOTAL** | | **62** | **PASS** | **5.094 s (latest run)** | **All 62 tests passed on 2026-10-12** |
+| **Enterprise Corpus Evaluator** | `tests/test_corpus_evaluator.py` | 7 | **PASS** | 0.080 s | Verifies 6-program enterprise corpus, parser coverage metrics, copybook resolution, unsupported verb gap inventory, cycle heuristics, and Sokół evidence event integrity. |
+| **TOTAL** | | **69** | **PASS** | **3.693 s (latest run)** | **All 69 tests passed on 2026-10-12** |
 
 ---
 
