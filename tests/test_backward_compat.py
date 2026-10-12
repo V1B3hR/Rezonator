@@ -17,6 +17,10 @@ class TestBackwardCompat(unittest.TestCase):
         symbols = [
             "audit_report_to_markdown",
             "build_audit_report",
+            "build_analysis_events",
+            "build_interpreter_run_event",
+            "serialize_jsonl_events",
+            "parse_jsonl_events",
             "CobolASTGraphBuilder",
             "CobolParser",
             "CobolRuntime",

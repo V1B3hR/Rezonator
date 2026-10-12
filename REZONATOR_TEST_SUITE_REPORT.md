@@ -7,12 +7,12 @@
 
 The **Rezonator** test harness exercises selected parser fixtures, graph invariants, spectral and diffusion routines, cycle reporting, embedded CICS/SQL forms, copybook preprocessing, provenance fields, and local/remote HTTP access controls. This report is a test snapshot, not a code-coverage measurement, complete COBOL conformance result, security certification, or proof of production readiness.
 
-- **Total Test Cases**: 57
-- **Latest Run (2026-10-12)**: 57 Passed, 0 Failed, 0 Skipped, 0 Errors.
-- **Latest Suite Time**: 3.827 seconds on the Rezonator worktree; platform and dependency details are recorded by the runtime provenance manifest. This is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
-- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, spectral and diffusion routines, slicing/ranking, bounded context-slice beta with line/token budgets and omission disclosures, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, versioned provenance and graph digests, JSON/Markdown audit reports, REST API (/api/audit, /api/slice), neutral comparator verdicts, and backward compatibility.
+- **Total Test Cases**: 62
+- **Latest Run (2026-10-12)**: 62 Passed, 0 Failed, 0 Skipped, 0 Errors.
+- **Latest Suite Time**: 5.094 seconds on the Rezonator worktree; platform and dependency details are recorded by the runtime provenance manifest. This is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
+- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, spectral and diffusion routines, slicing/ranking, bounded context-slice beta with line/token budgets and omission disclosures, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, versioned provenance and graph digests, JSON/Markdown audit reports, bounded versioned Sokół JSONL event envelopes, REST API (/api/audit, /api/slice), neutral comparator verdicts, and backward compatibility.
 
-The recorded suite ran against the main worktree with Increment D changes present. Re-run against the exact submitted revision before treating the result as a release gate.
+The recorded suite ran against the main worktree with Increment D and Sokół event-export changes present. Per-module timings below are historical unless marked as latest. Re-run against the exact submitted revision before treating the result as a release gate.
 
 ---
 
@@ -32,7 +32,8 @@ The recorded suite ran against the main worktree with Increment D changes presen
 | **Sparse End-to-End Analysis (Increment B)** | `tests/test_increment_b_sparse_analysis.py` | 6 | **PASS** | 2.253 s | Verifies CSR invariants and storage scaling, sparse solver/ranker/PINN behavior and limits, no dense fallback, and generated COBOL analysis above 2,048 nodes. |
 | **Auditable Report & Provenance (Increment C)** | `tests/test_increment_c_auditable_report.py` | 4 | **PASS** | Included in full suite | Verifies canonical graph digest, fingerprint sensitivity/determinism, copybook hashes/origins, source-linked findings, Markdown caveats, and fail-closed unresolved copybooks. HTTP JSON and Markdown formats are additionally checked in the API suite. |
 | **Bounded Context Slices (Increment D)** | `tests/test_increment_d_bounded_slicer.py` | 7 | **PASS** | 0.366 s | Verifies line/token budgets, omission disclosure, backward/bidirectional slicing, seed resolution, and precision/recall evaluation. |
-| **TOTAL** | | **57** | **PASS** | **3.827 s (latest run)** | **All 57 tests passed on 2026-10-12** |
+| **Sokół Evidence Events** | `tests/test_sokol_evidence_events.py` | 5 | **PASS** | Included in full suite | Verifies stable snapshot IDs, JSONL round-trips/checksum rejection, source/value omission, bounded interpreter traces, and invalid-input rejection. |
+| **TOTAL** | | **62** | **PASS** | **5.094 s (latest run)** | **All 62 tests passed on 2026-10-12** |
 
 ---
 
@@ -401,8 +402,21 @@ Validates Increment D contract: exportable evidence packets under caller-supplie
 
 ---
 
+#### 13. Sokół Evidence Events Suite (`tests/test_sokol_evidence_events.py`)
+Checks the `sokol.event.v1` export contract without enabling persistence, network transfer, or model integration.
+
+- `test_analysis_events_are_snapshot_scoped_and_repeatable`: checks stable source and analysis snapshot IDs, parser coverage, graph digest, epistemic label, and reproducibility for the same explicit timestamp.
+- `test_jsonl_round_trip_and_checksum_rejects_edits`: validates JSONL serialization/parsing and rejects a modified envelope whose SHA-256 event ID no longer matches.
+- `test_events_exclude_source_and_statement_text`: verifies source text and statement code are not exported while source anchors remain available.
+- `test_interpreter_event_omits_values_and_bounds_trace`: verifies interpreter-only labeling, source mapping, trace truncation, and exclusion of runtime variable values.
+- `test_invalid_timestamps_and_blank_jsonl_records_fail_closed`: rejects timezone-naive timestamps, filesystem-path project IDs, and blank JSONL records.
+
+The per-record checksum is not a signature, hash chain, or tamper-proof log.
+
+---
+
 ### Conclusion & Quality Sign-Off
 
-The latest recorded run passed all **57 listed tests** in 3.83 s (suite elapsed time varies by machine; recorded between 3.68 s and 5.31 s). This is not 100% code coverage and does not establish complete dialect, security, or production readiness. Increment B's end-to-end scale evidence covers generated COBOL through 5,001 nodes, not the 50,000-node hard limit or representative production portfolios.
+The latest recorded run passed all **62 listed tests** in 5.09 s on this host. This is not 100% code coverage and does not establish complete dialect, security, or production readiness. Increment B's end-to-end scale evidence covers generated COBOL through 5,001 nodes, not the 50,000-node hard limit or representative production portfolios.
 
 Large-response HTTP delivery over loopback (including ~107 KiB comparison payloads) is verified hermetically in `tests/test_api_and_engines.py` (Test 6) following Winsock `SO_LINGER` socket lifecycle management and chunked 64 KiB buffer delivery. The REST endpoints `/api/audit` (JSON & Markdown) and `/api/slice` (JSON & Markdown) operate deterministically with explicit error handling and resource guards. Slices are static extractions with stated caveats, not formal completeness proofs. Runtime varies by host.

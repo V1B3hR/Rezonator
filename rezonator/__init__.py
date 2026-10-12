@@ -15,6 +15,10 @@ __author__ = "Błyskawica & Rezonator Team"
 _LAZY_EXPORTS = {
     "audit_report_to_markdown": (".audit_report", "audit_report_to_markdown"),
     "build_audit_report": (".audit_report", "build_audit_report"),
+    "build_analysis_events": (".evidence_events", "build_analysis_events"),
+    "build_interpreter_run_event": (".evidence_events", "build_interpreter_run_event"),
+    "serialize_jsonl_events": (".evidence_events", "serialize_jsonl_events"),
+    "parse_jsonl_events": (".evidence_events", "parse_jsonl_events"),
     "CobolASTGraphBuilder": (".ast_graph_builder", "CobolASTGraphBuilder"),
     "CopybookInliner": (".copybooks", "CopybookInliner"),
     "CopybookResolutionError": (".copybooks", "CopybookResolutionError"),
@@ -50,6 +54,10 @@ def __getattr__(name):
 __all__ = [
     "audit_report_to_markdown",
     "build_audit_report",
+    "build_analysis_events",
+    "build_interpreter_run_event",
+    "serialize_jsonl_events",
+    "parse_jsonl_events",
     "CobolASTGraphBuilder",
     "CobolParser",
     "CobolRuntime",

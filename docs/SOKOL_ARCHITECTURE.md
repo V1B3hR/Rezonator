@@ -49,7 +49,7 @@ Do not present model confidence as a calibrated probability unless calibration h
 
 ## Versioning, node identity, and invalidation
 
-The current provenance records source SHA-256, Rezonator version, seed, and UTC time; it does not yet record the Git commit, copybook set, parser options, dependency versions, or graph digest. Current statement IDs are based on paragraph, line, and statement type (for example `PARA:L42_STMT`), so they can shift or collide as code changes. They are not yet safe long-lived memory keys.
+The current analysis manifest records source and supplied copybook hashes, effective analysis options, dependency versions, Rezonator version, a graph-topology digest, and an analysis fingerprint. The opt-in event exporter derives a content-based source snapshot ID and can record a Git commit only when the caller supplies it; it does not inspect Git. Current statement IDs are based on paragraph, line, and statement type (for example `PARA:L42_STMT`), so they can shift or collide as code changes. They are not yet safe long-lived memory keys.
 
 Before persistent project memory:
 
@@ -59,13 +59,13 @@ Before persistent project memory:
 4. On a new commit, mark affected or unmappable facts `STALE`; keep historical facts for audit but exclude them from current answers unless clearly labeled historical.
 5. Never carry `VERIFIED` across snapshots without rerunning its scoped check or recording a new reviewer attestation.
 
-An append-only JSONL event log is a reasonable first transport because it is inspectable and easy to replay. It should be versioned, bounded, project-scoped, and opt-in for persistence. Append-only application behavior is not tamper-proof storage; if the log is audit evidence, add a defined integrity mechanism (for example, chained event hashes or signed snapshots) and document its key-management limits. The storage location, retention, encryption, and deletion behavior must be explicit before implementation; a source repository should not silently become the memory database.
+The v1 event envelope and bounded JSONL serializer are implemented in `rezonator/evidence_events.py` and specified in [Sokół Evidence Events](SOKOL_EVIDENCE_EVENTS.md). Export is opt-in and returns text in memory; there is no event log, persistence, replay service, watcher, HTTP endpoint, signature, or hash chain. The per-record SHA-256 detects accidental edits only when compared with a trusted prior digest; it is not tamper-proof storage. Storage location, retention, encryption, deletion, and key management must be decided before any persistence is implemented; a source repository must not silently become the memory database.
 
 ## Runtime traces and privacy boundary
 
-The current `CobolRuntime` is a bounded interpreter for a supported subset, not a native COBOL runtime or production instrumentation agent. It records visited graph node IDs and final variable state; it does not currently emit a complete structured event stream of each mutation. Such traces are observations of this interpreter on a specific fixture and input, not proof of behavior on a mainframe.
+The current `CobolRuntime` is a bounded interpreter for a supported subset, not a native COBOL runtime or production instrumentation agent. It records visited graph node IDs and final variable state. The opt-in `runtime.interpreter_run` event summarizes node visits and outcome without values; it is not a per-mutation event stream. Such traces are observations of this interpreter on a specific fixture and input, not proof of behavior on a mainframe.
 
-Future tracing should run only in a controlled local/test harness and should emit structured, source-linked events with run ID, input snapshot, runtime version, step/node, event kind, and outcome. Default events should omit raw variable values. If a test needs values, use a field allowlist and synthetic data wherever possible. Unknown fields are excluded by default.
+Any richer future tracing should run only in a controlled local/test harness and should emit structured, source-linked events with run ID, input snapshot, runtime version, step/node, event kind, and outcome. Default events should omit raw variable values. If a test needs values, use a field allowlist and synthetic data wherever possible. Unknown fields are excluded by default.
 
 Deterministic masking can reduce exposure but cannot guarantee detection of all personal data or secrets. Therefore:
 
@@ -85,7 +85,7 @@ Project idioms should first appear as `INFERRED` candidates with the number of e
 
 ## Context packets and model integration
 
-The existing `ProgramSlicer` provides a forward graph slice and BFS ranking. It is not a source-mapped, bounded LLM packet, and it does not establish complete dependencies. A future packet should include only necessary source spans and evidence IDs, plus parser coverage, unresolved/opaque constructs, snapshot IDs, and an explicit truncation list. Budgets should be measured in tokens or bytes rather than promising a fixed number of source lines.
+The existing `ProgramSlicer` provides forward, backward, and bidirectional static slices, source-mapped bounded packets, explicit omitted-dependency lists, and caller-selected line/token/node budgets. These are static PDG extractions, not complete runtime dependencies. The packet includes source spans and truncation disclosure; integration with Sokół still needs to bind packets to event/snapshot IDs and enforce a local data-transfer policy before any model adapter is considered.
 
 The first model adapter should be optional, read-only, and disabled by default. The deterministic API must work without model credentials or network access. The model receives a packet only after local policy checks; every generated claim must cite packet evidence or be marked `INFERRED`. Rezonator should validate evidence references and output schema, not pretend that schema validation proves semantic correctness. No autonomous edits, command execution, production access, or deployment authority are in scope.
 
@@ -93,7 +93,7 @@ The first model adapter should be optional, read-only, and disabled by default. 
 
 ## Delivery gates
 
-1. **Evidence contract** — versioned event and fact schemas, reproducible snapshot IDs, parser coverage fields, and a clear distinction between core output and model claims.
+1. **Evidence contract** — event envelope v1, bounded JSONL serialization, reproducible source/analysis snapshot IDs, parser coverage fields, and the distinction between core observations and interpreter observations are implemented. Fact schemas, storage/replay, signatures, and any model-claim validation remain open.
 2. **Core readiness** — unsupported syntax is surfaced; graph storage and analysis are sparse end to end and benchmarked on generated plus permissioned representative inputs.
 3. **Controlled trace** — structured events from the bounded interpreter are labeled as interpreter observations, values are omitted by default, and redaction/allowlist behavior is independently reviewed.
 4. **Memory prototype** — local opt-in storage, snapshot binding, stale invalidation, review metadata, and replay/deletion behavior are defined.
