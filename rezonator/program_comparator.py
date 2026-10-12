@@ -44,7 +44,13 @@ class ProgramComparator:
         u0 = np.zeros(field.num_nodes)
         if field.num_nodes > 0:
             u0[0] = 1.0
-        diffusion = self.diffusion_engine.solve_analytical(field.L, u0, time_steps=20, t_max=2.0)
+        diffusion = self.diffusion_engine.solve_analytical(
+            field.L,
+            u0,
+            time_steps=20,
+            t_max=2.0,
+            fiedler_value=spectrum["fiedler_value"],
+        )
         directed_impact = self.diffusion_engine.solve_directed_impact(field.A_dir, source_idx=0, t=1.5)
 
         # 5. Static cycle and heuristic hazard analysis

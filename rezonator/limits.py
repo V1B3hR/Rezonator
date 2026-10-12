@@ -4,10 +4,12 @@ MAX_SOURCE_BYTES = 10 * 1024 * 1024
 MAX_GRAPH_NODES = 50_000
 MAX_GRAPH_EDGES = 200_000
 
-# GraphField currently materializes dense NumPy operators.  This separate
-# ceiling prevents the symbolic 50k-node allowance from becoming an accidental
-# multi-gigabyte matrix allocation.
+# Explicit dense matrix exports remain available for legacy/small-graph use;
+# normal GraphField operators are sparse CSR and are not subject to this cap.
 MAX_DENSE_MATRIX_NODES = 2_048
+# PINN training constructs a dense N-dimensional neural output and is not the
+# sparse, end-to-end analysis path. Keep that experimental mode separately bounded.
+MAX_PINN_NODES = 2_048
 MAX_RUNTIME_STEPS = 100_000
 MAX_EXPRESSION_CHARS = 4_096
 MAX_EXPRESSION_AST_NODES = 256

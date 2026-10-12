@@ -140,7 +140,7 @@ This document chronicles the major development milestones of the project, detail
     - Implemented circular reference protection that fails closed with `CopybookResolutionError` displaying the full cycle chain.
   - **Runtime Limits and AST Evaluation**:
     - Replaced `eval()` with a whitelist-based AST evaluator for a bounded subset of arithmetic and boolean expressions.
-    - Enforced limits (`MAX_SOURCE_BYTES = 10MB`, `MAX_GRAPH_NODES = 50,000`, `MAX_GRAPH_EDGES = 200,000`, `MAX_DENSE_MATRIX_NODES = 2,048`, `MAX_RUNTIME_STEPS = 100,000`).
+    - Enforced limits (`MAX_SOURCE_BYTES = 10MB`, `MAX_GRAPH_NODES = 50,000`, `MAX_GRAPH_EDGES = 200,000`, explicit dense export and PINN training limits of 2,048 nodes, `MAX_RUNTIME_STEPS = 100,000`).
     - Cryptographic SHA-256 provenance tagging with fixed solver seed (`42`), version stamp, and UTC ISO timestamp.
     - HTTP API uses `HTTP/1.0`, `Connection: close`, 10 MB payload limits, an Origin allowlist, and optional `--remote --token`. Remote bearer tokens travel over plain HTTP and require a trusted TLS boundary for network deployment.
   - Reached **33 / 33 unit tests passing (100% pass rate in 1.939 seconds)**.
@@ -152,10 +152,17 @@ This document chronicles the major development milestones of the project, detail
 | Metric | Initial State (M0) | Early Package State (Rezonator V1.0) | Current Code-Observed State (M7) |
 |:---|:---:|:---:|:---:|
 | **Pure-Python COBOL Parser** | None | Supported-subset parser | **Supported subset plus selected CICS / SQL / COPYBOOK handling** |
-| **Graph Scale** | Dense prototype | Sparse numerical kernels benchmarked separately on synthetic inputs | **Main GraphField path remains dense; 2,048-node ceiling** |
+| **Graph Scale** | Dense prototype | Sparse numerical kernels benchmarked separately on synthetic inputs | **CSR GraphField/comparator path; tested end-to-end through 5,001 generated nodes. The 50,000-node input ceiling is not a throughput claim.** |
 | **Lanczos Eigensolver ($N=1000$)** | 2,870 ms | 1.53 ms (Shift-Invert) | **1.53 ms (1,875x Faster)** |
-| **Cycle Analysis** | Size heuristic | Directed cycle enumeration | **NetworkX simple-cycle enumeration with heuristic hazard labels** |
+| **Cycle Analysis** | Size heuristic | Directed cycle enumeration | **NetworkX SCC decomposition with bounded in-SCC cycle enumeration and heuristic hazard labels** |
 | **Security & AST Safety** | Unrestricted `eval()` | Unrestricted `eval()` | **Bounded AST evaluator; local API controls** |
+
+### Current Increment B Record (2026-10-12)
+
+- Migrated `GraphField` adjacency, degree, and Laplacian operators to SciPy CSR; default graph serialization omits matrix payloads, optional CSR serialization is available, and dense legacy export remains capped at 2,048 nodes.
+- Wired sparse operators through spectral analysis, analytical diffusion, directed impact, `DiffusionRanker`, and `ProgramComparator`. Large sparse ARPACK failures now raise instead of silently densifying; optional sparse spectral-radius computation is skipped in the comparator because profiling showed it dominated runtime without affecting its verdict.
+- Added six focused regressions, including a complete generated-COBOL comparator analysis at 2,050 nodes, CSR storage scaling at 3,000 nodes, and bounded sparse PINN training.
+- Recorded generated straight-line COBOL runs at 2,050 and 5,001 nodes; detailed timings, JSON sizes, CSR buffer bytes, and memory-measurement caveats are in [REZONATOR_BENCHMARKS.md](REZONATOR_BENCHMARKS.md).
 | **HTTP Transport & Auth** | Prototype local API | Prototype local API | **Loopback default; optional bearer over plain HTTP; CORS allowlist** |
 | **Provenance Tracking** | None | None | **SHA-256 + Seed 42 + UTC Timestamp** |
 | **Test Suite Coverage** | 7 tests (failing on Win11) | 22 tests (100% passing) | **33 tests (100% passing across 8 suites)** |

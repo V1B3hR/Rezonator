@@ -26,7 +26,7 @@ Text-only inspection or summarization can miss non-local `PERFORM ... THRU` rela
 
 The implemented core represents a parsed program as a finite graph and applies graph operators, spectral methods, and diffusion equations to that representation. The hydraulic and physical language in this document is an explanatory analogy; the current software does not construct a continuous manifold or prove full source-program semantics.
 
-> **Implementation scope:** The parser handles a supported subset of COBOL. The current cycle analyzer enumerates simple cycles with NetworkX and applies heuristics; it does not implement Tarjan SCC or prove termination. Comparative spectral scores describe parsed graph structure, not behavioral equivalence or migration safety. Consult [REZONATOR_ROADMAP.md](../REZONATOR_ROADMAP.md) for implementation status and planned validation.
+> **Implementation scope:** The parser handles a supported subset of COBOL and explicitly reports selected unsupported statements. GraphField operators are sparse CSR in the normal analysis path. The cycle analyzer uses SCCs and bounded in-component cycle enumeration, but its hazard labels remain heuristics; they do not prove termination. Comparative spectral scores describe parsed graph structure, not behavioral equivalence or migration safety. Consult [REZONATOR_ROADMAP.md](../REZONATOR_ROADMAP.md) for implementation status and remaining validation.
 
 ---
 
@@ -152,28 +152,26 @@ $$u(t) = \exp(Q t) u_0 = \exp\left((P^T - I) t\right) u_0$$
 
 ---
 
-### 5. High-Performance Numerical Algorithms (Scaling Phase F3)
+### 5. Sparse Operators and Numerical Solvers (Increment B)
 
 #### 5.1 Shift-Invert Lanczos Eigensolver
-Computing eigenvalues of large sparse Laplacians ($N \ge 1,000$) via standard Krylov iteration (`which='SM'`) stalls because $L$ has a zero eigenvalue ($\lambda_0 = 0$), creating ill-conditioned Krylov bases.
-
-Rezonator applies a **negative spectral shift-invert transformation**:
+For large symmetric sparse Laplacians, Rezonator uses ARPACK's shift-invert eigensolver to obtain low modes. The negative shift moves the target near-zero eigenvalues away from a singular factorization:
 $$(L - \sigma I)^{-1} v = \mu v, \quad \text{with } \sigma = -10^{-4} < 0$$
 Since $L \succeq 0$, choosing $\sigma < 0$ guarantees that $(L - \sigma I)$ is strictly positive definite and non-singular. Under the Cayley mapping:
 $$\mu_k = \frac{1}{\lambda_k - \sigma}$$
-The smallest eigenvalues $\lambda_k \approx 0$ are mapped to the largest eigenvalues in magnitude ($\mu_0 \approx 10^4$), which ARPACK's `which='LM'` solves with quadratic convergence in **1.5 milliseconds** (an **1,800x speedup**).
+The transformation maps the smallest $\lambda_k$ to large-magnitude transformed eigenvalues. Rezonator first tries `eigsh(..., sigma=-10^{-4}, which='LM')`, then retries with `which='SM'` if needed. If sparse solving still fails on a large graph, the analyzer raises an explicit error; it does not fall back to a dense $N \times N$ allocation. Runtime depends on graph structure, conditioning, SciPy/ARPACK, and machine. The measurements in [REZONATOR_BENCHMARKS.md](../REZONATOR_BENCHMARKS.md) are observations, not asymptotic guarantees.
 
 #### 5.2 Krylov Subspace Matrix Exponential Multipliers
 To compute $u(t) = \exp(Q t) u_0$ without materializing dense $N \times N$ matrix exponentials, Rezonator projects the operator into a small $m$-dimensional Krylov subspace:
 $$\mathcal{K}_m(Q, u_0) = \text{span}\{u_0, Q u_0, Q^2 u_0, \dots, Q^{m-1} u_0\}$$
 Using the Arnoldi iteration, $Q V_m = V_m H_m + h_{m+1, m} v_{m+1} e_m^T$, the matrix exponential is approximated by:
 $$\exp(Q t) u_0 \approx \|u_0\|_2 V_m \exp(H_m t) e_1$$
-The benchmark report records a 10-step trajectory on a synthetic sparse operator at $N = 10,000$ in **83.98 ms**. This kernel benchmark is not an end-to-end COBOL analysis result; the current GraphField path is dense and capped at 2,048 nodes.
+On the recorded environment, the isolated synthetic $N=10{,}000$ sparse kernel produced a 10-point diffusion trajectory in **77.57 ms**. A separate end-to-end generated COBOL measurement covers 5,001 graph nodes; neither timing establishes production-corpus throughput or operation at the 50,000-node hard limit.
 
 #### 5.3 Hutchinson Stochastic Trace Estimator
-For extreme-scale graphs ($N > 2,000$), computing the exact NetLSD sum $\sum_k e^{-t \lambda_k}$ is replaced with Hutchinson's trace estimator:
-$$\Phi(t) = \text{Tr}\left(\exp(-t \mathcal{L}_{\text{norm}})\right) \approx \frac{1}{M} \sum_{m=1}^M v_m^T \exp\left(-t \mathcal{L}_{\text{norm}}\right) v_m$$
-where $v_m \in \{-1, +1\}^N / \sqrt{N}$ are random Rademacher vectors. Since $\mathbb{E}[v_m v_m^T] = I$, the expectation is mathematically exact.
+For graphs with $N \ge 100$, computing the exact NetLSD heat trace is replaced with a 15-probe Hutchinson estimate of its normalized trace:
+$$h(t) = \frac{1}{N}\text{Tr}\left(\exp(-t \mathcal{L}_{\text{norm}})\right) \approx \frac{1}{M} \sum_{m=1}^M v_m^T \exp\left(-t \mathcal{L}_{\text{norm}}\right) v_m$$
+where each entry of $v_m$ is an independent Rademacher sign scaled by $1/\sqrt{N}$, so $\mathbb{E}[v_m v_m^T] = I/N$. The implementation fixes the random seed for repeatable probes. The estimator is unbiased for the normalized trace; a finite 15-probe estimate still has sampling error.
 
 ---
 
@@ -181,11 +179,11 @@ where $v_m \in \{-1, +1\}^N / \sqrt{N}$ are random Rademacher vectors. Since $\m
 
 Let $\mathcal{G}_{\text{cfg}} = (V_{\text{stmt}}, E_{\text{cfg}})$ be the directed Control Flow Graph.
 
-Strongly connected components (SCCs) are a useful graph-theoretic way to group mutually reachable nodes; Tarjan's algorithm computes them in $O(|V| + |E|)$. The current Rezonator implementation does **not** run Tarjan: `rezonator/cycle_detector.py` calls NetworkX simple-cycle enumeration.
+Strongly connected components (SCCs) group mutually reachable nodes; the current implementation obtains SCCs with NetworkX's linear-time SCC routine and bounds simple-cycle enumeration within each component.
 
 A directed cycle in the parsed CFG establishes that the graph model contains a possible repeated path. It does not establish that the path is feasible for program data, that its guards remain true, or that execution repeats forever. Likewise, an acyclic parsed CFG only establishes absence of cycles in the represented graph; unsupported syntax and unresolved external calls limit any conclusion about the full program.
 
-The current analyzer marks selected cases as critical when a cycle is trapped from the modeled terminal nodes or when a recursive cycle contains a branch whose read variables are not written within that cycle. This is a heuristic hazard signal, not a termination proof. The roadmap calls for linear-time SCC analysis and explicit result categories while preserving this distinction.
+The analyzer reports trapped SCCs and selected cycle/guard hazards. Its cycle search is budgeted, and exhaustion is recorded explicitly. These are structural observations and heuristic hazard signals, not termination proofs.
 
 ---
 

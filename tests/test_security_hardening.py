@@ -29,15 +29,21 @@ class TestRuntimeSafety(unittest.TestCase):
             0,
         )
 
-    def test_source_and_dense_graph_limits_fail_closed(self):
+    def test_source_limit_and_explicit_dense_export_limit_fail_closed(self):
         with self.assertRaises(ResourceLimitError):
             from rezonator.limits import validate_source_size
             validate_source_size("X" * (MAX_SOURCE_BYTES + 1))
 
         nodes = [{"id": f"n{i}", "node_type": "stmt", "reads": [], "writes": []}
                  for i in range(MAX_DENSE_MATRIX_NODES + 1)]
+        field = GraphField({"nodes": nodes, "edges": [], "variables": []})
+        self.assertEqual(field.num_nodes, MAX_DENSE_MATRIX_NODES + 1)
+        self.assertNotIn("adjacency_matrix", field.to_dict())
+        csr_result = field.to_dict(include_matrices=True)
+        self.assertEqual(csr_result["matrix_format"], "csr")
+        self.assertEqual(csr_result["adjacency_matrix"]["shape"], [len(nodes), len(nodes)])
         with self.assertRaises(GraphLimitError):
-            GraphField({"nodes": nodes, "edges": [], "variables": []})
+            field.to_dict(include_matrices=True, matrix_format="dense")
 
 
 class TestProvenance(unittest.TestCase):

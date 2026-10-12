@@ -18,6 +18,31 @@ class DiamondYantSpectralEngine:
     def __init__(self, lattice_size: int = 32):
         self.lattice_size = lattice_size
 
+    def _sparse_eigenpairs(self, matrix, k: int):
+        """Solve for the low spectrum without a dense fallback on large graphs."""
+        import scipy.sparse.linalg as spla
+
+        n = matrix.shape[0]
+        v0 = np.random.default_rng(42).standard_normal(n)
+        v0 /= np.linalg.norm(v0)
+        maxiter = max(1_000, n * 10)
+        try:
+            return spla.eigsh(
+                matrix, k=k, sigma=-1e-4, which="LM", v0=v0,
+                tol=1e-8, maxiter=maxiter,
+            )
+        except Exception as shift_invert_error:
+            try:
+                return spla.eigsh(
+                    matrix, k=k, which="SM", v0=v0,
+                    tol=1e-8, maxiter=maxiter,
+                )
+            except Exception as iterative_error:
+                raise RuntimeError(
+                    "Sparse eigensolver did not converge; dense fallback is disabled "
+                    "to preserve the graph memory bound"
+                ) from iterative_error
+
     def compute_spectrum(self, L: np.ndarray, L_norm: Optional[np.ndarray] = None, num_modes: int = 10) -> Dict[str, Any]:
         """
         Computes exact eigenvalues and eigenvectors of Laplacian L:
@@ -36,7 +61,9 @@ class DiamondYantSpectralEngine:
                 "fiedler_norm": 0.0
             }
 
-        # Dual solver: Sparse Arnoldi/Lanczos for n >= 100, exact dense eigh for small graphs
+        # Sparse Lanczos for large graphs; exact dense eigh is intentionally
+        # restricted to small inputs. Never turn an ARPACK failure into an
+        # unbounded N-by-N allocation.
         import scipy.sparse as sp
         import scipy.sparse.linalg as spla
 
@@ -44,16 +71,16 @@ class DiamondYantSpectralEngine:
         if use_sparse:
             L_sp = sp.csr_matrix(L, dtype=np.float64)
             k_solve = min(max(num_modes + 2, 6), n - 1)
-            try:
-                evals_sm, evecs_sm = spla.eigsh(L_sp, k=k_solve, sigma=-1e-4, which='LM')
-                idx_sort = np.argsort(evals_sm)
-                evals = np.clip(evals_sm[idx_sort], a_min=0.0, a_max=None)
-                evecs = evecs_sm[:, idx_sort]
-            except Exception:
+            if n < 100:
                 evals, evecs = la.eigh(L if not sp.issparse(L) else L.toarray())
                 idx_sort = np.argsort(evals)
                 evals = np.clip(evals[idx_sort], a_min=0.0, a_max=None)
                 evecs = evecs[:, idx_sort]
+            else:
+                evals_sm, evecs_sm = self._sparse_eigenpairs(L_sp, k_solve)
+                idx_sort = np.argsort(evals_sm)
+                evals = np.clip(evals_sm[idx_sort], a_min=0.0, a_max=None)
+                evecs = evecs_sm[:, idx_sort]
         else:
             evals, evecs = la.eigh(L if not sp.issparse(L) else L.toarray())
             idx_sort = np.argsort(evals)
@@ -84,12 +111,9 @@ class DiamondYantSpectralEngine:
                 fiedler_norm = float(evals_norm[1]) if n > 1 else float(evals_norm[0])
             else:
                 L_norm_sp = sp.csr_matrix(L_norm, dtype=np.float64)
-                try:
-                    norm_evals_sm, _ = spla.eigsh(L_norm_sp, k=min(4, n - 1), sigma=-1e-4, which='LM')
-                    norm_evals_sm = np.sort(np.clip(norm_evals_sm, 0.0, 2.0))
-                    fiedler_norm = float(norm_evals_sm[1]) if len(norm_evals_sm) > 1 else float(norm_evals_sm[0])
-                except Exception:
-                    fiedler_norm = 0.0
+                norm_evals_sm, _ = self._sparse_eigenpairs(L_norm_sp, min(4, n - 1))
+                norm_evals_sm = np.sort(np.clip(norm_evals_sm, 0.0, 2.0))
+                fiedler_norm = float(norm_evals_sm[1]) if len(norm_evals_sm) > 1 else float(norm_evals_sm[0])
 
                 # Fast Hutchinson stochastic trace estimator with Rademacher random vectors
                 M_samples = 15

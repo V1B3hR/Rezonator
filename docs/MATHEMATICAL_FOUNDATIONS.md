@@ -8,13 +8,13 @@ Legacy COBOL systems have control and data dependencies that are difficult to in
 
 By applying:
 1. **Fan Chung Normalized Laplacian Spectral Analysis** ($\mathcal{L}_{\text{norm}} = I - D^{-1/2} A D^{-1/2}$),
-2. **NetLSD Multi-Scale Heat Trace Distance** ($\Phi(t) = \text{Tr}(\exp(-t \mathcal{L}_{\text{norm}}))$),
+2. **NetLSD Multi-Scale Normalized Heat Trace Distance** ($h(t) = \frac{1}{N}\text{Tr}(\exp(-t \mathcal{L}_{\text{norm}}))$),
 3. **Directed Forward Impact Diffusion / Blast Radius** ($\dot{u} = (P^T - I)u \implies u(t) = \exp((P^T - I)t) u_0$),
 4. **CFG cycle enumeration and heuristic hazard reporting**,
 
 the parsed graph can be analyzed for structural metrics, impact propagation, and possible cycle hazards. Results are deterministic for a given graph and options, but their source-level meaning is limited by parser coverage.
 
-> **Implementation scope:** The parser supports a subset of COBOL. The current analyzer uses NetworkX simple-cycle enumeration, not Tarjan SCC; a graph cycle is not a proof of nontermination. Spectral distance and comparator verdicts are structural heuristics, not behavioral equivalence or safety certificates. See [REZONATOR_ROADMAP.md](../REZONATOR_ROADMAP.md) for code-observed status and validation gates.
+> **Implementation scope:** The parser supports a subset of COBOL and reports selected unsupported statements explicitly. GraphField operators use SciPy CSR in the ordinary path; only explicit dense export and experimental PINN training are size-limited. Cycle analysis groups the modeled graph into SCCs and applies bounded in-component enumeration. A graph cycle is not a proof of nontermination; spectral distance and comparator verdicts are structural heuristics, not behavioral equivalence or safety certificates. See [REZONATOR_ROADMAP.md](../REZONATOR_ROADMAP.md) for remaining validation gates.
 
 ---
 
@@ -61,10 +61,12 @@ $$\mathcal{L}_{\text{norm}} v_k = \lambda_k v_k, \quad 0 = \lambda_0 \le \lambda
 Comparing raw unnormalized eigenvalue spectra across graphs of different sizes $N_A \neq N_B$ via zero-padding introduces artificial distance artifacts. Rezonator uses **NetLSD (Network Laplacian Spectral Distance)** (Tsitsulin et al., KDD 2018):
 $$\Phi(t) = \text{Tr}\left(\exp(-t \mathcal{L}_{\text{norm}})\right) = \sum_{k=0}^{N-1} \exp(-t \lambda_k)$$
 
-Computed across 25 logarithmically spaced time scales $t \in [10^{-2}, 10^2]$, $\Phi(t)$ provides a scale-invariant signature of graph topology:
-- Small $t \to 0$: captures local neighborhood structure and degree distribution ($\Phi(t) \approx N - t \sum d_i$).
+Computed across 25 logarithmically spaced time scales $t \in [10^{-2}, 10^2]$, the normalized trace $h(t)=\Phi(t)/N$ provides a size-normalized signature of represented graph topology. For $N<100$ the code uses the exact eigenvalue trace; for $N\ge100$ it uses a seeded 15-probe Hutchinson estimate:
+$$h(t) = \frac{1}{N}\operatorname{Tr}\left(\exp(-t\mathcal{L}_{\text{norm}})\right) \approx \frac{1}{15}\sum_{m=1}^{15}v_m^T\exp(-t\mathcal{L}_{\text{norm}})v_m,$$
+where each Rademacher vector has entries scaled by $1/\sqrt{N}$. This is an estimator with finite-sample error, not an exact trace for larger graphs.
+- Small $t \to 0$: approaches 1, with its initial slope determined by $-\operatorname{Tr}(\mathcal{L}_{\text{norm}})/N$.
 - Intermediate $t$: captures community structure and modular clusters.
-- Large $t \to \infty$: converges to the number of connected components ($k$ components $\implies \Phi(t) \to k$).
+- Large $t \to \infty$: the normalized trace approaches the component-related nullity divided by $N$ (subject to isolated-node handling).
 
 The **Topological NetLSD Distance** between programs $P_A$ and $P_B$ is:
 $$d_{\text{NetLSD}}(P_A, P_B) = \sqrt{\sum_{t \in T} (\Phi_A(t) - \Phi_B(t))^2}$$
@@ -89,7 +91,7 @@ This yields model-level impact scores $u_j(t)$ under the selected graph, transit
 
 The code reports structural cycles and selected heuristic hazards in the parsed CFG:
 
-1. The current implementation calls NetworkX simple-cycle enumeration; it does not compute Tarjan SCC.
+1. The implementation obtains strongly connected components through NetworkX and bounds simple-cycle enumeration within each component; cycle-budget exhaustion is reported.
 2. A detected cycle means the graph contains a possible repeated path. It does not prove that the path is feasible or that execution repeats forever.
 3. The current guard check looks for branch variables that are not written within an enumerated cycle. This is a heuristic signal, not path-sensitive termination analysis.
 4. Terminal reachability reports reachability in the modeled graph; it does not establish that every execution path reaches an exit.

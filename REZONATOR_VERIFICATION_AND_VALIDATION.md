@@ -124,7 +124,7 @@ This document records project-level verification and validation checks informed 
 |:---|:---|:---:|:---:|:---|:---:|
 | **HAZ-01** | OS Smart App Control blocks native Cython `.pyd` binaries. | CRITICAL | HIGH | Pure-Python hermetic AST fallback parser embedded directly in source tree. | **MITIGATED** |
 | **HAZ-02** | Ill-conditioned Laplacian eigenvalues stall Lanczos iterations. | HIGH | MEDIUM | Negative shift-invert transformation ($\sigma = -10^{-4}$, `which='LM'`). | **MITIGATED** |
-| **HAZ-03** | Dense graph matrices can exhaust memory on larger inputs. | HIGH | MEDIUM | Sparse kernels exist, but the end-to-end GraphField path is still dense. | **PARTIAL** |
+| **HAZ-03** | Dense graph matrices can exhaust memory on larger inputs. | HIGH | MEDIUM | Normal GraphField/comparator path uses CSR, default serialization omits matrices, large sparse eigensolvers fail without dense fallback; explicit dense export/PINN are capped. End-to-end evidence currently covers generated inputs through 5,001 nodes only. | **MITIGATED WITHIN TESTED SCOPE** |
 | **HAZ-04** | Hidden infinite loop in mainframe batch job. | CRITICAL | LOW | Current cycle enumeration reports selected hazards; it does not prove general termination. | **PARTIAL** |
 | **HAZ-05** | Namespace breaking changes during repo rename. | MEDIUM | HIGH | Automated forwarding shims in `mathy/` with unit test validation. | **MITIGATED** |
 
@@ -132,6 +132,6 @@ This document records project-level verification and validation checks informed 
 
 ### 6. Scope and Sign-Off
 
-The current CycleDetector enumerates simple cycles through NetworkX; it does not implement Tarjan SCC. The sparse solver test file currently exercises spectral solving at N=200, diffusion at N=1,000, and directed ranking at N=200. GraphField itself remains dense and rejects graphs above 2,048 nodes. These are material scope limits for interpreting the earlier traceability and hazard tables.
+The current CycleDetector obtains SCCs through NetworkX and applies bounded in-component cycle enumeration; its hazard results remain heuristics. Sparse-kernel tests exercise spectral solving at N=200, diffusion at N=1,000, and directed ranking at N=200. Increment B adds a full generated COBOL comparator test above 2,048 nodes and benchmark observations through 5,001 nodes. The 50,000-node graph ceiling is a resource guard, not established throughput. See [REZONATOR_TEST_SUITE_REPORT.md](REZONATOR_TEST_SUITE_REPORT.md) for the latest run result and its local HTTP transport caveat.
 
 This report is a repository-level self-assessment of selected tests and numerical checks. It does not claim complete verification, absence of defects, standards compliance, or production certification. Before a production pilot, parser coverage, cycle-analysis soundness, sparse end-to-end behavior, security deployment controls, and representative-corpus results remain to be established as described in [REZONATOR_ROADMAP.md](REZONATOR_ROADMAP.md).

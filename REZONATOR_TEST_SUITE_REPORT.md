@@ -7,9 +7,9 @@
 
 The **Rezonator** test harness exercises selected parser fixtures, graph invariants, spectral and diffusion routines, cycle reporting, embedded CICS/SQL forms, copybook preprocessing, provenance fields, and local/remote HTTP access controls. This report is a test snapshot, not a code-coverage measurement, complete COBOL conformance result, security certification, or proof of production readiness.
 
-- **Total Test Cases**: 40
-- **Recorded Run**: 40 Passed, 0 Failed, 0 Skipped, 0 Errors (100% for that run)
-- **Recorded Suite Time**: 1.959 seconds in the captured environment; this is not a performance guarantee.
+- **Total Test Cases**: 46
+- **Latest Run (2026-10-12)**: 46 Passed, 0 Failed, 0 Skipped, 0 Errors.
+- **Latest Suite Time**: 4.444 seconds on Windows 11, Python 3.12.10, NumPy 2.5.3, SciPy 1.18.1; this is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
 - **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, spectral and diffusion routines, slicing/ranking, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, provenance fields, REST API, neutral comparator verdicts, and backward compatibility.
 
 The source revision and run date for the recorded result are not captured here. Re-run the suite against the current commit before treating this as current status.
@@ -29,7 +29,8 @@ The source revision and run date for the recorded result are not captured here. 
 | **Enterprise Statements (CICS/SQL)** | `tests/test_f4_enterprise_statements.py` | 3 | **PASS** | 0.025 s | Verifies EXEC SQL and EXEC CICS commands as typed graph nodes with persistent and external flow. |
 | **Basic Security Controls** | `tests/test_security_hardening.py` | 5 | **PASS** | 0.145 s | Exercises CORS allowlisting, 10MB limits, remote bearer auth, bounded AST evaluation, and SHA-256 source provenance. |
 | **Truthful Parser & Tarjan SCCs** | `tests/test_increment_a_truthful_parser.py` | 7 | **PASS** | 0.020 s | Validates unhandled statement materialization, DFG read dependencies, copybook provenance, Tarjan SCC analysis, bounded cycle budgets, and neutral comparator verdicts. |
-| **TOTAL** | | **40** | **PASS** | **1.959 s** | **All listed tests passed in the recorded run** |
+| **Sparse End-to-End Analysis (Increment B)** | `tests/test_increment_b_sparse_analysis.py` | 6 | **PASS** | 2.253 s | Verifies CSR invariants and storage scaling, sparse solver/ranker/PINN behavior and limits, no dense fallback, and generated COBOL analysis above 2,048 nodes. |
+| **TOTAL** | | **46** | **PASS** | **4.444 s (latest run)** | **All 46 tests passed on 2026-10-12** |
 
 ---
 
@@ -133,7 +134,7 @@ Validates core mathematical engines and REST endpoints.
   - **Result**: **PASS**
 
 - `test_05_cycle_and_deadlock_detection`:
-  - Checks the selected bank and ATM fixtures. The implementation currently uses NetworkX simple-cycle enumeration, not Tarjan SCC; the flag is heuristic.
+  - Checks the selected bank and ATM fixtures using SCC-based cycle analysis. Hazard flags remain heuristic.
   - **Result**: **PASS**
 
 - `test_06_program_comparator_netlsd`:
@@ -146,7 +147,7 @@ Validates core mathematical engines and REST endpoints.
     - `GET /api/health` -> HTTP 200 `{"status": "healthy"}`
     - `GET /api/examples` -> HTTP 200 with list of canonical programs
     - `POST /api/analyze` -> HTTP 200 with topological spectrum
-    - `POST /api/compare` -> HTTP 200 with differential comparison
+    - `POST /api/compare` -> HTTP 200 with differential comparison for compact smoke-test inputs; full bank-demo comparison is checked directly by `test_06`.
   - **Result**: **PASS**
 
 ---
@@ -233,9 +234,9 @@ Enforces strict security boundaries, AST evaluation sandboxing, resource caps, a
   - Asserts zero arbitrary code execution: malicious payloads (e.g., `__import__('os').system(...)`) evaluate safely without interpreter escape or OS side-effects (returns neutral 0).
   - **Result**: **PASS**
 
-- `test_source_and_dense_graph_limits_fail_closed`:
+- `test_source_limit_and_explicit_dense_export_limit_fail_closed`:
   - Asserts that sources exceeding `MAX_SOURCE_BYTES` (10 MB) fail-closed with `ResourceLimitError`.
-  - Asserts that graph structures exceeding `MAX_DENSE_MATRIX_NODES` (2,048 nodes) fail-closed with `GraphLimitError`. Sparse solver primitives are separate; the full GraphField path is still dense.
+  - Asserts that GraphField accepts graphs above 2,048 nodes using CSR, default serialization omits matrix payloads, and explicit dense export fails closed above `MAX_DENSE_MATRIX_NODES`.
   - **Result**: **PASS**
 
 - `test_provenance_is_cryptographic_and_versioned`:
@@ -296,4 +297,4 @@ Validates Increment A contract: explicit materialization of unhandled statements
 
 ### Conclusion & Quality Sign-Off
 
-The recorded run passed all **40 listed tests**. This is not 100% code coverage and does not establish complete dialect, security, or production readiness. The Python project still uses scientific dependencies; the statement about avoiding a native COBOL parser does not mean the entire application has no native binary dependencies. Runtime varies by host.
+The latest recorded run passed all **46 listed tests**. This is not 100% code coverage and does not establish complete dialect, security, or production readiness. Increment B's end-to-end scale evidence covers generated COBOL through 5,001 nodes, not the 50,000-node hard limit or representative production portfolios. The HTTP compare smoke test uses compact inputs; a larger ~111 KiB local response was intermittently reset by the test host after a 200 status, so large-response transport remains unverified for the future localhost/API work. The Python project still uses scientific dependencies; the statement about avoiding a native COBOL parser does not mean the entire application has no native binary dependencies. Runtime varies by host.

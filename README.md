@@ -17,7 +17,7 @@ Long-lived COBOL systems can contain non-local control flow, shared `WORKING-STO
 
 Rezonator is a research-oriented static-analysis prototype. Its line-oriented parser recognizes a supported subset of COBOL, then computes graph and spectral metrics, diffusion rankings, and heuristic cycle signals. It does not model all COBOL semantics or prove program behavior.
 
-The current source-to-result path is summarized below; the dense graph representation is limited to 2,048 nodes:
+The ordinary source-to-result path uses sparse CSR graph operators. The declared graph-input ceiling is 50,000 nodes and 200,000 edges; this is a resource limit, not a throughput guarantee:
 
 ```
 COBOL source
@@ -31,7 +31,7 @@ COBOL source
     └──> DFG (selected data-flow edges)
              │
              ▼
-[Dense GraphField: adjacency and Laplacians; maximum 2,048 nodes]
+[Sparse CSR GraphField: adjacency and Laplacians]
              │
              ├──> Spectral graph metrics
              ├──> Diffusion-based impact rankings
@@ -80,7 +80,7 @@ Rezonator includes project documentation for architecture, experiments, implemen
 - Injects impulse into any variable (e.g. `WS-ACCOUNT-BALANCE`) to observe downstream dispersion.
 - Computes directed forward blast radius via continuous Markov generator $Q = P^T - I$:
   $$u(t) = \exp((P^T - I)t) u_0$$
-- Sparse diffusion kernels have been benchmarked separately on synthetic graphs. The ordinary `GraphField` path still materializes dense matrices and has a 2,048-node limit; see the roadmap before interpreting kernel timings as end-to-end capacity.
+- The ordinary `GraphField` and comparator path use CSR operators. A generated COBOL benchmark exercises the full analyzer at 2,050 and 5,001 graph nodes; see [`REZONATOR_BENCHMARKS.md`](REZONATOR_BENCHMARKS.md). These are bounded synthetic observations, not production-corpus or 50,000-node capacity claims.
 
 ### 3. Cycle and Control-Flow Analysis
 - Enumerates control-flow cycles with NetworkX and reports selected trapped-cycle and unmodified-guard hazards.
@@ -139,7 +139,9 @@ Rezonator currently provides basic local API safeguards. They are not a zero-tru
 3. **Payload & Resource Limits**:
    - `MAX_PAYLOAD_BYTES = 10 MB`: Requests exceeding 10 MB are rejected immediately with `HTTP 413 Payload Too Large`.
    - `MAX_SOURCE_BYTES = 10 MB`: Source files exceeding 10 MB raise `ResourceLimitError`.
-   - `MAX_DENSE_MATRIX_NODES = 2,048`: `GraphField` rejects larger graphs because it currently materializes dense matrices; sparse solver primitives are not yet wired through this whole path.
+   - `MAX_GRAPH_NODES = 50,000` and `MAX_GRAPH_EDGES = 200,000`: hard input graph budgets; actual runtime and result size depend on graph structure.
+   - `MAX_DENSE_MATRIX_NODES = 2,048`: applies only to explicit legacy dense export via `GraphField.to_dict(..., matrix_format="dense")`; normal operators and default serialization do not materialize dense matrices.
+   - `MAX_PINN_NODES = 2,048`: caps experimental PINN training, whose neural output is dense; use the sparse analytical solver for larger graphs.
    - `MAX_GRAPH_NODES = 50,000`: Hard ceiling on graph size to prevent memory exhaustion.
    - `MAX_RUNTIME_STEPS = 100,000`: Upper bound for simulation steps.
 4. **CORS Origin Allowlist**: Uses an origin allowlist and handles browser preflight requests. CORS is not authentication and does not restrict non-browser clients.

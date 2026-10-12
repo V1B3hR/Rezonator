@@ -26,7 +26,10 @@ class PINNGraphDiffusionEngine:
         L: np.ndarray,
         initial_impulse: np.ndarray,
         time_steps: int = 20,
-        t_max: float = 2.0
+        t_max: float = 2.0,
+        *,
+        fiedler_value: Optional[float] = None,
+        estimate_spectral_radius: bool = False,
     ) -> Dict[str, Any]:
         """
         Computes analytical diffusion trajectory using matrix exponential:
@@ -45,20 +48,33 @@ class PINNGraphDiffusionEngine:
         import scipy.sparse.linalg as spla
 
         times = np.linspace(0.0, t_max, time_steps)
-        if n >= 100 or sp.issparse(L):
+        if n >= 100:
             L_sp = sp.csr_matrix(L, dtype=np.float64)
             # Efficient Krylov subspace matrix exponential trajectory
             traj_arr = spla.expm_multiply(-self.alpha * L_sp, u0, start=0.0, stop=t_max, num=time_steps)
             trajectory = [np.clip(traj_arr[s], a_min=0.0, a_max=None).tolist() for s in range(time_steps)]
             final_distribution = np.array(trajectory[-1])
             cold_nodes = [int(i) for i in np.where(final_distribution < 0.01 * np.max(final_distribution))[0]]
-            try:
+            if fiedler_value is not None:
+                fiedler_val = float(fiedler_value)
+            elif n > 1:
                 evals_sm, _ = spla.eigsh(L_sp, k=min(2, n - 1), sigma=-1e-4, which='LM')
-                fiedler_val = float(evals_sm[1]) if len(evals_sm) > 1 else float(evals_sm[0])
-            except Exception:
+                fiedler_val = float(np.sort(np.clip(evals_sm, 0.0, None))[1])
+            else:
                 fiedler_val = 0.0
             half_life = float(np.log(2.0) / (self.alpha * fiedler_val)) if fiedler_val > 1e-4 else float("inf")
-            spectral_rad = 0.0
+            if estimate_spectral_radius and n > 1:
+                try:
+                    spectral_rad = float(abs(spla.eigsh(L_sp, k=1, which="LM", return_eigenvectors=False)[0]))
+                except Exception:
+                    # This auxiliary metric is not needed for the trajectory; do
+                    # not substitute a misleading zero if ARPACK cannot estimate it.
+                    spectral_rad = None
+            else:
+                # A largest-eigenvalue solve can dominate sparse end-to-end
+                # latency; expose the omission instead of silently guessing.
+                spectral_rad = None
+            spectral_radius_status = "computed" if spectral_rad is not None else "not_computed_sparse"
         else:
             # Eigen-decomposition for fast, exact matrix exponential:
             evals, evecs = la.eigh(L if not sp.issparse(L) else L.toarray())
@@ -81,6 +97,7 @@ class PINNGraphDiffusionEngine:
             fiedler_val = evals[1] if n > 1 else evals[0]
             half_life = float(np.log(2.0) / (self.alpha * fiedler_val)) if fiedler_val > 1e-4 else float("inf")
             spectral_rad = float(np.max(evals)) if n > 0 else 0.0
+            spectral_radius_status = "computed"
 
         return {
             "alpha": self.alpha,
@@ -89,7 +106,8 @@ class PINNGraphDiffusionEngine:
             "final_state": final_distribution.tolist(),
             "cold_nodes_unreached": cold_nodes,
             "diffusion_half_life": half_life,
-            "spectral_radius": spectral_rad
+            "spectral_radius": spectral_rad,
+            "spectral_radius_status": spectral_radius_status,
         }
 
     def solve_directed_impact(
@@ -165,9 +183,26 @@ class PINNGraphDiffusionEngine:
         n = L.shape[0]
         if n == 0:
             return {"final_loss": 0.0, "status": "empty"}
+        from rezonator.limits import MAX_PINN_NODES, GraphLimitError
+        if n > MAX_PINN_NODES:
+            raise GraphLimitError(
+                f"PINN training node limit exceeded: {n} > {MAX_PINN_NODES}; "
+                "use the sparse analytical solver for larger graphs"
+            )
+
+        import scipy.sparse as sp
+        if sp.issparse(L):
+            coo = L.tocoo()
+            indices = torch.as_tensor(
+                np.vstack((coo.row, coo.col)), dtype=torch.int64
+            )
+            values = torch.as_tensor(coo.data, dtype=torch.float32)
+            L_tensor = torch.sparse_coo_tensor(indices, values, size=coo.shape).coalesce()
+        else:
+            L_tensor = torch.as_tensor(L, dtype=torch.float32)
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        L_tensor = torch.tensor(L, dtype=torch.float32, device=device)
+        L_tensor = L_tensor.to(device)
         u0_tensor = torch.tensor(u0, dtype=torch.float32, device=device).unsqueeze(0)
 
         # Small MLP: t (1D) -> u(t) (n-D)
@@ -209,7 +244,10 @@ class PINNGraphDiffusionEngine:
             du_dt = torch.cat(du_dt_list, dim=1)
 
             # Physical residual: f = du/dt + alpha * L * u
-            Lu = (L_tensor @ u_colloc.T).T
+            if L_tensor.layout == torch.sparse_coo:
+                Lu = torch.sparse.mm(L_tensor, u_colloc.T).T
+            else:
+                Lu = (L_tensor @ u_colloc.T).T
             f_res = du_dt + self.alpha * Lu
             loss_phys = torch.mean(f_res ** 2)
 

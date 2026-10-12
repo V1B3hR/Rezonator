@@ -46,8 +46,10 @@ class TestGoldenGraphs(unittest.TestCase):
 
         # 2. Laplacian symmetry: L == L.T
         import numpy as np
-        self.assertTrue(np.allclose(field.L, field.L.T, atol=1e-8), "Laplacian L must be symmetric")
-        self.assertTrue(np.allclose(field.L_norm, field.L_norm.T, atol=1e-8), "Normalized Laplacian L_norm must be symmetric")
+        self.assertLess(np.max(np.abs((field.L - field.L.T).data), initial=0.0), 1e-8,
+                        "Laplacian L must be symmetric")
+        self.assertLess(np.max(np.abs((field.L_norm - field.L_norm.T).data), initial=0.0), 1e-8,
+                        "Normalized Laplacian L_norm must be symmetric")
 
     def test_01_bank_demo_v1_golden_isomorphism(self):
         code = self._load_code("bank_demo_v1.cbl")

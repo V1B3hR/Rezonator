@@ -18,6 +18,7 @@ import unittest
 import urllib.request
 import urllib.error
 import numpy as np
+import scipy.sparse as sp
 
 from rezonator.cobol_parser import CobolParser
 from rezonator.graph_field import GraphField
@@ -76,14 +77,15 @@ class TestRezonatorEngine(unittest.TestCase):
         field = GraphField(parsed, symmetrize=True, include_variables=True)
 
         # Symmetry test: L == L.T
-        self.assertTrue(np.allclose(field.L, field.L.T, atol=1e-8))
+        self.assertTrue(sp.isspmatrix_csr(field.L))
+        self.assertLess(np.max(np.abs((field.L - field.L.T).data), initial=0.0), 1e-8)
         # Row sums of Laplacian should be approximately 0
-        row_sums = np.sum(field.L, axis=1)
+        row_sums = np.asarray(field.L.sum(axis=1)).ravel()
         self.assertTrue(np.allclose(row_sums, np.zeros_like(row_sums), atol=1e-5))
 
         # Normalized Laplacian must be symmetric and eigenvalues in [0, 2]
-        self.assertTrue(np.allclose(field.L_norm, field.L_norm.T, atol=1e-8))
-        evals_norm = np.linalg.eigvalsh(field.L_norm)
+        self.assertLess(np.max(np.abs((field.L_norm - field.L_norm.T).data), initial=0.0), 1e-8)
+        evals_norm = np.linalg.eigvalsh(field.L_norm.toarray())
         self.assertTrue(all(ev >= -1e-6 and ev <= 2.0001 for ev in evals_norm))
 
     def test_03_diamond_yant_netlsd_spectrum(self):
@@ -203,9 +205,22 @@ class TestRezonatorEngine(unittest.TestCase):
         self.assertIn("cycles", analysis)
 
         # 4. Compare
+        # Keep this endpoint smoke test's response compact and deterministic;
+        # the full bank-demo comparison is exercised directly in test_06.
+        api_compare_a = """       IDENTIFICATION DIVISION.
+       PROGRAM-ID. API-COMPARE-A.
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           STOP RUN."""
+        api_compare_b = """       IDENTIFICATION DIVISION.
+       PROGRAM-ID. API-COMPARE-B.
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           DISPLAY "API SMOKE".
+           STOP RUN."""
         payload_cmp = json.dumps({
-            "code_a": self.code_v1,
-            "code_b": self.code_v2
+            "code_a": api_compare_a,
+            "code_b": api_compare_b
         }).encode()
         post_cmp = urllib.request.Request(
             f"{base_url}/api/compare",
