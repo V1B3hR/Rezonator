@@ -20,6 +20,8 @@ class TestBackwardCompat(unittest.TestCase):
             "CobolASTGraphBuilder",
             "CobolParser",
             "CobolRuntime",
+            "ContextSliceEvaluator",
+            "context_slice_to_markdown",
             "CycleDetector",
             "DiamondYantSpectralEngine",
             "DiffusionRanker",

@@ -5,7 +5,7 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Powered by Błyskawica](https://img.shields.io/badge/Powered%20by-B%C5%82yskawica%20SPARKLE%20V10-cyan.svg)](https://github.com/V1B3hR/Blyskawica)
 [![GitHub Repo](https://img.shields.io/badge/GitHub-V1B3hR%2FRezonator-blue.svg)](https://github.com/V1B3hR/Rezonator)
-[![Focused Test Inventory](https://img.shields.io/badge/focused%20tests-50%20listed-blue.svg)]()
+[![Focused Test Inventory](https://img.shields.io/badge/focused%20tests-57%20listed-blue.svg)]()
 
 > *"Rezonator maps selected COBOL constructs into a finite program graph, making structural relationships easier to inspect."*
 
@@ -51,8 +51,9 @@ Rezonator includes project documentation for architecture, experiments, implemen
 |:---|:---|:---|
 | **License & Commercial Terms** | [`REZONATOR_LICENSE.md`](file:///c:/Projekty/Rezonator/REZONATOR_LICENSE.md) | Source-available & commercial licensing terms (UK jurisdiction), enterprise bank restrictions, and public healthcare / NHS humanitarian waiver. |
 | **Debugging & Defect Report** | [`REZONATOR_DEBUGGING_REPORT.md`](file:///c:/Projekty/Rezonator/REZONATOR_DEBUGGING_REPORT.md) | Historical technical audit and root-cause notes for reported defects; not an independent proof or current certification. |
-| **Test Suite Report** | [`REZONATOR_TEST_SUITE_REPORT.md`](file:///c:/Projekty/Rezonator/REZONATOR_TEST_SUITE_REPORT.md) | Snapshot of 50 focused unit and integration tests; not a statement of code coverage or certification. |
+| **Test Suite Report** | [`REZONATOR_TEST_SUITE_REPORT.md`](file:///c:/Projekty/Rezonator/REZONATOR_TEST_SUITE_REPORT.md) | Snapshot of 57 focused unit and integration tests; not a statement of code coverage or certification. |
 | **Audit Report & Provenance** | [`docs/AUDIT_REPORT.md`](file:///c:/Projekty/Rezonator/docs/AUDIT_REPORT.md) | Contract for auditable JSON/Markdown reports, SHA-256 graph digest, deterministic analysis fingerprint, and source anchors (Increment C). |
+| **Context Slice Specification** | [`docs/CONTEXT_SLICE_SPEC.md`](file:///c:/Projekty/Rezonator/docs/CONTEXT_SLICE_SPEC.md) | Contract for bounded context slices under line/token budgets with explicit disclosure of omitted dependencies (Increment D). |
 | **Performance Benchmarks** | [`REZONATOR_BENCHMARKS.md`](file:///c:/Projekty/Rezonator/REZONATOR_BENCHMARKS.md) | Recorded parser and synthetic sparse-kernel measurements plus the Hypothesis $H_1$ experiment. See the roadmap for end-to-end scaling limits. |
 | **Verification & Validation Notes** | [`REZONATOR_VERIFICATION_AND_VALIDATION.md`](file:///c:/Projekty/Rezonator/REZONATOR_VERIFICATION_AND_VALIDATION.md) | Project checks inspired by V&V practices; not an IEEE/ISO conformity assessment or independent certification. |
 | **Strategic Roadmap** | [`REZONATOR_ROADMAP.md`](file:///c:/Projekty/Rezonator/REZONATOR_ROADMAP.md) | Code-grounded baseline, delivery gates, and 2027/2028/2031 strategic horizons. |
@@ -122,7 +123,7 @@ python main.py --compare examples/bank_demo_v1.cbl examples/bank_demo_v2.cbl
 ```bash
 python -m unittest discover -s tests -p "test_*.py"
 ```
-*(The 50 focused tests exercise golden graphs, runtime examples, mutation experiments, selected numerical invariants, cycle analysis, sparse kernels, copybook expansion, selected CICS/SQL forms, HTTP access controls, auditable provenance fields, JSON/Markdown reports, and compatibility shims. They are not exhaustive COBOL conformance or production certification.)*
+*(The 57 focused tests exercise golden graphs, runtime examples, mutation experiments, selected numerical invariants, cycle analysis, sparse kernels, copybook expansion, selected CICS/SQL forms, HTTP access controls, auditable provenance fields, JSON/Markdown reports, bounded context slices with line/token budgets and omission disclosures, and compatibility shims. They are not exhaustive COBOL conformance or production certification.)*
 
 ### 5. Run the Full Benchmark Suite
 ```bash
@@ -155,6 +156,7 @@ Rezonator currently provides basic local API safeguards. They are not a zero-tru
    - `solver_seed`: Fixed deterministic solver seed (`42`).
    - `timestamp_utc`: ISO 8601 UTC timestamp.
    The `/api/audit` endpoint emits structured JSON or Markdown reports linking findings directly to source line numbers, paragraphs, and copybook origins.
+7. **Bounded Context Slices (Increment D)**: The `/api/slice` endpoint extracts source-mapped, bounded evidence packets under caller-supplied line and token budgets (`max_lines`, `max_tokens`, `max_nodes`) with explicit disclosure of omitted dependencies when budgets truncate the slice. Emits JSON or reviewer-oriented Markdown.
 
 Remote mode accepts a bearer token over plain HTTP. Use it only behind a trusted TLS-terminating boundary until encrypted transport is provided by deployment infrastructure.
 
@@ -219,7 +221,7 @@ C:\Projekty\Rezonator\
 │   ├── bank_demo_v2.cbl       # Modular Extension with Risk Checks (27 nodes)
 │   ├── atm_deadlock.cbl       # Mutual Recursive Deadlock Loop (1 cycle)
 │   └── batch_interest.cbl     # Batch with Dead Variable (2 components)
-├── tests/                     # Deterministic Test Harness (50 tests)
+├── tests/                     # Deterministic Test Harness (57 tests)
 │   ├── golden_graphs.py       # Immutable Reference Specifications
 │   ├── test_golden_graphs.py  # 100% Graph Isomorphism Verification (6 tests)
 │   ├── test_hypothesis_h1.py  # Mutation Testing Benchmark Battery (4 tests)
@@ -231,9 +233,11 @@ C:\Projekty\Rezonator\
 │   ├── test_security_hardening.py# HTTP, AST sandbox, limits, provenance (5 tests)
 │   ├── test_increment_a_truthful_parser.py # Truthful parser & Tarjan SCCs (7 tests)
 │   ├── test_increment_b_sparse_analysis.py # Sparse end-to-end & scaling (6 tests)
-│   └── test_increment_c_auditable_report.py # Auditable report & provenance (4 tests)
+│   ├── test_increment_c_auditable_report.py # Auditable report & provenance (4 tests)
+│   └── test_increment_d_bounded_slicer.py # Bounded context slices & budgets (7 tests)
 ├── docs/                      # Scientific Documentation
 │   ├── AUDIT_REPORT.md        # Audit report & provenance contract (Increment C)
+│   ├── CONTEXT_SLICE_SPEC.md  # Bounded context slice specification (Increment D)
 │   ├── MATHEMATICAL_FOUNDATIONS.md           # Companion Foundations
 │   ├── REZONATOR_MATHEMATICAL_FOUNDATIONS.md # Graph-math reference and implementation scope
 │   ├── SOKOL_ARCHITECTURE.md  # Sokół observer, memory & privacy specifications

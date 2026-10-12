@@ -16,6 +16,7 @@ from rezonator.cobol_parser import CobolParser
 from rezonator.program_comparator import ProgramComparator
 from rezonator.llm_synthesizer import LLMSynthesizer
 from rezonator.audit_report import audit_report_to_markdown, build_audit_report
+from rezonator.program_slicer import ProgramSlicer, context_slice_to_markdown
 from rezonator.limits import ResourceLimitError, MAX_SOURCE_BYTES
 
 
@@ -139,6 +140,8 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
                 self._handle_compare(data)
             elif path == "/api/audit":
                 self._handle_audit(data)
+            elif path == "/api/slice":
+                self._handle_slice(data)
             elif path == "/api/brief":
                 self._handle_brief(data)
             else:
@@ -241,6 +244,65 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
             )
         else:
             self._send_json(report)
+
+    def _handle_slice(self, data: dict):
+        code = data.get("code", "")
+        if not isinstance(code, str) or not code.strip():
+            self._send_error_json("Code parameter is required", 400)
+            return
+
+        output_format = data.get("format", "json")
+        if output_format not in ("json", "markdown"):
+            self._send_error_json("format must be 'json' or 'markdown'", 400)
+            return
+
+        copybooks = self._request_copybooks(data)
+        parser = CobolParser(copybooks=copybooks)
+        graph = parser.parse(code)
+        slicer = ProgramSlicer(graph)
+
+        seed_node = data.get("seed_node")
+        seed_line = data.get("seed_line")
+        seed_variable = data.get("seed_variable")
+
+        direction = data.get("direction", "forward")
+        max_lines = data.get("max_lines", 50)
+        max_tokens = data.get("max_tokens", 1000)
+        max_nodes = data.get("max_nodes")
+        ranking_strategy = data.get("ranking_strategy", "bfs")
+
+        if max_lines is not None and (not isinstance(max_lines, int) or max_lines <= 0):
+            self._send_error_json("max_lines must be a positive integer", 400)
+            return
+        if max_tokens is not None and (not isinstance(max_tokens, int) or max_tokens <= 0):
+            self._send_error_json("max_tokens must be a positive integer", 400)
+            return
+        if max_nodes is not None and (not isinstance(max_nodes, int) or max_nodes <= 0):
+            self._send_error_json("max_nodes must be a positive integer", 400)
+            return
+
+        try:
+            packet = slicer.extract_bounded_slice(
+                seed_node_id=seed_node,
+                seed_line=seed_line,
+                seed_variable=seed_variable,
+                direction=direction,
+                max_lines=max_lines,
+                max_tokens=max_tokens,
+                max_nodes=max_nodes,
+                ranking_strategy=ranking_strategy,
+            )
+        except ValueError as err:
+            self._send_error_json(str(err), 400)
+            return
+
+        if output_format == "markdown":
+            self._send_bytes(
+                context_slice_to_markdown(packet).encode("utf-8"),
+                "text/markdown; charset=utf-8",
+            )
+        else:
+            self._send_json(packet)
 
     @staticmethod
     def _request_copybooks(data: dict):

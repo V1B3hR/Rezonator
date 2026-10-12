@@ -21,6 +21,8 @@ from rezonator import (
     PINNGraphDiffusionEngine,
     ProgramComparator,
     ProgramSlicer,
+    context_slice_to_markdown,
+    ContextSliceEvaluator,
 )
 
 __all__ = [
@@ -29,6 +31,8 @@ __all__ = [
     "CobolASTGraphBuilder",
     "CobolParser",
     "CobolRuntime",
+    "ContextSliceEvaluator",
+    "context_slice_to_markdown",
     "CycleDetector",
     "DiamondYantSpectralEngine",
     "DiffusionRanker",

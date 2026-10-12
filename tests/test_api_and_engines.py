@@ -243,7 +243,51 @@ class TestRezonatorEngine(unittest.TestCase):
         self.assertTrue(markdown_response.headers["Content-Type"].startswith("text/markdown"))
         self.assertIn("# Rezonator audit report", markdown_report)
 
-        # 5. Compare
+        # 5. Bounded context slice in JSON and Markdown
+        slice_code = """       IDENTIFICATION DIVISION.
+       PROGRAM-ID. API-SLICE.
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           MOVE 10 TO WS-A.
+           ADD 5 TO WS-A.
+           DISPLAY WS-A.
+           STOP RUN.
+"""
+        slice_payload = json.dumps({
+            "code": slice_code,
+            "seed_line": 5,
+            "max_lines": 2,
+        }).encode()
+        slice_request = urllib.request.Request(
+            f"{base_url}/api/slice",
+            data=slice_payload,
+            headers={"Content-Type": "application/json"},
+        )
+        slice_response = urllib.request.urlopen(slice_request)
+        slice_data = json.loads(slice_response.read().decode())
+        self.assertEqual(slice_response.status, 200)
+        self.assertEqual(slice_data["slice_schema_version"], "1.0")
+        self.assertTrue(slice_data["slice_scope"]["is_truncated"])
+        self.assertGreater(slice_data["slice_scope"]["omitted_nodes_count"], 0)
+        self.assertTrue(slice_data["omitted_dependencies"])
+
+        slice_md_payload = json.dumps({
+            "code": slice_code,
+            "seed_line": 5,
+            "max_lines": 2,
+            "format": "markdown",
+        }).encode()
+        slice_md_request = urllib.request.Request(
+            f"{base_url}/api/slice",
+            data=slice_md_payload,
+            headers={"Content-Type": "application/json"},
+        )
+        slice_md_response = urllib.request.urlopen(slice_md_request)
+        slice_md_report = slice_md_response.read().decode()
+        self.assertTrue(slice_md_response.headers["Content-Type"].startswith("text/markdown"))
+        self.assertIn("# Rezonator Bounded Context Slice", slice_md_report)
+
+        # 6. Compare
         # Keep this endpoint smoke test's response compact and deterministic;
         # the full bank-demo comparison is exercised directly in test_06.
         api_compare_a = """       IDENTIFICATION DIVISION.

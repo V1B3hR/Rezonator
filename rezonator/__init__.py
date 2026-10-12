@@ -33,6 +33,8 @@ _LAZY_EXPORTS = {
     "PINNGraphDiffusionEngine": (".pinn_diffusion", "PINNGraphDiffusionEngine"),
     "ProgramComparator": (".program_comparator", "ProgramComparator"),
     "ProgramSlicer": (".program_slicer", "ProgramSlicer"),
+    "context_slice_to_markdown": (".program_slicer", "context_slice_to_markdown"),
+    "ContextSliceEvaluator": (".program_slicer", "ContextSliceEvaluator"),
 }
 
 
@@ -51,6 +53,8 @@ __all__ = [
     "CobolASTGraphBuilder",
     "CobolParser",
     "CobolRuntime",
+    "ContextSliceEvaluator",
+    "context_slice_to_markdown",
     "CycleDetector",
     "DiamondYantSpectralEngine",
     "DiffusionRanker",

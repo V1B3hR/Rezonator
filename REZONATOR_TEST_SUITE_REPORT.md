@@ -7,12 +7,12 @@
 
 The **Rezonator** test harness exercises selected parser fixtures, graph invariants, spectral and diffusion routines, cycle reporting, embedded CICS/SQL forms, copybook preprocessing, provenance fields, and local/remote HTTP access controls. This report is a test snapshot, not a code-coverage measurement, complete COBOL conformance result, security certification, or proof of production readiness.
 
-- **Total Test Cases**: 50
-- **Latest Run (2026-10-12)**: 50 Passed, 0 Failed, 0 Skipped, 0 Errors.
-- **Latest Suite Time**: 5.315 seconds on the Rezonator worktree based at `3b36022`; platform and dependency details are recorded by the runtime provenance manifest. This is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
-- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, spectral and diffusion routines, slicing/ranking, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, versioned provenance and graph digests, JSON/Markdown audit reports, source-origin traceability, REST API, neutral comparator verdicts, and backward compatibility.
+- **Total Test Cases**: 57
+- **Latest Run (2026-10-12)**: 57 Passed, 0 Failed, 0 Skipped, 0 Errors.
+- **Latest Suite Time**: 3.827 seconds on the Rezonator worktree; platform and dependency details are recorded by the runtime provenance manifest. This is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
+- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, spectral and diffusion routines, slicing/ranking, bounded context-slice beta with line/token budgets and omission disclosures, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, versioned provenance and graph digests, JSON/Markdown audit reports, REST API (/api/audit, /api/slice), neutral comparator verdicts, and backward compatibility.
 
-The recorded suite ran against the `3b36022` base with the Increment C working-tree changes present; those changes were not committed at report time. Re-run against the exact submitted revision before treating the result as a release gate.
+The recorded suite ran against the main worktree with Increment D changes present. Re-run against the exact submitted revision before treating the result as a release gate.
 
 ---
 
@@ -22,7 +22,7 @@ The recorded suite ran against the `3b36022` base with the Increment C working-t
 |:---|:---|:---:|:---:|:---:|:---|
 | **Golden Graphs & Runtime Fixtures** | `tests/test_golden_graphs.py` | 6 | **PASS** | 0.215 s | Checks four fixture graphs plus bounded-interpreter traces and one mutation comparison. Exactness is relative to checked fixtures, not COBOL conformance. |
 | **Hypothesis H1 Empirical Benchmark** | `tests/test_hypothesis_h1.py` | 4 | **PASS** | 0.130 s | Exercises forward slicing, ranking, mutation generation, and a benchmark battery; sample results are not general accuracy guarantees. |
-| **API & Analysis Engines** | `tests/test_api_and_engines.py` | 7 | **PASS** | 0.724 s | Exercises parser fixtures, graph operators, spectral/diffusion routines, cycle heuristics, comparison, and HTTP endpoints. |
+| **API & Analysis Engines** | `tests/test_api_and_engines.py` | 7 | **PASS** | 0.724 s | Exercises parser fixtures, graph operators, spectral/diffusion routines, cycle heuristics, comparison, and HTTP endpoints (`/api/audit`, `/api/slice`). |
 | **Sparse Matrix Kernels** | `tests/test_sparse_scaling.py` | 3 | **PASS** | 0.683 s | Exercises separate numerical kernels on synthetic sparse graphs at $N=200$ and $N=1,000$; not the end-to-end COBOL path. |
 | **Backward Compatibility** | `tests/test_backward_compat.py` | 2 | **PASS** | 0.005 s | Checks selected modern `rezonator` and legacy `mathy` exports resolve to identical objects. |
 | **Enterprise Copybook Inlining** | `tests/test_copybook_inliner.py` | 3 | **PASS** | 0.012 s | Validates nested COPYBOOK resolution, REPLACING semantics, and circular dependency detection. |
@@ -31,7 +31,8 @@ The recorded suite ran against the `3b36022` base with the Increment C working-t
 | **Truthful Parser & Tarjan SCCs** | `tests/test_increment_a_truthful_parser.py` | 7 | **PASS** | 0.020 s | Validates unhandled statement materialization, DFG read dependencies, copybook provenance, Tarjan SCC analysis, bounded cycle budgets, and neutral comparator verdicts. |
 | **Sparse End-to-End Analysis (Increment B)** | `tests/test_increment_b_sparse_analysis.py` | 6 | **PASS** | 2.253 s | Verifies CSR invariants and storage scaling, sparse solver/ranker/PINN behavior and limits, no dense fallback, and generated COBOL analysis above 2,048 nodes. |
 | **Auditable Report & Provenance (Increment C)** | `tests/test_increment_c_auditable_report.py` | 4 | **PASS** | Included in full suite | Verifies canonical graph digest, fingerprint sensitivity/determinism, copybook hashes/origins, source-linked findings, Markdown caveats, and fail-closed unresolved copybooks. HTTP JSON and Markdown formats are additionally checked in the API suite. |
-| **TOTAL** | | **50** | **PASS** | **5.315 s (latest run)** | **All 50 tests passed on 2026-10-12** |
+| **Bounded Context Slices (Increment D)** | `tests/test_increment_d_bounded_slicer.py` | 7 | **PASS** | 0.366 s | Verifies line/token budgets, omission disclosure, backward/bidirectional slicing, seed resolution, and precision/recall evaluation. |
+| **TOTAL** | | **57** | **PASS** | **3.827 s (latest run)** | **All 57 tests passed on 2026-10-12** |
 
 ---
 
@@ -358,8 +359,50 @@ Validates Increment C contract: schema-versioned provenance manifest, determinis
 
 ---
 
+#### 12. Bounded Context Slices Suite (`tests/test_increment_d_bounded_slicer.py`)
+Validates Increment D contract: exportable evidence packets under caller-supplied line and token budgets, explicit omission disclosures, backward/bidirectional slicing, snippet reconstruction, and precision/recall evaluation.
+
+- `test_seed_resolution_by_line_and_variable`:
+  - Verifies resolution of seed statements via direct node ID, 1-indexed source line number, or variable reference.
+  - Asserts fail-closed `ValueError` when an unresolvable seed is requested.
+  - **Result**: **PASS**
+
+- `test_bounded_slice_respects_line_budget_and_discloses_omissions`:
+  - Tests extraction under an unconstrained budget vs. a 2-line restricted budget.
+  - Asserts that budget truncation sets `is_truncated = True` and records `truncation_reasons: ["max_lines_exceeded"]`.
+  - Asserts invariant conservation: $\text{total\_slice\_nodes} = \text{included\_nodes\_count} + \text{omitted\_nodes\_count}$.
+  - Verifies that every entry in `omitted_dependencies` retains node ID, code, paragraph, and hop distance.
+  - **Result**: **PASS**
+
+- `test_bounded_slice_respects_token_budget`:
+  - Tests extraction under a strict token cap (15 tokens).
+  - Asserts that token consumption stays within the declared budget and flags `"max_tokens_exceeded"`.
+  - **Result**: **PASS**
+
+- `test_backward_and_bidirectional_slicing`:
+  - Tests backward slicing (`direction="backward"`) to discover upstream causal influencers.
+  - Tests bidirectional slicing (`direction="bidirectional"`) and asserts that it forms a superset of both forward and backward slices.
+  - **Result**: **PASS**
+
+- `test_source_mapping_and_copybook_origin_preservation`:
+  - Extracts context slice from a program containing inlined copybooks.
+  - Asserts that included statements preserve copybook source filename and line numbers in `source_origin`.
+  - **Result**: **PASS**
+
+- `test_snippet_reconstruction_and_markdown_rendering`:
+  - Verifies `reconstruct_snippet` generating line-numbered COBOL with explicit `*> [TRUNCATED DEPENDENCIES]` marker blocks.
+  - Verifies `context_slice_to_markdown` emitting reviewer-oriented Markdown with budget stats, included statements, omitted dependencies, and limitations.
+  - **Result**: **PASS**
+
+- `test_evaluator_metrics_and_budget_sweeps`:
+  - Validates `ContextSliceEvaluator.evaluate_slice` calculating Precision, Recall, F1, and Jaccard metrics against ground truth.
+  - Runs automated budget sweeps across canonical fixtures (`bank_demo_v1.cbl`, `bank_demo_v2.cbl`) verifying truncation behavior.
+  - **Result**: **PASS**
+
+---
+
 ### Conclusion & Quality Sign-Off
 
-The latest recorded run passed all **50 listed tests** in 3.68 s (suite elapsed time varies by machine; recorded between 3.68 s and 5.31 s). This is not 100% code coverage and does not establish complete dialect, security, or production readiness. Increment B's end-to-end scale evidence covers generated COBOL through 5,001 nodes, not the 50,000-node hard limit or representative production portfolios.
+The latest recorded run passed all **57 listed tests** in 3.83 s (suite elapsed time varies by machine; recorded between 3.68 s and 5.31 s). This is not 100% code coverage and does not establish complete dialect, security, or production readiness. Increment B's end-to-end scale evidence covers generated COBOL through 5,001 nodes, not the 50,000-node hard limit or representative production portfolios.
 
-Large-response HTTP delivery over loopback (including ~107 KiB comparison payloads) is verified hermetically in `tests/test_api_and_engines.py` (Test 6) following Winsock `SO_LINGER` socket lifecycle management and chunked 64 KiB buffer delivery. Both `/api/audit` (JSON & Markdown) and `/api/compare` endpoints operate deterministically. The Python project uses scientific dependencies; the statement about avoiding a native COBOL parser does not mean the entire application has no native binary dependencies. Runtime varies by host.
+Large-response HTTP delivery over loopback (including ~107 KiB comparison payloads) is verified hermetically in `tests/test_api_and_engines.py` (Test 6) following Winsock `SO_LINGER` socket lifecycle management and chunked 64 KiB buffer delivery. The REST endpoints `/api/audit` (JSON & Markdown) and `/api/slice` (JSON & Markdown) operate deterministically with explicit error handling and resource guards. Slices are static extractions with stated caveats, not formal completeness proofs. Runtime varies by host.
