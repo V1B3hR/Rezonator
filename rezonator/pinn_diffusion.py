@@ -10,6 +10,11 @@ import numpy as np
 import scipy.linalg as la
 import torch
 import torch.nn as nn
+from rezonator.analysis_config import (
+    DIFFUSION_COLD_NODE_THRESHOLD,
+    DIFFUSION_HALF_LIFE_EIGENVALUE_THRESHOLD,
+    SPARSE_CUTOFF,
+)
 
 
 class PINNGraphDiffusionEngine:
@@ -48,13 +53,17 @@ class PINNGraphDiffusionEngine:
         import scipy.sparse.linalg as spla
 
         times = np.linspace(0.0, t_max, time_steps)
-        if n >= 100:
+        if n >= SPARSE_CUTOFF:
             L_sp = sp.csr_matrix(L, dtype=np.float64)
             # Efficient Krylov subspace matrix exponential trajectory
             traj_arr = spla.expm_multiply(-self.alpha * L_sp, u0, start=0.0, stop=t_max, num=time_steps)
             trajectory = [np.clip(traj_arr[s], a_min=0.0, a_max=None).tolist() for s in range(time_steps)]
             final_distribution = np.array(trajectory[-1])
-            cold_nodes = [int(i) for i in np.where(final_distribution < 0.01 * np.max(final_distribution))[0]]
+            cold_nodes = [
+                int(i) for i in np.where(
+                    final_distribution < DIFFUSION_COLD_NODE_THRESHOLD * np.max(final_distribution)
+                )[0]
+            ]
             if fiedler_value is not None:
                 fiedler_val = float(fiedler_value)
             elif n > 1:
@@ -62,7 +71,10 @@ class PINNGraphDiffusionEngine:
                 fiedler_val = float(np.sort(np.clip(evals_sm, 0.0, None))[1])
             else:
                 fiedler_val = 0.0
-            half_life = float(np.log(2.0) / (self.alpha * fiedler_val)) if fiedler_val > 1e-4 else float("inf")
+            half_life = (
+                float(np.log(2.0) / (self.alpha * fiedler_val))
+                if fiedler_val > DIFFUSION_HALF_LIFE_EIGENVALUE_THRESHOLD else float("inf")
+            )
             if estimate_spectral_radius and n > 1:
                 try:
                     spectral_rad = float(abs(spla.eigsh(L_sp, k=1, which="LM", return_eigenvectors=False)[0]))
@@ -91,11 +103,18 @@ class PINNGraphDiffusionEngine:
                 trajectory.append(u_t.tolist())
 
             final_distribution = np.array(trajectory[-1])
-            cold_nodes = [int(i) for i in np.where(final_distribution < 0.01 * np.max(final_distribution))[0]]
+            cold_nodes = [
+                int(i) for i in np.where(
+                    final_distribution < DIFFUSION_COLD_NODE_THRESHOLD * np.max(final_distribution)
+                )[0]
+            ]
 
             # Clean half-life: tau = ln(2) / (alpha * lambda_1) if connected, else inf
             fiedler_val = evals[1] if n > 1 else evals[0]
-            half_life = float(np.log(2.0) / (self.alpha * fiedler_val)) if fiedler_val > 1e-4 else float("inf")
+            half_life = (
+                float(np.log(2.0) / (self.alpha * fiedler_val))
+                if fiedler_val > DIFFUSION_HALF_LIFE_EIGENVALUE_THRESHOLD else float("inf")
+            )
             spectral_rad = float(np.max(evals)) if n > 0 else 0.0
             spectral_radius_status = "computed"
 
@@ -131,7 +150,7 @@ class PINNGraphDiffusionEngine:
         u0 = np.zeros(n, dtype=np.float64)
         u0[source_idx] = 1.0
 
-        if n >= 100 or sp.issparse(A_dir):
+        if n >= SPARSE_CUTOFF or sp.issparse(A_dir):
             A_sp = sp.csr_matrix(A_dir, dtype=np.float64)
             out_degrees = np.array(A_sp.sum(axis=1)).flatten()
             pos_mask = out_degrees > 0

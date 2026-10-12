@@ -5,7 +5,7 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Powered by Błyskawica](https://img.shields.io/badge/Powered%20by-B%C5%82yskawica%20SPARKLE%20V10-cyan.svg)](https://github.com/V1B3hR/Blyskawica)
 [![GitHub Repo](https://img.shields.io/badge/GitHub-V1B3hR%2FRezonator-blue.svg)](https://github.com/V1B3hR/Rezonator)
-[![Focused Test Inventory](https://img.shields.io/badge/focused%20tests-33%20listed-blue.svg)]()
+[![Focused Test Inventory](https://img.shields.io/badge/focused%20tests-50%20listed-blue.svg)]()
 
 > *"Rezonator maps selected COBOL constructs into a finite program graph, making structural relationships easier to inspect."*
 
@@ -51,7 +51,8 @@ Rezonator includes project documentation for architecture, experiments, implemen
 |:---|:---|:---|
 | **License & Commercial Terms** | [`REZONATOR_LICENSE.md`](file:///c:/Projekty/Rezonator/REZONATOR_LICENSE.md) | Source-available & commercial licensing terms (UK jurisdiction), enterprise bank restrictions, and public healthcare / NHS humanitarian waiver. |
 | **Debugging & Defect Report** | [`REZONATOR_DEBUGGING_REPORT.md`](file:///c:/Projekty/Rezonator/REZONATOR_DEBUGGING_REPORT.md) | Historical technical audit and root-cause notes for reported defects; not an independent proof or current certification. |
-| **Test Suite Report** | [`REZONATOR_TEST_SUITE_REPORT.md`](file:///c:/Projekty/Rezonator/REZONATOR_TEST_SUITE_REPORT.md) | Snapshot of 33 focused unit and integration tests; not a statement of code coverage or certification. |
+| **Test Suite Report** | [`REZONATOR_TEST_SUITE_REPORT.md`](file:///c:/Projekty/Rezonator/REZONATOR_TEST_SUITE_REPORT.md) | Snapshot of 50 focused unit and integration tests; not a statement of code coverage or certification. |
+| **Audit Report & Provenance** | [`docs/AUDIT_REPORT.md`](file:///c:/Projekty/Rezonator/docs/AUDIT_REPORT.md) | Contract for auditable JSON/Markdown reports, SHA-256 graph digest, deterministic analysis fingerprint, and source anchors (Increment C). |
 | **Performance Benchmarks** | [`REZONATOR_BENCHMARKS.md`](file:///c:/Projekty/Rezonator/REZONATOR_BENCHMARKS.md) | Recorded parser and synthetic sparse-kernel measurements plus the Hypothesis $H_1$ experiment. See the roadmap for end-to-end scaling limits. |
 | **Verification & Validation Notes** | [`REZONATOR_VERIFICATION_AND_VALIDATION.md`](file:///c:/Projekty/Rezonator/REZONATOR_VERIFICATION_AND_VALIDATION.md) | Project checks inspired by V&V practices; not an IEEE/ISO conformity assessment or independent certification. |
 | **Strategic Roadmap** | [`REZONATOR_ROADMAP.md`](file:///c:/Projekty/Rezonator/REZONATOR_ROADMAP.md) | Code-grounded baseline, delivery gates, and 2027/2028/2031 strategic horizons. |
@@ -121,7 +122,7 @@ python main.py --compare examples/bank_demo_v1.cbl examples/bank_demo_v2.cbl
 ```bash
 python -m unittest discover -s tests -p "test_*.py"
 ```
-*(The 33 focused tests exercise golden graphs, runtime examples, mutation experiments, selected numerical invariants, cycle analysis, sparse kernels, copybook expansion, selected CICS/SQL forms, HTTP access controls, provenance fields, and compatibility shims. They are not exhaustive COBOL conformance or production certification.)*
+*(The 50 focused tests exercise golden graphs, runtime examples, mutation experiments, selected numerical invariants, cycle analysis, sparse kernels, copybook expansion, selected CICS/SQL forms, HTTP access controls, auditable provenance fields, JSON/Markdown reports, and compatibility shims. They are not exhaustive COBOL conformance or production certification.)*
 
 ### 5. Run the Full Benchmark Suite
 ```bash
@@ -135,23 +136,25 @@ python REZONATOR_run_benchmarks.py
 Rezonator currently provides basic local API safeguards. They are not a zero-trust architecture or a security certification:
 
 1. **Local-by-Default Binding**: Binds strictly to loopback interface `127.0.0.1`. Remote binding (`--remote`) requires an explicit secret token (`--token <TOKEN>`). Unauthenticated requests fail closed with `HTTP 401 Unauthorized`.
-2. **Request/response isolation**: Uses `HTTP/1.0` and `Connection: close` for a simple connection lifecycle. These settings do not by themselves prevent request smuggling or make an exposed service safe.
+2. **Request/response isolation**: Uses `HTTP/1.0` and `Connection: close` for a simple connection lifecycle. Winsock `SO_LINGER` and chunked stream delivery prevent connection resets on large responses.
 3. **Payload & Resource Limits**:
    - `MAX_PAYLOAD_BYTES = 10 MB`: Requests exceeding 10 MB are rejected immediately with `HTTP 413 Payload Too Large`.
    - `MAX_SOURCE_BYTES = 10 MB`: Source files exceeding 10 MB raise `ResourceLimitError`.
    - `MAX_GRAPH_NODES = 50,000` and `MAX_GRAPH_EDGES = 200,000`: hard input graph budgets; actual runtime and result size depend on graph structure.
    - `MAX_DENSE_MATRIX_NODES = 2,048`: applies only to explicit legacy dense export via `GraphField.to_dict(..., matrix_format="dense")`; normal operators and default serialization do not materialize dense matrices.
    - `MAX_PINN_NODES = 2,048`: caps experimental PINN training, whose neural output is dense; use the sparse analytical solver for larger graphs.
-   - `MAX_GRAPH_NODES = 50,000`: Hard ceiling on graph size to prevent memory exhaustion.
    - `MAX_RUNTIME_STEPS = 100,000`: Upper bound for simulation steps.
 4. **CORS Origin Allowlist**: Uses an origin allowlist and handles browser preflight requests. CORS is not authentication and does not restrict non-browser clients.
 5. **Hermetic AST Expression Evaluator (Zero `eval()`)**: Evaluates expressions in runtime conditions strictly via an Abstract Syntax Tree whitelist (basic arithmetic and boolean operators). Escapes attempting arbitrary code execution (e.g. `__import__`, `os.system`) fail closed safely.
-6. **Basic Provenance Fields**: Analyze/compare results include metadata for the source text:
+6. **Auditable Provenance Manifest & Graph Digest (Increment C)**: Analyze, compare, and `/api/audit` results include versioned provenance metadata (`manifest_schema_version: "1.0"`):
+   - `analysis_fingerprint`: Deterministic SHA-256 digest over canonical source hashes, sorted copybooks, effective analysis options, dependency versions, Rezonator version, and graph digests.
+   - `graph_digest`: Order-independent SHA-256 digest over canonical graph topology (nodes, types, edges, weights, and DFG variable expansions).
    - `source_sha256`: Cryptographic digest of the analyzed source code.
+   - `copybooks`: Inlined copybook names and content SHA-256 hashes.
+   - `dependency_versions`: Exact runtime versions (`numpy`, `scipy`, `networkx`, `torch`, `python`, `platform`).
    - `solver_seed`: Fixed deterministic solver seed (`42`).
-   - `rezonator_version`: Package semantic version (`1.0.0`).
    - `timestamp_utc`: ISO 8601 UTC timestamp.
-   The current digest does not yet bind copybook contents, analysis options, dependency versions, or the serialized result.
+   The `/api/audit` endpoint emits structured JSON or Markdown reports linking findings directly to source line numbers, paragraphs, and copybook origins.
 
 Remote mode accepts a bearer token over plain HTTP. Use it only behind a trusted TLS-terminating boundary until encrypted transport is provided by deployment infrastructure.
 
@@ -186,7 +189,9 @@ Commercial inquiries: **[https://github.com/V1B3hR/Rezonator](https://github.com
 C:\Projekty\Rezonator\
 ├── rezonator/                 # Core Production Package
 │   ├── __init__.py            # Public API exports (v1.0.0)
+│   ├── analysis_config.py     # Deterministic pipeline parameters & solver options
 │   ├── ast_graph_builder.py   # Pure-Python AST, CICS/SQL dialect & Graph Builder
+│   ├── audit_report.py        # Auditable report generator & Markdown exporter
 │   ├── cobol_parser.py        # Front-End Parser Adapter
 │   ├── cobol_runtime.py       # Deterministic Operational Semantics (AST Evaluator)
 │   ├── copybooks.py           # Nested COPYBOOK inlining & REPLACING preprocessor
@@ -214,7 +219,7 @@ C:\Projekty\Rezonator\
 │   ├── bank_demo_v2.cbl       # Modular Extension with Risk Checks (27 nodes)
 │   ├── atm_deadlock.cbl       # Mutual Recursive Deadlock Loop (1 cycle)
 │   └── batch_interest.cbl     # Batch with Dead Variable (2 components)
-├── tests/                     # Deterministic Test Harness (33 tests)
+├── tests/                     # Deterministic Test Harness (50 tests)
 │   ├── golden_graphs.py       # Immutable Reference Specifications
 │   ├── test_golden_graphs.py  # 100% Graph Isomorphism Verification (6 tests)
 │   ├── test_hypothesis_h1.py  # Mutation Testing Benchmark Battery (4 tests)
@@ -223,10 +228,16 @@ C:\Projekty\Rezonator\
 │   ├── test_backward_compat.py# Rezonator vs Mathy Namespace Equivalence (2 tests)
 │   ├── test_copybook_inliner.py# Nested COPYBOOK expansion & REPLACING (3 tests)
 │   ├── test_f4_enterprise_statements.py # Embedded CICS & DB2 SQL Dialects (3 tests)
-│   └── test_security_hardening.py# HTTP, AST sandbox, limits, provenance (5 tests)
+│   ├── test_security_hardening.py# HTTP, AST sandbox, limits, provenance (5 tests)
+│   ├── test_increment_a_truthful_parser.py # Truthful parser & Tarjan SCCs (7 tests)
+│   ├── test_increment_b_sparse_analysis.py # Sparse end-to-end & scaling (6 tests)
+│   └── test_increment_c_auditable_report.py # Auditable report & provenance (4 tests)
 ├── docs/                      # Scientific Documentation
+│   ├── AUDIT_REPORT.md        # Audit report & provenance contract (Increment C)
+│   ├── MATHEMATICAL_FOUNDATIONS.md           # Companion Foundations
 │   ├── REZONATOR_MATHEMATICAL_FOUNDATIONS.md # Graph-math reference and implementation scope
-│   └── MATHEMATICAL_FOUNDATIONS.md           # Companion Foundations
+│   ├── SOKOL_ARCHITECTURE.md  # Sokół observer, memory & privacy specifications
+│   └── SUPPORTED_SYNTAX.md    # COBOL parser supported/unsupported syntax matrix
 ├── Cargo.toml                 # Rust Package Definition
 ├── requirements.txt           # Python Dependency Specification
 ├── REZONATOR_requirements.txt # Extended Runtime Specification

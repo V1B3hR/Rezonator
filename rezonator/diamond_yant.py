@@ -7,6 +7,18 @@ graph topology onto continuous 2D Chladni resonant vibration surfaces.
 from typing import Dict, List, Any, Tuple, Optional
 import numpy as np
 import scipy.linalg as la
+from rezonator.analysis_config import (
+    NETLSD_HUTCHINSON_SAMPLES,
+    NETLSD_TIME_MAX,
+    NETLSD_TIME_MIN,
+    NETLSD_TIME_SCALES,
+    SOLVER_SEED,
+    SPARSE_CUTOFF,
+    SPARSE_EIGENSOLVER_ITERATIONS_PER_NODE,
+    SPARSE_EIGENSOLVER_MIN_ITERATIONS,
+    SPARSE_EIGENSOLVER_SHIFT,
+    SPARSE_EIGENSOLVER_TOLERANCE,
+)
 
 
 class DiamondYantSpectralEngine:
@@ -23,19 +35,19 @@ class DiamondYantSpectralEngine:
         import scipy.sparse.linalg as spla
 
         n = matrix.shape[0]
-        v0 = np.random.default_rng(42).standard_normal(n)
+        v0 = np.random.default_rng(SOLVER_SEED).standard_normal(n)
         v0 /= np.linalg.norm(v0)
-        maxiter = max(1_000, n * 10)
+        maxiter = max(SPARSE_EIGENSOLVER_MIN_ITERATIONS, n * SPARSE_EIGENSOLVER_ITERATIONS_PER_NODE)
         try:
             return spla.eigsh(
-                matrix, k=k, sigma=-1e-4, which="LM", v0=v0,
-                tol=1e-8, maxiter=maxiter,
+                matrix, k=k, sigma=SPARSE_EIGENSOLVER_SHIFT, which="LM", v0=v0,
+                tol=SPARSE_EIGENSOLVER_TOLERANCE, maxiter=maxiter,
             )
         except Exception as shift_invert_error:
             try:
                 return spla.eigsh(
                     matrix, k=k, which="SM", v0=v0,
-                    tol=1e-8, maxiter=maxiter,
+                    tol=SPARSE_EIGENSOLVER_TOLERANCE, maxiter=maxiter,
                 )
             except Exception as iterative_error:
                 raise RuntimeError(
@@ -67,11 +79,11 @@ class DiamondYantSpectralEngine:
         import scipy.sparse as sp
         import scipy.sparse.linalg as spla
 
-        use_sparse = (n >= 100 or sp.issparse(L))
+        use_sparse = (n >= SPARSE_CUTOFF or sp.issparse(L))
         if use_sparse:
             L_sp = sp.csr_matrix(L, dtype=np.float64)
             k_solve = min(max(num_modes + 2, 6), n - 1)
-            if n < 100:
+            if n < SPARSE_CUTOFF:
                 evals, evecs = la.eigh(L if not sp.issparse(L) else L.toarray())
                 idx_sort = np.argsort(evals)
                 evals = np.clip(evals[idx_sort], a_min=0.0, a_max=None)
@@ -103,8 +115,10 @@ class DiamondYantSpectralEngine:
         netlsd_sig: List[float] = []
         fiedler_norm = 0.0
         if L_norm is not None and n > 0:
-            times = np.logspace(-2, 2, 25)
-            if n < 100:
+            times = np.logspace(
+                np.log10(NETLSD_TIME_MIN), np.log10(NETLSD_TIME_MAX), NETLSD_TIME_SCALES,
+            )
+            if n < SPARSE_CUTOFF:
                 evals_norm = la.eigvalsh(L_norm if not sp.issparse(L_norm) else L_norm.toarray())
                 evals_norm = np.clip(evals_norm, 0.0, 2.0)
                 netlsd_sig = [float(np.mean(np.exp(-t * evals_norm))) for t in times]
@@ -116,8 +130,8 @@ class DiamondYantSpectralEngine:
                 fiedler_norm = float(norm_evals_sm[1]) if len(norm_evals_sm) > 1 else float(norm_evals_sm[0])
 
                 # Fast Hutchinson stochastic trace estimator with Rademacher random vectors
-                M_samples = 15
-                rng = np.random.default_rng(42)
+                M_samples = NETLSD_HUTCHINSON_SAMPLES
+                rng = np.random.default_rng(SOLVER_SEED)
                 # Keep samples as columns so expm_multiply can propagate all
                 # probes in one sparse matrix operation per time scale.
                 V = rng.choice([-1.0, 1.0], size=(n, M_samples)) / np.sqrt(n)

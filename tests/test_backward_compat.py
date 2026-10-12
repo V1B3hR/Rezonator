@@ -15,6 +15,8 @@ class TestBackwardCompat(unittest.TestCase):
         self.assertEqual(rezonator.__version__, mathy.__version__)
 
         symbols = [
+            "audit_report_to_markdown",
+            "build_audit_report",
             "CobolASTGraphBuilder",
             "CobolParser",
             "CobolRuntime",

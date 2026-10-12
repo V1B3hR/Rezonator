@@ -13,6 +13,8 @@ __author__ = "Błyskawica & Rezonator Team"
 # ML dependencies are loaded only when the corresponding public symbol is
 # actually requested.
 _LAZY_EXPORTS = {
+    "audit_report_to_markdown": (".audit_report", "audit_report_to_markdown"),
+    "build_audit_report": (".audit_report", "build_audit_report"),
     "CobolASTGraphBuilder": (".ast_graph_builder", "CobolASTGraphBuilder"),
     "CopybookInliner": (".copybooks", "CopybookInliner"),
     "CopybookResolutionError": (".copybooks", "CopybookResolutionError"),
@@ -44,6 +46,8 @@ def __getattr__(name):
     return symbol
 
 __all__ = [
+    "audit_report_to_markdown",
+    "build_audit_report",
     "CobolASTGraphBuilder",
     "CobolParser",
     "CobolRuntime",

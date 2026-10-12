@@ -204,7 +204,46 @@ class TestRezonatorEngine(unittest.TestCase):
         self.assertIn("diffusion", analysis)
         self.assertIn("cycles", analysis)
 
-        # 4. Compare
+        # 4. Auditable report in structured JSON and reviewer-oriented Markdown.
+        audit_code = """       IDENTIFICATION DIVISION.
+       PROGRAM-ID. API-AUDIT.
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           COPY AUDIT-OUTPUT.
+           STOP RUN.
+"""
+        audit_payload = json.dumps({
+            "code": audit_code,
+            "copybooks": {"AUDIT-OUTPUT.CPY": 'DISPLAY "AUDIT".'},
+        }).encode()
+        audit_request = urllib.request.Request(
+            f"{base_url}/api/audit",
+            data=audit_payload,
+            headers={"Content-Type": "application/json"},
+        )
+        audit_response = urllib.request.urlopen(audit_request)
+        audit_report = json.loads(audit_response.read().decode())
+        self.assertEqual(audit_response.status, 200)
+        self.assertEqual(audit_report["audit_report_schema_version"], "1.0")
+        self.assertTrue(audit_report["graph"]["graph_digest"])
+        self.assertEqual(audit_report["provenance"]["copybooks"][0]["name"], "AUDIT-OUTPUT.CPY")
+        self.assertEqual(
+            audit_report["findings"][0]["source_origin"]["source"],
+            "AUDIT-OUTPUT.CPY",
+        )
+
+        markdown_payload = json.dumps({"code": audit_code, "format": "markdown"}).encode()
+        markdown_request = urllib.request.Request(
+            f"{base_url}/api/audit",
+            data=markdown_payload,
+            headers={"Content-Type": "application/json"},
+        )
+        markdown_response = urllib.request.urlopen(markdown_request)
+        markdown_report = markdown_response.read().decode()
+        self.assertTrue(markdown_response.headers["Content-Type"].startswith("text/markdown"))
+        self.assertIn("# Rezonator audit report", markdown_report)
+
+        # 5. Compare
         # Keep this endpoint smoke test's response compact and deterministic;
         # the full bank-demo comparison is exercised directly in test_06.
         api_compare_a = """       IDENTIFICATION DIVISION.
@@ -233,7 +272,7 @@ class TestRezonatorEngine(unittest.TestCase):
         self.assertIn("metrics", cmp_res)
         self.assertIn("verdict", cmp_res)
 
-        # 5. Full Bank Demo Compare (verifies large ~107 KiB response delivery without reset)
+        # 6. Full Bank Demo Compare (verifies large ~107 KiB response delivery without reset)
         payload_full = json.dumps({
             "code_a": self.code_v1,
             "code_b": self.code_v2

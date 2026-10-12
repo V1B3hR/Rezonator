@@ -7,6 +7,7 @@ hazards under static CFG assumptions without claiming general program terminatio
 
 from typing import Dict, List, Set, Any, Optional
 import networkx as nx
+from rezonator.analysis_config import CYCLE_MAX_PER_SCC, CYCLE_TOTAL_BUDGET
 
 
 class CycleDetector:
@@ -75,13 +76,11 @@ class CycleDetector:
         trapped_sccs = [scc for scc in non_trivial_sccs if not scc_can_reach_terminal(scc)]
 
         # 2. Bounded cycle extraction within non-trivial SCCs
-        MAX_CYCLES_PER_SCC = 25
-        TOTAL_CYCLE_BUDGET = 100
         raw_cycles: List[List[str]] = []
         budget_exhausted = False
 
         for scc in non_trivial_sccs:
-            if len(raw_cycles) >= TOTAL_CYCLE_BUDGET:
+            if len(raw_cycles) >= CYCLE_TOTAL_BUDGET:
                 budget_exhausted = True
                 break
             sub = self.cfg.subgraph(scc)
@@ -90,10 +89,10 @@ class CycleDetector:
                 for cycle in nx.simple_cycles(sub):
                     raw_cycles.append(cycle)
                     scc_count += 1
-                    if scc_count >= MAX_CYCLES_PER_SCC:
+                    if scc_count >= CYCLE_MAX_PER_SCC:
                         budget_exhausted = True
                         break
-                    if len(raw_cycles) >= TOTAL_CYCLE_BUDGET:
+                    if len(raw_cycles) >= CYCLE_TOTAL_BUDGET:
                         budget_exhausted = True
                         break
             except Exception:
@@ -203,6 +202,8 @@ class CycleDetector:
             "trapped_cycle_count": len(trapped_cycles),
             "invariant_hazard_count": len(invariant_hazard_cycles),
             "cycle_budget_exhausted": budget_exhausted,
+            "max_cycles_per_scc": CYCLE_MAX_PER_SCC,
+            "total_cycle_budget": CYCLE_TOTAL_BUDGET,
             "sccs": scc_summaries,
             "terminal_nodes": terminal_nodes,
             "reaches_terminal": can_reach_terminal,

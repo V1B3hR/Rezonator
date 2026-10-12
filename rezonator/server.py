@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 from rezonator.cobol_parser import CobolParser
 from rezonator.program_comparator import ProgramComparator
 from rezonator.llm_synthesizer import LLMSynthesizer
+from rezonator.audit_report import audit_report_to_markdown, build_audit_report
 from rezonator.limits import ResourceLimitError, MAX_SOURCE_BYTES
 
 
@@ -136,6 +137,8 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
                 self._handle_analyze(data)
             elif path == "/api/compare":
                 self._handle_compare(data)
+            elif path == "/api/audit":
+                self._handle_audit(data)
             elif path == "/api/brief":
                 self._handle_brief(data)
             else:
@@ -143,7 +146,7 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
         except ResourceLimitError as exc:
             self._send_error_json(str(exc), exc.status_code)
         except (UnicodeDecodeError, ValueError, json.JSONDecodeError) as exc:
-            self._send_error_json(f"Invalid JSON payload: {str(exc)}", 400)
+            self._send_error_json(f"Invalid request: {str(exc)}", 400)
         except Exception:
             self._send_error_json("Internal server error", 500)
 
@@ -187,7 +190,7 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
             self._send_error_json("Code parameter is required", 400)
             return
 
-        comparator = ProgramComparator(lattice_size=32)
+        comparator = ProgramComparator(lattice_size=32, copybooks=self._request_copybooks(data))
         result = comparator.analyze_single(code)
         # Keep the legacy response key for existing clients; this is not model output.
         result["llm_brief"] = LLMSynthesizer.generate_cognitive_brief(result)
@@ -201,7 +204,7 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
             self._send_error_json("Both code_a and code_b are required", 400)
             return
 
-        comparator = ProgramComparator(lattice_size=32)
+        comparator = ProgramComparator(lattice_size=32, copybooks=self._request_copybooks(data))
         result = comparator.compare(code_a, code_b)
         result["program_a_brief"] = LLMSynthesizer.generate_cognitive_brief(result["program_a_details"])
         result["program_b_brief"] = LLMSynthesizer.generate_cognitive_brief(result["program_b_details"])
@@ -212,15 +215,52 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
         if not code.strip():
             self._send_error_json("Code parameter is required", 400)
             return
-        comparator = ProgramComparator(lattice_size=32)
+        comparator = ProgramComparator(lattice_size=32, copybooks=self._request_copybooks(data))
         result = comparator.analyze_single(code)
         brief = LLMSynthesizer.generate_cognitive_brief(result)
         self._send_json({"brief": brief})
 
+    def _handle_audit(self, data: dict):
+        code = data.get("code", "")
+        if not isinstance(code, str) or not code.strip():
+            self._send_error_json("Code parameter is required", 400)
+            return
+        output_format = data.get("format", "json")
+        if output_format not in ("json", "markdown"):
+            self._send_error_json("format must be 'json' or 'markdown'", 400)
+            return
+        comparator = ProgramComparator(
+            lattice_size=32,
+            copybooks=self._request_copybooks(data),
+        )
+        report = build_audit_report(comparator.analyze_single(code))
+        if output_format == "markdown":
+            self._send_bytes(
+                audit_report_to_markdown(report).encode("utf-8"),
+                "text/markdown; charset=utf-8",
+            )
+        else:
+            self._send_json(report)
+
+    @staticmethod
+    def _request_copybooks(data: dict):
+        copybooks = data.get("copybooks")
+        if copybooks is None:
+            return None
+        if not isinstance(copybooks, dict):
+            raise ValueError("copybooks must be an object mapping names to source text")
+        if any(not isinstance(name, str) or not isinstance(content, str)
+               for name, content in copybooks.items()):
+            raise ValueError("copybooks must map string names to string contents")
+        return copybooks
+
     def _send_json(self, payload: dict, status: int = 200):
         body_bytes = json.dumps(payload).encode("utf-8")
+        self._send_bytes(body_bytes, "application/json; charset=utf-8", status=status)
+
+    def _send_bytes(self, body_bytes: bytes, content_type: str, status: int = 200):
         self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Type", content_type)
         origin = self.headers.get("Origin")
         if origin and origin in self.server.allowed_origins:
             self.send_header("Access-Control-Allow-Origin", origin)

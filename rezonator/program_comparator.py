@@ -4,9 +4,18 @@ Computes spectral distances, graph metrics, impact diffusion, and heuristic
 cycle-hazard comparisons over the parsed graph representations.
 """
 
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import numpy as np
 
+from rezonator.analysis_config import (
+    DIFFUSION_ALPHA,
+    DIFFUSION_TIME_STEPS,
+    DIFFUSION_T_MAX,
+    DIRECTED_IMPACT_THRESHOLD,
+    DIRECTED_IMPACT_TIME,
+    SPECTRAL_NUM_MODES,
+    effective_analysis_options,
+)
 from rezonator.cobol_parser import CobolParser
 from rezonator.graph_field import GraphField
 from rezonator.diamond_yant import DiamondYantSpectralEngine
@@ -22,10 +31,23 @@ class ProgramComparator:
     labels are heuristics; they do not establish behavioral equivalence or safety.
     """
 
-    def __init__(self, lattice_size: int = 32):
-        self.parser = CobolParser()
+    def __init__(self, lattice_size: int = 32, copybooks: Optional[Dict[str, str]] = None):
+        self.lattice_size = lattice_size
+        self.copybooks = copybooks
+        self.analysis_options = effective_analysis_options(lattice_size)
+        self.parser = CobolParser(copybooks=copybooks)
         self.yant_engine = DiamondYantSpectralEngine(lattice_size=lattice_size)
-        self.diffusion_engine = PINNGraphDiffusionEngine(alpha=0.5)
+        self.diffusion_engine = PINNGraphDiffusionEngine(alpha=DIFFUSION_ALPHA)
+
+    def _provenance_options(self, parser_engines: Dict[str, str]) -> Dict[str, Any]:
+        options = dict(self.analysis_options)
+        parser_options = dict(self.analysis_options["parser"])
+        if len(parser_engines) == 1:
+            parser_options["selected_engine"] = next(iter(parser_engines.values()))
+        else:
+            parser_options["selected_engines"] = parser_engines
+        options["parser"] = parser_options
+        return options
 
     def analyze_single(self, source_code: str) -> Dict[str, Any]:
         """Runs the available analysis pipeline on the supported parsed subset."""
@@ -37,7 +59,9 @@ class ProgramComparator:
         field = GraphField(parsed, symmetrize=True, include_variables=True)
 
         # 3. Modal spectrum & NetLSD signature & Chladni surface
-        spectrum = self.yant_engine.compute_spectrum(field.L, L_norm=field.L_norm, num_modes=12)
+        spectrum = self.yant_engine.compute_spectrum(
+            field.L, L_norm=field.L_norm, num_modes=SPECTRAL_NUM_MODES,
+        )
         chladni = self.yant_engine.generate_chladni_surface(spectrum)
 
         # 4. Diffusion (symmetric equilibration + directed forward impact)
@@ -47,11 +71,14 @@ class ProgramComparator:
         diffusion = self.diffusion_engine.solve_analytical(
             field.L,
             u0,
-            time_steps=20,
-            t_max=2.0,
+            time_steps=DIFFUSION_TIME_STEPS,
+            t_max=DIFFUSION_T_MAX,
             fiedler_value=spectrum["fiedler_value"],
         )
-        directed_impact = self.diffusion_engine.solve_directed_impact(field.A_dir, source_idx=0, t=1.5)
+        directed_impact = self.diffusion_engine.solve_directed_impact(
+            field.A_dir, source_idx=0, t=DIRECTED_IMPACT_TIME,
+            threshold=DIRECTED_IMPACT_THRESHOLD,
+        )
 
         # 5. Static cycle and heuristic hazard analysis
         cycle_analysis = CycleDetector(parsed).analyze()
@@ -73,7 +100,14 @@ class ProgramComparator:
                 "fell_into_horizon_trap": cycle_analysis["has_deadlock"],
                 "frame_dragging_coupling_factor": float(len(field.variables) * 0.45)
             },
-            "provenance": source_provenance(source_code)
+            "provenance": source_provenance(
+                source_code,
+                analysis_options=self._provenance_options({
+                    "source": parsed.get("parser_engine", "unknown"),
+                }),
+                copybooks=self.copybooks,
+                graph_data=parsed,
+            )
         }
 
     def compare(self, source_a: str, source_b: str) -> Dict[str, Any]:
@@ -156,5 +190,15 @@ class ProgramComparator:
             "verdict": verdict,
             "program_a_details": res_a,
             "program_b_details": res_b,
-            "provenance": comparison_provenance(source_a, source_b)
+            "provenance": comparison_provenance(
+                source_a,
+                source_b,
+                analysis_options=self._provenance_options({
+                    "source_a": res_a["parsed"].get("parser_engine", "unknown"),
+                    "source_b": res_b["parsed"].get("parser_engine", "unknown"),
+                }),
+                copybooks=self.copybooks,
+                graph_data_a=res_a["parsed"],
+                graph_data_b=res_b["parsed"],
+            )
         }

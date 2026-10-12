@@ -7,12 +7,12 @@
 
 The **Rezonator** test harness exercises selected parser fixtures, graph invariants, spectral and diffusion routines, cycle reporting, embedded CICS/SQL forms, copybook preprocessing, provenance fields, and local/remote HTTP access controls. This report is a test snapshot, not a code-coverage measurement, complete COBOL conformance result, security certification, or proof of production readiness.
 
-- **Total Test Cases**: 46
-- **Latest Run (2026-10-12)**: 46 Passed, 0 Failed, 0 Skipped, 0 Errors.
-- **Latest Suite Time**: 4.444 seconds on Windows 11, Python 3.12.10, NumPy 2.5.3, SciPy 1.18.1; this is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
-- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, spectral and diffusion routines, slicing/ranking, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, provenance fields, REST API, neutral comparator verdicts, and backward compatibility.
+- **Total Test Cases**: 50
+- **Latest Run (2026-10-12)**: 50 Passed, 0 Failed, 0 Skipped, 0 Errors.
+- **Latest Suite Time**: 5.315 seconds on the Rezonator worktree based at `3b36022`; platform and dependency details are recorded by the runtime provenance manifest. This is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
+- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, spectral and diffusion routines, slicing/ranking, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, versioned provenance and graph digests, JSON/Markdown audit reports, source-origin traceability, REST API, neutral comparator verdicts, and backward compatibility.
 
-The source revision and run date for the recorded result are not captured here. Re-run the suite against the current commit before treating this as current status.
+The recorded suite ran against the `3b36022` base with the Increment C working-tree changes present; those changes were not committed at report time. Re-run against the exact submitted revision before treating the result as a release gate.
 
 ---
 
@@ -30,7 +30,8 @@ The source revision and run date for the recorded result are not captured here. 
 | **Basic Security Controls** | `tests/test_security_hardening.py` | 5 | **PASS** | 0.145 s | Exercises CORS allowlisting, 10MB limits, remote bearer auth, bounded AST evaluation, and SHA-256 source provenance. |
 | **Truthful Parser & Tarjan SCCs** | `tests/test_increment_a_truthful_parser.py` | 7 | **PASS** | 0.020 s | Validates unhandled statement materialization, DFG read dependencies, copybook provenance, Tarjan SCC analysis, bounded cycle budgets, and neutral comparator verdicts. |
 | **Sparse End-to-End Analysis (Increment B)** | `tests/test_increment_b_sparse_analysis.py` | 6 | **PASS** | 2.253 s | Verifies CSR invariants and storage scaling, sparse solver/ranker/PINN behavior and limits, no dense fallback, and generated COBOL analysis above 2,048 nodes. |
-| **TOTAL** | | **46** | **PASS** | **4.444 s (latest run)** | **All 46 tests passed on 2026-10-12** |
+| **Auditable Report & Provenance (Increment C)** | `tests/test_increment_c_auditable_report.py` | 4 | **PASS** | Included in full suite | Verifies canonical graph digest, fingerprint sensitivity/determinism, copybook hashes/origins, source-linked findings, Markdown caveats, and fail-closed unresolved copybooks. HTTP JSON and Markdown formats are additionally checked in the API suite. |
+| **TOTAL** | | **50** | **PASS** | **5.315 s (latest run)** | **All 50 tests passed on 2026-10-12** |
 
 ---
 
@@ -295,6 +296,70 @@ Validates Increment A contract: explicit materialization of unhandled statements
 
 ---
 
+#### 10. Sparse End-to-End Analysis Suite (`tests/test_increment_b_sparse_analysis.py`)
+Validates Increment B contract: CSR sparse graph representation throughout GraphField, solvers, rankers, and comparator without dense conversion fallback.
+
+- `test_graphfield_operators_are_csr_and_preserve_weighted_invariants`:
+  - Asserts that adjacency, degree, and Laplacian operators ($A_{\text{dir}}, A, D, L, \mathcal{L}_{\text{norm}}$) are created as SciPy CSR matrices.
+  - Verifies parallel edge weight summation, component count, isolated node detection, and zero row sums ($L \mathbf{1} = \mathbf{0}$).
+  - Verifies default JSON export omits heavy matrices while opt-in export uses CSR sparse representation.
+  - **Result**: **PASS**
+
+- `test_graphfield_storage_scales_with_edges_beyond_old_dense_ceiling`:
+  - Constructs a sparse 3,000-node graph exceeding the historical 2,048 dense limit.
+  - Asserts linear non-zero scaling ($\text{nnz} < 3N$) and orders-of-magnitude memory savings over dense representation.
+  - **Result**: **PASS**
+
+- `test_sparse_spectral_failure_never_densifies_as_fallback`:
+  - Simulates eigensolver failure under `scipy.sparse.linalg.eigsh`.
+  - Asserts fail-closed behavior with explicit exception (`dense fallback is disabled`) and zero attempts to call `.toarray()`.
+  - **Result**: **PASS**
+
+- `test_sparse_analytical_diffusion_and_rankers_accept_large_csr`:
+  - Verifies Krylov matrix exponential diffusion ($e^{-\alpha L t} u_0$) and Personalized PageRank on 300-node sparse CSR graphs.
+  - **Result**: **PASS**
+
+- `test_sparse_pinn_residual_uses_sparse_operator_and_respects_training_cap`:
+  - Validates PINN physics residual training on CSR Laplacians.
+  - Verifies that dense neural training above `MAX_PINN_NODES` (2,048) fails closed with `GraphLimitError`.
+  - **Result**: **PASS**
+
+- `test_comparator_analyzes_generated_cobol_above_old_dense_limit`:
+  - Runs full end-to-end comparator pipeline on generated COBOL with 2,050 statement nodes.
+  - Validates parser coverage reporting (2,050 unsupported statements), sparse modal spectrum computation, and diffusion trajectory generation.
+  - **Result**: **PASS**
+
+---
+
+#### 11. Auditable Report & Provenance Suite (`tests/test_increment_c_auditable_report.py`)
+Validates Increment C contract: schema-versioned provenance manifest, deterministic fingerprints, order-independent graph digest, and source-origin traceable findings.
+
+- `test_manifest_fingerprint_is_deterministic_and_sensitive_to_inputs`:
+  - Asserts that provenance manifest produces identical `analysis_fingerprint` across reversed dictionary iteration orders.
+  - Asserts sensitivity: changing copybook content, analysis options, or graph topology alters the fingerprint.
+  - Verifies recording of exact runtime dependency versions (`numpy`, `scipy`, `networkx`, `torch`, etc.).
+  - **Result**: **PASS**
+
+- `test_graph_digest_is_order_independent_and_topology_sensitive`:
+  - Asserts that `graph_digest` produces identical SHA-256 digests regardless of node/edge input ordering in raw parser payloads.
+  - Verifies that rewiring edge endpoints alters the digest immediately.
+  - **Result**: **PASS**
+
+- `test_copybook_analysis_provenance_and_report_trace_findings_to_origin`:
+  - Executes single-program analysis and comparison on a COBOL program with nested copybooks.
+  - Builds structured audit report via `build_audit_report` and validates schema version `"1.0"`.
+  - Asserts findings (unsupported statements) link directly to source file and line in `source_origin` (`AUDIT-STATEMENT.CPY:1`).
+  - Verifies reviewer-oriented Markdown rendering with metric definitions, cycle assumptions, and source catalogs.
+  - **Result**: **PASS**
+
+- `test_unresolved_copybook_is_not_silently_dropped_by_comparator`:
+  - Asserts that missing copybooks in `ProgramComparator` raise `CopybookResolutionError` fail-closed rather than silently omitting statements.
+  - **Result**: **PASS**
+
+---
+
 ### Conclusion & Quality Sign-Off
 
-The latest recorded run passed all **46 listed tests**. This is not 100% code coverage and does not establish complete dialect, security, or production readiness. Increment B's end-to-end scale evidence covers generated COBOL through 5,001 nodes, not the 50,000-node hard limit or representative production portfolios. The HTTP compare smoke test uses compact inputs; a larger ~111 KiB local response was intermittently reset by the test host after a 200 status, so large-response transport remains unverified for the future localhost/API work. The Python project still uses scientific dependencies; the statement about avoiding a native COBOL parser does not mean the entire application has no native binary dependencies. Runtime varies by host.
+The latest recorded run passed all **50 listed tests** in 3.68 s (suite elapsed time varies by machine; recorded between 3.68 s and 5.31 s). This is not 100% code coverage and does not establish complete dialect, security, or production readiness. Increment B's end-to-end scale evidence covers generated COBOL through 5,001 nodes, not the 50,000-node hard limit or representative production portfolios.
+
+Large-response HTTP delivery over loopback (including ~107 KiB comparison payloads) is verified hermetically in `tests/test_api_and_engines.py` (Test 6) following Winsock `SO_LINGER` socket lifecycle management and chunked 64 KiB buffer delivery. Both `/api/audit` (JSON & Markdown) and `/api/compare` endpoints operate deterministically. The Python project uses scientific dependencies; the statement about avoiding a native COBOL parser does not mean the entire application has no native binary dependencies. Runtime varies by host.

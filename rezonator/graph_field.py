@@ -17,6 +17,7 @@ from rezonator.limits import (
     GraphLimitError,
     validate_graph_payload,
 )
+from rezonator.analysis_config import VARIABLE_READ_EDGE_WEIGHT, VARIABLE_WRITE_EDGE_WEIGHT
 
 
 class GraphField:
@@ -62,7 +63,7 @@ class GraphField:
                         "source": f"var_{r_var}",
                         "target": nid,
                         "edge_type": "dfg_read",
-                        "weight": 1.2,
+                        "weight": VARIABLE_READ_EDGE_WEIGHT,
                         "label": f"read({r_var})",
                     })
                 for w_var in node.get("writes", []):
@@ -74,7 +75,7 @@ class GraphField:
                         "source": nid,
                         "target": f"var_{w_var}",
                         "edge_type": "dfg_write",
-                        "weight": 1.5,
+                        "weight": VARIABLE_WRITE_EDGE_WEIGHT,
                         "label": f"write({w_var})",
                     })
 

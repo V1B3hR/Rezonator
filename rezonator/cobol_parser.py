@@ -6,6 +6,7 @@ Extracts basic blocks, control transfers, variable definitions, and usage chains
 import re
 from typing import Dict, List, Set, Any, Tuple
 
+from rezonator.copybooks import CopybookResolutionError
 from rezonator.limits import ResourceLimitError, validate_graph_payload, validate_source_size
 
 
@@ -80,11 +81,12 @@ class CobolParser:
     Extracts Data Division state variables and Procedure Division Control/Data flow graphs.
     """
 
-    def __init__(self):
+    def __init__(self, copybooks: Dict[str, str] = None):
         self.variables: Dict[str, VariableDef] = {}
         self.nodes: Dict[str, ProgramNode] = {}
         self.edges: List[GraphEdge] = []
         self.program_id: str = "UNKNOWN-PROGRAM"
+        self.copybooks = copybooks
 
     def clean_cobol_text(self, source: str) -> List[str]:
         """Cleans columns 1-6 (sequence numbers) and column 7 (indicator area) if fixed format."""
@@ -119,8 +121,13 @@ class CobolParser:
         try:
             from rezonator.ast_graph_builder import CobolASTGraphBuilder
             if CobolASTGraphBuilder.is_available():
-                return CobolASTGraphBuilder().build_from_source(source_code)
+                builder = CobolASTGraphBuilder(copybooks=self.copybooks)
+                payload = builder.build_from_source(source_code)
+                payload["parser_engine"] = "CobolASTGraphBuilder"
+                return payload
         except ResourceLimitError:
+            raise
+        except CopybookResolutionError:
             raise
         except Exception:
             pass
@@ -146,6 +153,7 @@ class CobolParser:
 
         # 4. Construct Unified Analytic Graph
         payload = self._build_graph_payload()
+        payload["parser_engine"] = "regex_fallback"
         validate_graph_payload(payload, include_variables=True)
         return payload
 
