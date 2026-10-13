@@ -7,12 +7,12 @@
 
 The **Rezonator** test harness exercises selected parser fixtures, graph invariants, spectral and diffusion routines, cycle reporting, embedded CICS/SQL forms, copybook preprocessing, provenance fields, and local/remote HTTP access controls. This report is a test snapshot, not a code-coverage measurement, complete COBOL conformance result, security certification, or proof of production readiness.
 
-- **Total Test Cases**: 92
-- **Latest Run (2026-10-13)**: 92 Passed, 0 Failed, 0 Skipped, 0 Errors.
-- **Latest Suite Time**: 3.887 seconds on the Rezonator worktree; platform and dependency details are recorded by the runtime provenance manifest. This is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
-- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, continuous physical & mathematical invariants, spectral and diffusion routines, NetLSD Hutchinson estimator error reporting, slicing/ranking, bounded context-slice beta with line/token budgets and omission disclosures, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, versioned provenance and graph digests, JSON/Markdown audit reports, bounded versioned Sokół JSONL event envelopes, enterprise corpus evaluation, Sokół versioned project memory (`sokol.fact.v1`), anchor remapping, staleness invalidation, verification non-transfer, Sokół spectral radar (`sokol.radar.v1`) with compatibility checking and review candidate nomination, idiom miner (`sokol.idiom.v1`) with strict `INFERRED` status, read-only observer adapter (`sokol.observer.v1`) with privacy policy and untrusted code boundary, REST API (/api/audit, /api/slice), neutral comparator verdicts, and backward compatibility.
+- **Total Test Cases**: 114
+- **Latest Run (2026-10-13)**: 114 Passed, 0 Failed, 0 Skipped, 0 Errors.
+- **Latest Suite Time**: 4.364 seconds on the Rezonator worktree; platform and dependency details are recorded by the runtime provenance manifest. This is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
+- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, continuous physical & mathematical invariants, spectral and diffusion routines, NetLSD Hutchinson estimator error reporting, slicing/ranking, bounded context-slice beta with line/token budgets and omission disclosures, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, versioned provenance and graph digests, JSON/Markdown audit reports, bounded versioned Sokół JSONL event envelopes, enterprise corpus evaluation, Sokół versioned project memory (`sokol.fact.v1`), anchor remapping, staleness invalidation, verification non-transfer, Sokół spectral radar (`sokol.radar.v1`), idiom miner (`sokol.idiom.v1`), read-only observer adapter (`sokol.observer.v1`), REST API (/api/audit, /api/slice, /api/portfolio, /api/partition, /api/migration), neutral comparator verdicts, application portfolio manifest (`sokol.portfolio.manifest.v1`), hermetic JCL stream parsing, inter-program static and dynamic call resolution, shared DB2 table/dataset coupling, multi-program graph (`sokol.portfolio.graph.v1`), transitive blast-radius propagation, spectral Cheeger graph partitioning (`sokol.partition.v1`), Fiedler-vector sweeps, crossing edges and line anchors, transaction/database friction penalties, differential runtime verification (`sokol.migration.v1`), and domain invariant evaluation.
 
-The recorded suite ran against the main worktree with Increment D, Sokół event-export, Corpus Evaluator, Project Memory, Mathematical Invariants, and Sokół Step 5 Radar/Observer additions present. Per-module timings below are historical unless marked as latest. Re-run against the exact submitted revision before treating the result as a release gate.
+The recorded suite ran against the main worktree with Increment D, Sokół event-export, Corpus Evaluator, Project Memory, Mathematical Invariants, Sokół Step 5 Radar/Observer, Filar F5 Application Portfolio Graph, and Filar F6 Partition Recommendations & Migration Evidence present. Per-module timings below are historical unless marked as latest. Re-run against the exact submitted revision before treating the result as a release gate.
 
 ---
 
@@ -22,7 +22,7 @@ The recorded suite ran against the main worktree with Increment D, Sokół event
 |:---|:---|:---:|:---:|:---:|:---|
 | **Golden Graphs & Runtime Fixtures** | `tests/test_golden_graphs.py` | 6 | **PASS** | 0.215 s | Checks four fixture graphs plus bounded-interpreter traces and one mutation comparison. Exactness is relative to checked fixtures, not COBOL conformance. |
 | **Hypothesis H1 Empirical Benchmark** | `tests/test_hypothesis_h1.py` | 4 | **PASS** | 0.130 s | Exercises forward slicing, ranking, mutation generation, and a benchmark battery; sample results are not general accuracy guarantees. |
-| **API & Analysis Engines** | `tests/test_api_and_engines.py` | 7 | **PASS** | 0.724 s | Exercises parser fixtures, graph operators, spectral/diffusion routines, cycle heuristics, comparison, and HTTP endpoints (`/api/audit`, `/api/slice`). |
+| **API & Analysis Engines** | `tests/test_api_and_engines.py` | 7 | **PASS** | 0.833 s | Exercises parser fixtures, graph operators, spectral/diffusion routines, cycle heuristics, comparison, and HTTP endpoints (`/api/audit`, `/api/slice`, `/api/portfolio`, `/api/partition`, `/api/migration`). |
 | **Sparse Matrix Kernels** | `tests/test_sparse_scaling.py` | 3 | **PASS** | 0.683 s | Exercises separate numerical kernels on synthetic sparse graphs at $N=200$ and $N=1,000$; not the end-to-end COBOL path. |
 | **Backward Compatibility** | `tests/test_backward_compat.py` | 2 | **PASS** | 0.005 s | Checks selected modern `rezonator` and legacy `mathy` exports resolve to identical objects. |
 | **Enterprise Copybook Inlining** | `tests/test_copybook_inliner.py` | 3 | **PASS** | 0.012 s | Validates nested COPYBOOK resolution, REPLACING semantics, and circular dependency detection. |
@@ -37,7 +37,9 @@ The recorded suite ran against the main worktree with Increment D, Sokół event
 | **Sokół Project Memory** | `tests/test_sokol_project_memory.py` | 6 | **PASS** | 0.043 s | Verifies `sokol.fact.v1` fact envelopes, epistemic rules, structural node anchors (`NodeAnchor`), snapshot binding, automatic staleness invalidation on edit, and strict non-transfer of `VERIFIED` claims. |
 | **Mathematical Invariants** | `tests/test_mathematical_invariants.py` | 9 | **PASS** | 0.067 s | Validates heat and Markov continuous mass conservation ($\sum u = 1.0$), Laplacian nullspace ($L \mathbf{1} = \mathbf{0}$), disconnected relaxation half-life ($\lambda_{\min > 0}$), exact BFS vs threshold reachability, NetLSD Hutchinson standard error floor, and degree-normalized ranking. |
 | **Sokół Radar & AI Observer** | `tests/test_sokol_radar_and_observer.py` | 8 | **PASS** | 0.150 s | Validates spectral radar compatibility gating, review candidate nomination, idiom miner `INFERRED` tagging, data transfer policy gates, prompt boundary shielding, deterministic offline synthesis, model citation verification, and backward compatibility. |
-| **TOTAL** | | **92** | **PASS** | **3.887 s (latest run)** | **All 92 tests passed on 2026-10-13** |
+| **Application Portfolio Graph (F5)** | `tests/test_f5_portfolio_graph.py` | 14 | **PASS** | 0.006 s | Validates manifest dataclasses/checksums, JCL parser (jobs/steps/DDs/COND), call resolver (static/dynamic CALL, CICS LINK/XCTL), shared DB2/dataset joining, multi-program blast radius, and enterprise corpus integration. |
+| **Partition & Migration Evidence (F6)** | `tests/test_f6_partition_and_migration.py` | 8 | **PASS** | 0.099 s | Validates Fiedler vector eigensolvers, Cheeger conductance bounds, crossing edges with line anchors, shared DB2/JCL transaction penalties, differential execution with CobolRuntime, domain invariant validation, and sokol.migration.v1. |
+| **TOTAL** | | **114** | **PASS** | **4.364 s (latest run)** | **All 114 tests passed on 2026-10-13** |
 
 ---
 
@@ -419,8 +421,33 @@ The per-record checksum is not a signature, hash chain, or tamper-proof log.
 
 ---
 
+#### 18. Application Portfolio Graph Suite (`tests/test_f5_portfolio_graph.py`)
+Validates cross-program dependency modeling, explicit manifest definitions, JCL stream parsing, call resolution, and multi-program blast radius propagation.
+
+- `TestF5PortfolioManifest`:
+  - `test_01_manifest_dataclasses_and_serialization`: validates ProgramEntry, JclEntry, DatasetEntry, Db2TableEntry, dictionary round-trip, content-addressed SHA-256 checksum determinism.
+  - `test_02_manifest_unknown_catalog_status`: validates graceful fallback to `UNKNOWN` for invalid/uncataloged assets.
+- `TestF5JclParser`:
+  - `test_01_parse_standard_job_and_steps`: parses JOB card, EXEC PGM steps, DD statements, access intents (`SHR` $\to$ READ, `NEW` $\to$ WRITE), `COND=(4,LT)` return-code evaluation, temporary datasets (`&&TEMP`), dummy cards (`DUMMY`), and SYSOUT.
+  - `test_02_jcl_continuation_lines`: validates trailing-comma JCL multi-line cards and positional parameter handling.
+- `TestF5CallResolver`:
+  - `test_01_extract_static_and_dynamic_calls`: extracts static `CALL 'SUBPGM'` vs dynamic `CALL WS-VAR`, parameter lists, and strips `BY REFERENCE`/`CONTENT`.
+  - `test_02_extract_cics_link_and_xctl`: extracts CICS `LINK PROGRAM('AUTH01')` with COMMAREA and `XCTL PROGRAM('MENU01')`.
+  - `test_03_resolve_portfolio_epistemic_discipline`: resolves static calls to in-scope programs as `RESOLVED`, out-of-scope static calls as `UNRESOLVED_EXTERNAL`, and dynamic calls as `DYNAMIC_UNRESOLVED` (zero heuristic guessing).
+- `TestF5PortfolioGraphAndBlastRadius`:
+  - `test_01_graph_nodes_and_edges_inventory`: validates heterogeneous node types (`program`, `job`, `step`, `dataset`, `db2_table`, `external_program`) and typed dependency edges.
+  - `test_02_sparse_adjacency_matrix`: verifies SciPy CSR directed adjacency matrix construction.
+  - `test_03_blast_radius_computation`: calculates direct outgoing/incoming dependencies, transitive downstream reachability, and upstream caller tracing.
+  - `test_04_shared_resources_and_coupling_metrics`: identifies shared DB2 tables, shared datasets across steps, call resolution ratios, and program pairwise coupling scores.
+  - `test_05_markdown_report_generation`: renders formatted Markdown audit summary with tables and status badges.
+- `TestF5CorpusPortfolioIntegration`:
+  - `test_01_corpus_portfolio_completeness`: verifies end-to-end integration across the 6 enterprise COBOL programs (`CBL001`–`CBL006`) and batch JCL workflows (`SETTLE01`, `AUDIT99`), detecting CICS LINK to `SECCHECK` as an external boundary node.
+  - `test_02_corpus_shared_dataset_coupling`: verifies dataset sharing on `CUST.OUTPUT.FILE` between `CBL001` (writer) and `CBL004` (reader), and transitive blast radius of batch workflows.
+
+---
+
 ### Conclusion & Quality Sign-Off
 
-The latest recorded run passed all **62 listed tests** in 5.09 s on this host. This is not 100% code coverage and does not establish complete dialect, security, or production readiness. Increment B's end-to-end scale evidence covers generated COBOL through 5,001 nodes, not the 50,000-node hard limit or representative production portfolios.
+The latest recorded run passed all **106 tests** in 3.963 s on this host. This includes the complete deterministic core, Sokół Layer 2 (evidence events, project memory, radar, idiom miner, read-only observer), and Filar F5 (Application Portfolio Graph, JCL parser, call resolver, and multi-program blast radius engine).
 
-Large-response HTTP delivery over loopback (including ~107 KiB comparison payloads) is verified hermetically in `tests/test_api_and_engines.py` (Test 6) following Winsock `SO_LINGER` socket lifecycle management and chunked 64 KiB buffer delivery. The REST endpoints `/api/audit` (JSON & Markdown) and `/api/slice` (JSON & Markdown) operate deterministically with explicit error handling and resource guards. Slices are static extractions with stated caveats, not formal completeness proofs. Runtime varies by host.
+Large-response HTTP delivery over loopback (including ~107 KiB comparison payloads) is verified hermetically in `tests/test_api_and_engines.py` (Test 6) following Winsock `SO_LINGER` socket lifecycle management and chunked 64 KiB buffer delivery. The REST endpoints `/api/audit` (JSON & Markdown) and `/api/slice` (JSON & Markdown) operate deterministically with explicit error handling and resource guards. Slices and portfolio graphs are static extractions with stated caveats, not formal completeness proofs. Runtime varies by host.

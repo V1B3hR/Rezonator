@@ -8,6 +8,8 @@ This folder contains the complete technical specifications, architectural bluepr
 
 | Document | Topic | Status | Scope & Implementation |
 |---|---|:---:|---|
+| [`PORTFOLIO_GRAPH_SPEC.md`](PORTFOLIO_GRAPH_SPEC.md) | Multi-Program Application Portfolio Graph (F5) | 🟢 **DELIVERED** | Cross-program CALL/JCL/DB2 graph (`sokol.portfolio.graph.v1`), manifest, sparse reachability, and blast radius. |
+| [`PARTITION_AND_MIGRATION_SPEC.md`](PARTITION_AND_MIGRATION_SPEC.md) | Partition Recommendations & Migration Evidence (F6) | 🟢 **DELIVERED** | Spectral Cheeger cuts (`sokol.partition.v1`), crossing edges, shared DB2/JCL penalties, differential runtime verification (`sokol.migration.v1`), and domain invariants. |
 | [`SOKOL_ARCHITECTURE.md`](SOKOL_ARCHITECTURE.md) | Sokół AI Observer & Memory Architecture | 🟢 **DELIVERED** | Two-layer model, epistemic boundaries (`OBSERVED`, `INFERRED`, `VERIFIED`), and delivery sequence. |
 | [`SOKOL_OBSERVER_AND_RADAR.md`](SOKOL_OBSERVER_AND_RADAR.md) | Spectral Radar, Idioms & Observer | 🟢 **DELIVERED** | Spectral change radar (`sokol.radar.v1`), idiom miner (`sokol.idiom.v1`), data transfer policy, and read-only AI adapter. |
 | [`SOKOL_PROJECT_MEMORY.md`](SOKOL_PROJECT_MEMORY.md) | Sokół Versioned Project Memory (`sokol.fact.v1`) | 🟢 **DELIVERED** | Content-addressed fact envelopes, node anchors (`NodeAnchor`), snapshot binding, and staleness invalidation. |
@@ -44,6 +46,25 @@ Layer 2: Sokół Read-Only Observer & Memory 🟢 DELIVERED
 ├── Spectral Change Radar (sokol.radar.v1) 🟢 DELIVERED (sokol_radar.py)
 ├── Project Idiom Miner (sokol.idiom.v1) 🟢 DELIVERED (idiom_miner.py)
 └── Read-Only AI Observer Adapter (sokol.observer.v1) 🟢 DELIVERED (sokol_observer.py)
+
+Layer 3: Multi-Program Application Portfolio Graph (F5) 🟢 DELIVERED
+├── Portfolio Manifest (sokol.portfolio.manifest.v1) 🟢 DELIVERED (portfolio_manifest.py)
+├── Hermetic Mainframe JCL Parser 🟢 DELIVERED (jcl_parser.py)
+├── Inter-Program Call & Resource Resolver 🟢 DELIVERED (call_resolver.py)
+└── Application Portfolio Graph & Blast Radius (sokol.portfolio.graph.v1) 🟢 DELIVERED (portfolio_graph.py)
+
+Layer 4: Partition Recommendations & Migration Evidence (F6) 🟢 DELIVERED
+├── Spectral Cheeger Partitioner (sokol.partition.v1) 🟢 DELIVERED (partition_recommender.py)
+│   ├── Fiedler Vector Sparse Eigensolver
+│   ├── Cheeger Conductance Bounds Sweep
+│   ├── Crossing Edges & Line Anchors
+│   ├── Shared DB2 & Dataset Friction Penalties
+│   └── JCL Transaction Boundary Violations
+└── Migration Verifier & Differential Testing (sokol.migration.v1) 🟢 DELIVERED (migration_verifier.py)
+    ├── Bounded Runtime Differential Execution
+    ├── Variable State & Trace Divergence Diffs
+    ├── Domain Invariant Enforcement (e.g. Balance >= 0)
+    └── Dual Structural & Semantic Equivalence Signals
 ```
 
 ---

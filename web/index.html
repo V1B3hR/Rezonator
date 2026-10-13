@@ -42,6 +42,7 @@
       <button class="tab-btn active" data-tab="single-view" id="tab-single">Single Program Graph</button>
       <button class="tab-btn" data-tab="compare-view" id="tab-compare">Structural Comparison</button>
       <button class="tab-btn" data-tab="brief-view" id="tab-brief">Analysis Evidence Brief</button>
+      <button class="tab-btn" data-tab="portfolio-view" id="tab-portfolio">Portfolio & Blast Radius (F5)</button>
     </div>
     <div class="system-status">
       <span class="status-indicator online"></span>
@@ -321,6 +322,135 @@
           </div>
           <pre class="brief-output" id="brief-text-content">The deterministic brief will appear after analysis.</pre>
         </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Multi-Program Application Portfolio View (Filar F5) -->
+    <section class="tab-pane" id="pane-portfolio-view">
+      <div class="panel glass-card portfolio-control-panel">
+        <div class="panel-header">
+          <div class="header-title-group">
+            <span class="icon-chip emerald">F5</span>
+            <h2>APPLICATION PORTFOLIO GRAPH & MULTI-PROGRAM BLAST RADIUS</h2>
+          </div>
+          <div class="panel-controls">
+            <button class="btn btn-primary" id="btn-reload-portfolio">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              Reload Enterprise Portfolio
+            </button>
+            <button class="btn btn-outline" id="btn-toggle-portfolio-report">Toggle Markdown Audit</button>
+          </div>
+        </div>
+
+        <!-- Portfolio Metrics Ribbon -->
+        <div class="metrics-ribbon" id="portfolio-metrics-ribbon">
+          <div class="ribbon-card">
+            <span class="ribbon-label">COBOL Programs</span>
+            <span class="ribbon-val" id="val-port-programs">--</span>
+          </div>
+          <div class="ribbon-card">
+            <span class="ribbon-label">JCL Batch Jobs</span>
+            <span class="ribbon-val" id="val-port-jobs">--</span>
+          </div>
+          <div class="ribbon-card">
+            <span class="ribbon-label">Job Steps</span>
+            <span class="ribbon-val" id="val-port-steps">--</span>
+          </div>
+          <div class="ribbon-card accent-cyan">
+            <span class="ribbon-label">Datasets / DSN</span>
+            <span class="ribbon-val" id="val-port-datasets">--</span>
+          </div>
+          <div class="ribbon-card accent-amber">
+            <span class="ribbon-label">DB2 Tables</span>
+            <span class="ribbon-val" id="val-port-tables">--</span>
+          </div>
+          <div class="ribbon-card accent-violet">
+            <span class="ribbon-label">Call Invocations</span>
+            <span class="ribbon-val" id="val-port-calls">--</span>
+          </div>
+          <div class="ribbon-card">
+            <span class="ribbon-label">Resolution Ratio</span>
+            <span class="ribbon-val" id="val-port-res-ratio">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Visualizer Grid for Portfolio -->
+      <div class="portfolio-grid">
+        <div class="panel glass-card portfolio-graph-panel">
+          <div class="panel-header">
+            <div class="header-title-group">
+              <span class="panel-dot"></span>
+              <h3>CROSS-PROGRAM TOPOLOGY MAP</h3>
+            </div>
+            <div class="canvas-legend">
+              <span class="legend-item"><span class="dot prog-dot"></span> Program</span>
+              <span class="legend-item"><span class="dot job-dot"></span> JCL Job</span>
+              <span class="legend-item"><span class="dot step-dot"></span> Step</span>
+              <span class="legend-item"><span class="dot dsn-dot"></span> Dataset</span>
+              <span class="legend-item"><span class="dot tbl-dot"></span> DB2 Table</span>
+              <span class="legend-item"><span class="dot ext-dot"></span> External</span>
+            </div>
+          </div>
+          <div class="canvas-wrapper">
+            <canvas id="portfolio-canvas"></canvas>
+          </div>
+          <div class="node-inspector" id="portfolio-inspector">
+            Click on any program, table, or dataset node to analyze its multi-program blast radius.
+          </div>
+        </div>
+
+        <div class="panel glass-card portfolio-sidebar-panel">
+          <div class="panel-header">
+            <h3>BLAST RADIUS & RESOURCE COUPLING</h3>
+          </div>
+          <div class="portfolio-detail-content" id="portfolio-detail-view">
+            <div class="blast-radius-box">
+              <h4 id="blast-target-title">Target: None selected</h4>
+              <p class="blast-subtext" id="blast-target-subtext">Select a node from the topology map to compute its downstream impact set and upstream triggers.</p>
+              <div class="blast-stat-bar">
+                <div class="blast-stat">
+                  <span class="blast-stat-label">Downstream Impact</span>
+                  <span class="blast-stat-val" id="blast-downstream-val">--</span>
+                </div>
+                <div class="blast-stat">
+                  <span class="blast-stat-label">Upstream Callers</span>
+                  <span class="blast-stat-val" id="blast-upstream-val">--</span>
+                </div>
+                <div class="blast-stat">
+                  <span class="blast-stat-label">Impact Ratio</span>
+                  <span class="blast-stat-val" id="blast-ratio-val">--</span>
+                </div>
+              </div>
+              <div class="blast-lists">
+                <h5>Downstream Reachability:</h5>
+                <ul class="blast-node-list" id="blast-downstream-list">
+                  <li>None</li>
+                </ul>
+                <h5>Upstream Callers / Invocations:</h5>
+                <ul class="blast-node-list" id="blast-upstream-list">
+                  <li>None</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Shared Resources List -->
+            <div class="shared-resources-box">
+              <h4>Shared Coupling Hotspots</h4>
+              <div id="shared-resources-tables">
+                <p>Loading shared DB2 tables and datasets...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsible Markdown Report Container -->
+      <div class="panel glass-card portfolio-report-panel" id="portfolio-markdown-panel" style="display: none; margin-top: 1.5rem;">
+        <div class="panel-header">
+          <h3>PORTFOLIO AUDIT REPORT (MARKDOWN PREVIEW)</h3>
+        </div>
+        <pre class="brief-output" id="portfolio-markdown-content">Loading report...</pre>
       </div>
     </section>
 

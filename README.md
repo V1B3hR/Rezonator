@@ -5,7 +5,7 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Powered by Błyskawica](https://img.shields.io/badge/Powered%20by-B%C5%82yskawica%20SPARKLE%20V10-cyan.svg)](https://github.com/V1B3hR/Blyskawica)
 [![GitHub Repo](https://img.shields.io/badge/GitHub-V1B3hR%2FRezonator-blue.svg)](https://github.com/V1B3hR/Rezonator)
-[![Focused Test Inventory](https://img.shields.io/badge/focused%20tests-62%20listed-blue.svg)]()
+[![Focused Test Inventory](https://img.shields.io/badge/focused%20tests-114%20listed-blue.svg)]()
 
 > *"Rezonator maps selected COBOL constructs into a finite program graph, making structural relationships easier to inspect."*
 
@@ -51,7 +51,9 @@ Rezonator includes project documentation for architecture, experiments, implemen
 |:---|:---|:---|
 | **License & Commercial Terms** | [`REZONATOR_LICENSE.md`](file:///c:/Projekty/Rezonator/REZONATOR_LICENSE.md) | Source-available & commercial licensing terms (UK jurisdiction), enterprise bank restrictions, and public healthcare / NHS humanitarian waiver. |
 | **Debugging & Defect Report** | [`REZONATOR_DEBUGGING_REPORT.md`](file:///c:/Projekty/Rezonator/REZONATOR_DEBUGGING_REPORT.md) | Historical technical audit and root-cause notes for reported defects; not an independent proof or current certification. |
-| **Test Suite Report** | [`REZONATOR_TEST_SUITE_REPORT.md`](file:///c:/Projekty/Rezonator/REZONATOR_TEST_SUITE_REPORT.md) | Snapshot of 75 focused unit and integration tests; not a statement of code coverage or certification. |
+| **Test Suite Report** | [`REZONATOR_TEST_SUITE_REPORT.md`](file:///c:/Projekty/Rezonator/REZONATOR_TEST_SUITE_REPORT.md) | Snapshot of 114 focused unit and integration tests; not a statement of code coverage or certification. |
+| **Portfolio Graph Specification (F5)** | [`docs/PORTFOLIO_GRAPH_SPEC.md`](file:///c:/Projekty/Rezonator/docs/PORTFOLIO_GRAPH_SPEC.md) | Multi-program dependency graph (`sokol.portfolio.graph.v1`), JCL stream parser, static/dynamic CALL resolver, shared DB2/dataset joining, and blast radius. |
+| **Partition & Migration Spec (F6)** | [`docs/PARTITION_AND_MIGRATION_SPEC.md`](file:///c:/Projekty/Rezonator/docs/PARTITION_AND_MIGRATION_SPEC.md) | Spectral Cheeger graph partitioning (`sokol.partition.v1`), crossing edges, shared DB2/JCL friction, differential runtime verification (`sokol.migration.v1`), and domain invariants. |
 | **Audit Report & Provenance** | [`docs/AUDIT_REPORT.md`](file:///c:/Projekty/Rezonator/docs/AUDIT_REPORT.md) | Contract for auditable JSON/Markdown reports, SHA-256 graph digest, deterministic analysis fingerprint, and source anchors (Increment C). |
 | **Context Slice Specification** | [`docs/CONTEXT_SLICE_SPEC.md`](file:///c:/Projekty/Rezonator/docs/CONTEXT_SLICE_SPEC.md) | Contract for bounded context slices under line/token budgets with explicit disclosure of omitted dependencies (Increment D). |
 | **Sokół Evidence Events** | [`docs/SOKOL_EVIDENCE_EVENTS.md`](file:///c:/Projekty/Rezonator/docs/SOKOL_EVIDENCE_EVENTS.md) | Versioned, bounded JSONL export contract for source snapshots, deterministic analyses, and value-free interpreter summaries; no persistence or AI transfer. |

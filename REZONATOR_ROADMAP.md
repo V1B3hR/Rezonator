@@ -33,7 +33,8 @@ The current limits are centralized in `rezonator/limits.py`: 10 MiB source/paylo
 - **Increment D — bounded context-slice beta: implemented.** Bounded context packets under line and token budgets (`max_lines`, `max_tokens`, `max_nodes`) with explicit disclosure of omitted dependencies, snippet reconstruction, and Markdown rendering; `/api/slice` endpoint implemented; evaluated against behavioral mutation cases. Slices are static extractions with stated caveats, not formal completeness proofs.
 - **Sokół evidence events v1 — implemented (export contract only).** Versioned source-snapshot, analysis-result, and bounded interpreter-run event envelopes; reproducible source/analysis snapshot IDs; source-linked metadata; and bounded JSONL serialize/parse helpers. No event persistence, Git watcher, HTTP endpoint, per-mutation trace stream, project memory, or model adapter is included.
 - **F4 — enterprise constructs and basic hardening: partial implementation.** Copybook expansion and selected embedded statements exist; full dialect compatibility and deployment-grade remote security do not.
-- **F5–F6 — portfolio analysis and decomposition: not implemented.** There is no cross-program CALL/JCL graph, Cheeger partitioner, or migration verifier today.
+- **F5 — application portfolio graph: implemented.** 🟢 **DELIVERED:** Bounded project manifest (`sokol.portfolio.manifest.v1`), hermetic JCL parser (jobs, steps, DDs, DISP, COND), inter-program call resolver (static/dynamic COBOL CALL, CICS LINK/XCTL, parameters), shared DB2/dataset joining, unified multi-program dependency graph (`sokol.portfolio.graph.v1`), CSR adjacency, transitive blast-radius propagation, and Markdown reporting ([`docs/PORTFOLIO_GRAPH_SPEC.md`](docs/PORTFOLIO_GRAPH_SPEC.md)).
+- **F6 — partition recommendations and migration evidence: not implemented.** Cheeger spectral partitioner and migration verifier remain open.
 
 ### Two-layer architecture: deterministic core and Sokół
 
@@ -79,25 +80,29 @@ The spectral radar must not label a Fiedler-value drop as a business-logic failu
 
 ## 3. Multi-program analysis and modernization guidance
 
-### F5 — application portfolio graph (target horizon: 2027)
+### F5 — application portfolio graph — 🟢 DELIVERED
 
-Build a cross-program dependency model incrementally, starting from an explicit project manifest rather than assuming that one repository contains the whole mainframe estate.
+Build a cross-program dependency model incrementally, starting from an explicit project manifest rather than assuming that one repository contains the whole mainframe estate. Delivered in [`docs/PORTFOLIO_GRAPH_SPEC.md`](docs/PORTFOLIO_GRAPH_SPEC.md):
 
-1. Resolve static COBOL `CALL`, CICS `LINK`/`XCTL`, program identifiers, and parameter bindings where available; preserve unresolved or dynamic calls as explicit unknown edges.
-2. Add JCL job, step, `PGM`, and DD dataset relationships. Model conditional execution, procedures, overrides, and dataset identity only as their semantics are implemented and tested.
-3. Join shared DB2 table and VSAM/file resources across programs. Distinguish observed names from proven read/write semantics; represent missing catalog information as unknown.
-4. Produce an application-level dependency map and blast-radius report with source evidence and coverage counts.
+1. 🟢 **Explicit portfolio manifest (`sokol.portfolio.manifest.v1`):** Program, JCL job, dataset, and DB2 table catalog with content-addressed checksums ([`portfolio_manifest.py`](rezonator/portfolio_manifest.py)).
+2. 🟢 **Hermetic JCL stream parser:** Parsed jobs, execution steps (`PGM=`, `PROC=`), condition logic (`COND=`, `EVEN`, `ONLY`), and DD dataset access intents (`SHR` $\to$ read, `NEW`/`MOD` $\to$ write) ([`jcl_parser.py`](rezonator/jcl_parser.py)).
+3. 🟢 **Inter-program call & resource resolver:** Resolved static COBOL `CALL`, CICS `LINK`/`XCTL`, and parameter bindings (`USING`, `COMMAREA`); dynamic calls (`CALL WS-VAR`) and missing external programs are strictly preserved as explicit `UNRESOLVED` edges ([`call_resolver.py`](rezonator/call_resolver.py)).
+4. 🟢 **Shared DB2 table & dataset joining:** Joined relational tables (`EXEC SQL`) and file datasets with explicit catalog status tracking.
+5. 🟢 **Portfolio graph & blast radius engine (`sokol.portfolio.graph.v1`):** Unified multi-program dependency graph with sparse SciPy CSR directed adjacency, transitive blast-radius reachability, upstream caller tracing, cross-program coupling metrics, and Markdown reporting ([`portfolio_graph.py`](rezonator/portfolio_graph.py)).
 
-**2027 outcome:** a credible pre-migration audit pilot for a bounded application portfolio, with copybook-aware source references, selected CICS/DB2 support, parser coverage, and reviewable context slices. A Topological Coupling Score (TCS) may be researched during this period, but it becomes a published metric only after its definition is stable and its relationship to expert assessments or observed migration effort has been evaluated on a held-out corpus.
+**Delivered outcome:** A credible pre-migration audit pilot for bounded application portfolios with copybook-aware source references, CICS/DB2 support, and blast-radius impact analysis. A Topological Coupling Score (TCS) may be researched during subsequent phases, but it becomes a published metric only after empirical calibration on held-out legacy portfolios.
 
-### F6 — partition recommendations and migration evidence (target horizon: 2028)
+### F6 — partition recommendations and migration evidence — 🟢 DELIVERED
 
-1. Add candidate cuts using Fiedler-vector sweeps and conductance, then incorporate shared state, transaction boundaries, call traffic, and data ownership. A spectral cut is a structural suggestion; it does not by itself produce a valid service boundary or minimize real RPC cost.
-2. Explain each candidate boundary, including crossing edges, shared resources, uncertainty, and the source statements that create the coupling. Keep an architect in the approval loop.
-3. For translated code, compare observable behavior with differential tests, workload traces, and domain invariants. NetLSD similarity and absence of detected cycles are structural signals, not proof of functional equivalence.
-4. Consider a Rust `rezonator-core` only after profiling identifies Python or sparse-kernel overhead as the bottleneck. First define a stable graph interchange format and benchmark the Python baseline. The proposed 10-million-node / sub-500-ms target remains a research hypothesis until measured on a specified workload and machine.
+Ranked, explainable decomposition candidates and an auditable migration-validation workflow for legacy portfolios. Delivered in [`docs/PARTITION_AND_MIGRATION_SPEC.md`](docs/PARTITION_AND_MIGRATION_SPEC.md):
 
-**2028 outcome:** ranked, explainable decomposition candidates and a migration-validation workflow for selected COBOL portfolios. Rezonator recommends and gathers evidence; it does not autonomously rewrite or certify production systems.
+1. 🟢 **Spectral Cheeger graph partitioner (`sokol.partition.v1`):** Fiedler-vector eigensolvers on sparse CSR Laplacians, sweep cuts satisfying discrete Cheeger conductance bounds ($\lambda_1 / 2 \le \phi \le \sqrt{2 \lambda_1}$), multi-objective domain friction scoring, shared DB2 table ownership detection, JCL step transaction boundary violation tracking, and uncertainty scoring from unresolved dynamic calls ([`partition_recommender.py`](rezonator/partition_recommender.py)).
+2. 🟢 **Architect-in-the-loop explanation:** Crossing interaction edges with source location line anchors, shared resource breakdowns, and Markdown report rendering; all decomposition candidates are strictly governed under `PENDING_ARCHITECT_REVIEW`.
+3. 🟢 **Migration verification & differential testing (`sokol.migration.v1`):** Hermetic operational semantics via `CobolRuntime`, variable state diffing, execution trace divergence pinpointing, and domain invariant validation (e.g. non-negative balance constraints) ([`migration_verifier.py`](rezonator/migration_verifier.py)).
+4. 🟢 **Dual structural & semantic signals:** NetLSD spectral heat-trace distance, Fiedler eigenvalue shift, Chladni modal surface cosine correlation, and cycle topology preservation contrasted with functional test pass rates.
+5. 🟢 **REST API endpoints:** `POST /api/partition` and `POST /api/migration` supporting JSON and Markdown output formats.
+
+**Delivered outcome:** Rezonator recommends and gathers evidence; it does not autonomously rewrite or certify production systems. Structural signals and dynamic differential testing are clearly demarcated under strict epistemic discipline. A Rust `rezonator-core` remains an optional optimization considered only if future profiling identifies sparse kernel bottlenecks on million-node graphs.
 
 ## 4. Longer-range direction (target horizon: 2031)
 

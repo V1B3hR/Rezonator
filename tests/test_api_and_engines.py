@@ -332,6 +332,96 @@ class TestRezonatorEngine(unittest.TestCase):
         self.assertIn("metrics", full_res)
         self.assertIn("verdict", full_res)
 
+        # 7. Portfolio API (GET default corpus and POST custom/markdown)
+        port_get_req = urllib.request.Request(f"{base_url}/api/portfolio")
+        port_get_resp = urllib.request.urlopen(port_get_req)
+        self.assertEqual(port_get_resp.status, 200)
+        port_get_data = json.loads(port_get_resp.read().decode())
+        self.assertIn("report", port_get_data)
+        self.assertIn("graph", port_get_data)
+        self.assertGreaterEqual(port_get_data["report"]["metrics"]["node_counts"].get("program", 0), 6)
+
+        port_post_payload = json.dumps({"format": "markdown"}).encode()
+        port_post_req = urllib.request.Request(
+            f"{base_url}/api/portfolio",
+            data=port_post_payload,
+            headers={"Content-Type": "application/json"},
+        )
+        port_post_resp = urllib.request.urlopen(port_post_req)
+        self.assertEqual(port_post_resp.status, 200)
+        self.assertTrue(port_post_resp.headers["Content-Type"].startswith("text/markdown"))
+        port_md = port_post_resp.read().decode()
+        self.assertIn("# Application Portfolio Graph Report", port_md)
+
+        # 8. Partition API (POST /api/partition in JSON and Markdown)
+        part_post_payload = json.dumps({"top_k": 2}).encode()
+        part_post_req = urllib.request.Request(
+            f"{base_url}/api/partition",
+            data=part_post_payload,
+            headers={"Content-Type": "application/json"},
+        )
+        part_post_resp = urllib.request.urlopen(part_post_req)
+        self.assertEqual(part_post_resp.status, 200)
+        part_data = json.loads(part_post_resp.read().decode())
+        self.assertEqual(part_data["schema_version"], "sokol.partition.v1")
+        self.assertGreater(len(part_data["candidates"]), 0)
+
+        part_md_payload = json.dumps({"top_k": 2, "format": "markdown"}).encode()
+        part_md_req = urllib.request.Request(
+            f"{base_url}/api/partition",
+            data=part_md_payload,
+            headers={"Content-Type": "application/json"},
+        )
+        part_md_resp = urllib.request.urlopen(part_md_req)
+        self.assertEqual(part_md_resp.status, 200)
+        self.assertTrue(part_md_resp.headers["Content-Type"].startswith("text/markdown"))
+        part_md = part_md_resp.read().decode()
+        self.assertIn("# Architecture Partition Recommendations", part_md)
+
+        # 9. Migration API (POST /api/migration in JSON and Markdown)
+        mig_code_base = """       IDENTIFICATION DIVISION.
+       PROGRAM-ID. MIGBASE.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01  WS-BAL PIC 9(4) VALUE 100.
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           ADD 10 TO WS-BAL.
+           STOP RUN.
+"""
+        mig_payload = json.dumps({
+            "baseline_source": mig_code_base,
+            "candidate_source": mig_code_base,
+            "test_cases": [{"test_id": "api-tc1", "input_overrides": {"WS-BAL": 200}}],
+        }).encode()
+        mig_req = urllib.request.Request(
+            f"{base_url}/api/migration",
+            data=mig_payload,
+            headers={"Content-Type": "application/json"},
+        )
+        mig_resp = urllib.request.urlopen(mig_req)
+        self.assertEqual(mig_resp.status, 200)
+        mig_data = json.loads(mig_resp.read().decode())
+        self.assertEqual(mig_data["schema_version"], "sokol.migration.v1")
+        self.assertEqual(mig_data["epistemic_status"], "OBSERVED_VERIFIED")
+        self.assertEqual(mig_data["passed_tests"], 1)
+
+        mig_md_payload = json.dumps({
+            "baseline_source": mig_code_base,
+            "candidate_source": mig_code_base,
+            "format": "markdown",
+        }).encode()
+        mig_md_req = urllib.request.Request(
+            f"{base_url}/api/migration",
+            data=mig_md_payload,
+            headers={"Content-Type": "application/json"},
+        )
+        mig_md_resp = urllib.request.urlopen(mig_md_req)
+        self.assertEqual(mig_md_resp.status, 200)
+        self.assertTrue(mig_md_resp.headers["Content-Type"].startswith("text/markdown"))
+        mig_md = mig_md_resp.read().decode()
+        self.assertIn("# Migration Verification Report", mig_md)
+
 
 if __name__ == "__main__":
     unittest.main()

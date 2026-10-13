@@ -17,12 +17,28 @@ from rezonator.program_comparator import ProgramComparator
 from rezonator.llm_synthesizer import LLMSynthesizer
 from rezonator.audit_report import audit_report_to_markdown, build_audit_report
 from rezonator.program_slicer import ProgramSlicer, context_slice_to_markdown
+from rezonator.portfolio_manifest import (
+    PortfolioManifest,
+    ProgramEntry,
+    JclEntry,
+    DatasetEntry,
+    Db2TableEntry,
+)
+from rezonator.portfolio_graph import PortfolioGraphBuilder
+from rezonator.partition_recommender import PartitionRecommender
+from rezonator.migration_verifier import (
+    MigrationVerifier,
+    DifferentialTestCase,
+    DomainInvariant,
+)
 from rezonator.limits import ResourceLimitError, MAX_SOURCE_BYTES
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB_DIR = os.path.join(BASE_DIR, "web")
 EXAMPLES_DIR = os.path.join(BASE_DIR, "examples")
+CORPUS_DIR = os.path.join(EXAMPLES_DIR, "corpus")
+CORPUS_JCL_DIR = os.path.join(CORPUS_DIR, "jcl")
 MAX_PAYLOAD_BYTES = MAX_SOURCE_BYTES
 REQUEST_TIMEOUT_SECONDS = 30
 LOCAL_ALLOWED_ORIGINS = frozenset({
@@ -116,6 +132,8 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
                 self._handle_get_examples()
             elif path == "/api/health":
                 self._send_json({"status": "healthy", "service": "Rezonator Engine"})
+            elif path == "/api/portfolio":
+                self._handle_get_portfolio()
             else:
                 # Fall back to serving static files from web/
                 super().do_GET()
@@ -144,6 +162,12 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
                 self._handle_slice(data)
             elif path == "/api/brief":
                 self._handle_brief(data)
+            elif path == "/api/portfolio":
+                self._handle_portfolio(data)
+            elif path == "/api/partition":
+                self._handle_partition(data)
+            elif path == "/api/migration":
+                self._handle_migration(data)
             else:
                 self._send_error_json(f"Endpoint not found: {path}", 404)
         except ResourceLimitError as exc:
@@ -303,6 +327,173 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
             )
         else:
             self._send_json(packet)
+
+    def _build_default_corpus_manifest(self) -> PortfolioManifest:
+        program_files = [
+            os.path.join(CORPUS_DIR, f)
+            for f in sorted(os.listdir(CORPUS_DIR))
+            if f.endswith(".cbl")
+        ] if os.path.isdir(CORPUS_DIR) else []
+        jcl_files = [
+            os.path.join(CORPUS_JCL_DIR, f)
+            for f in sorted(os.listdir(CORPUS_JCL_DIR))
+            if f.endswith(".jcl")
+        ] if os.path.isdir(CORPUS_JCL_DIR) else []
+        return PortfolioManifest.from_files(
+            program_paths=program_files,
+            jcl_paths=jcl_files,
+            name="CorpusEnterprisePortfolio",
+            description="6-program enterprise portfolio with batch JCL workflows",
+            known_tables=["ACCOUNTS", "AUDIT_LOG"],
+            known_datasets=["CUST.MASTER.FILE", "CUST.OUTPUT.FILE"],
+        )
+
+    def _handle_portfolio(self, data: dict):
+        output_format = data.get("format", "json")
+        if output_format not in ("json", "markdown"):
+            self._send_error_json("format must be 'json' or 'markdown'", 400)
+            return
+
+        if "manifest" in data and isinstance(data["manifest"], dict):
+            manifest = PortfolioManifest.from_dict(data["manifest"])
+        elif data.get("programs") or data.get("jobs"):
+            progs = [ProgramEntry.from_dict(p) for p in data.get("programs", [])]
+            jobs = [JclEntry.from_dict(j) for j in data.get("jobs", [])]
+            dsns = [DatasetEntry.from_dict(d) for d in data.get("known_datasets", [])]
+            tables = [Db2TableEntry.from_dict(t) for t in data.get("known_tables", [])]
+            manifest = PortfolioManifest(
+                name=data.get("name", "ad-hoc-portfolio"),
+                programs=progs,
+                jobs=jobs,
+                known_datasets=dsns,
+                known_tables=tables,
+                description=data.get("description", ""),
+            )
+        else:
+            manifest = self._build_default_corpus_manifest()
+
+        builder = PortfolioGraphBuilder()
+        graph = builder.build(manifest)
+
+        if output_format == "markdown":
+            self._send_bytes(
+                graph.to_markdown_report().encode("utf-8"),
+                "text/markdown; charset=utf-8",
+            )
+        else:
+            self._send_json({
+                "report": graph.generate_report(),
+                "graph": graph.to_dict(),
+            })
+
+    def _handle_get_portfolio(self):
+        manifest = self._build_default_corpus_manifest()
+        builder = PortfolioGraphBuilder()
+        graph = builder.build(manifest)
+        self._send_json({
+            "report": graph.generate_report(),
+            "graph": graph.to_dict(),
+        })
+
+    def _handle_partition(self, data: dict):
+        output_format = data.get("format", "json")
+        if output_format not in ("json", "markdown"):
+            self._send_error_json("format must be 'json' or 'markdown'", 400)
+            return
+
+        top_k = data.get("top_k", 3)
+        if not isinstance(top_k, int) or top_k <= 0:
+            self._send_error_json("top_k must be a positive integer", 400)
+            return
+
+        if "manifest" in data and isinstance(data["manifest"], dict):
+            manifest = PortfolioManifest.from_dict(data["manifest"])
+        elif data.get("programs") or data.get("jobs"):
+            progs = [ProgramEntry.from_dict(p) for p in data.get("programs", [])]
+            jobs = [JclEntry.from_dict(j) for j in data.get("jobs", [])]
+            dsns = [DatasetEntry.from_dict(d) for d in data.get("known_datasets", [])]
+            tables = [Db2TableEntry.from_dict(t) for t in data.get("known_tables", [])]
+            manifest = PortfolioManifest(
+                name=data.get("name", "ad-hoc-portfolio"),
+                programs=progs,
+                jobs=jobs,
+                known_datasets=dsns,
+                known_tables=tables,
+                description=data.get("description", ""),
+            )
+        else:
+            manifest = self._build_default_corpus_manifest()
+
+        builder = PortfolioGraphBuilder()
+        graph = builder.build(manifest)
+        recommender = PartitionRecommender()
+        candidates = recommender.recommend_portfolio_partitions(graph, top_k=top_k)
+
+        if output_format == "markdown":
+            self._send_bytes(
+                recommender.to_markdown_report(candidates).encode("utf-8"),
+                "text/markdown; charset=utf-8",
+            )
+        else:
+            self._send_json({
+                "schema_version": PartitionRecommender.SCHEMA_VERSION,
+                "manifest_id": graph.manifest_id,
+                "candidate_count": len(candidates),
+                "candidates": [c.to_dict() for c in candidates],
+            })
+
+    def _handle_migration(self, data: dict):
+        output_format = data.get("format", "json")
+        if output_format not in ("json", "markdown"):
+            self._send_error_json("format must be 'json' or 'markdown'", 400)
+            return
+
+        baseline_source = data.get("baseline_source") or data.get("source_a")
+        candidate_source = data.get("candidate_source") or data.get("source_b")
+
+        if not baseline_source or not candidate_source:
+            self._send_error_json("baseline_source and candidate_source are required", 400)
+            return
+
+        copybooks = self._request_copybooks(data)
+        test_cases_raw = data.get("test_cases", [])
+        test_cases = [
+            DifferentialTestCase(
+                test_id=tc.get("test_id", f"tc-{idx:02d}"),
+                description=tc.get("description", ""),
+                input_overrides=tc.get("input_overrides", {}),
+                expected_output_vars=tc.get("expected_output_vars"),
+                invariants=tc.get("invariants", []),
+            )
+            for idx, tc in enumerate(test_cases_raw, 1)
+        ] if test_cases_raw else None
+
+        invariants_raw = data.get("invariants", [])
+        invariants = [
+            DomainInvariant(
+                name=inv.get("name", f"inv-{idx:02d}"),
+                expression=inv.get("expression", ""),
+                description=inv.get("description", ""),
+                severity=inv.get("severity", "CRITICAL"),
+            )
+            for idx, inv in enumerate(invariants_raw, 1)
+        ] if invariants_raw else None
+
+        verifier = MigrationVerifier(copybooks=copybooks)
+        evidence = verifier.verify(
+            baseline_source=baseline_source,
+            candidate_source=candidate_source,
+            test_cases=test_cases,
+            invariants=invariants,
+        )
+
+        if output_format == "markdown":
+            self._send_bytes(
+                evidence.to_markdown_report().encode("utf-8"),
+                "text/markdown; charset=utf-8",
+            )
+        else:
+            self._send_json(evidence.to_dict())
 
     @staticmethod
     def _request_copybooks(data: dict):

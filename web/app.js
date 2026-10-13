@@ -19,6 +19,14 @@ const AppState = {
   graphLayout: {
     nodes: [],
     edges: []
+  },
+  portfolio: {
+    data: null,
+    selectedNodeId: null,
+    layoutNodes: [],
+    layoutEdges: [],
+    downstreamIds: new Set(),
+    upstreamIds: new Set()
   }
 };
 
@@ -58,6 +66,13 @@ function initTabs() {
           triggerComparison();
         } else {
           renderCompareCharts();
+        }
+      } else if (AppState.activeTab === 'portfolio-view') {
+        resizeAllCanvases();
+        if (!AppState.portfolio.data) {
+          loadPortfolio();
+        } else {
+          renderPortfolioGraph();
         }
       }
     });
@@ -154,7 +169,30 @@ function initEventListeners() {
 
   // Canvas graph click listener for node inspector
   const graphCanvas = document.getElementById('canvas-graph');
-  graphCanvas.addEventListener('click', handleGraphClick);
+  if (graphCanvas) {
+    graphCanvas.addEventListener('click', handleGraphClick);
+  }
+
+  // Portfolio view listeners (Filar F5)
+  const btnReloadPort = document.getElementById('btn-reload-portfolio');
+  if (btnReloadPort) {
+    btnReloadPort.addEventListener('click', () => loadPortfolio());
+  }
+
+  const btnToggleReport = document.getElementById('btn-toggle-portfolio-report');
+  if (btnToggleReport) {
+    btnToggleReport.addEventListener('click', () => {
+      const panel = document.getElementById('portfolio-markdown-panel');
+      if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      }
+    });
+  }
+
+  const portCanvas = document.getElementById('portfolio-canvas');
+  if (portCanvas) {
+    portCanvas.addEventListener('click', handlePortfolioCanvasClick);
+  }
 }
 
 // ==========================================================================
@@ -922,12 +960,395 @@ function renderCompareRadar() {
 }
 
 function resizeAllCanvases() {
-  const ids = ['canvas-graph', 'canvas-cymatics', 'canvas-diffusion', 'canvas-geodesic', 'canvas-compare-spectrum', 'canvas-compare-radar'];
+  const ids = [
+    'canvas-graph',
+    'canvas-cymatics',
+    'canvas-diffusion',
+    'canvas-geodesic',
+    'canvas-compare-spectrum',
+    'canvas-compare-radar',
+    'portfolio-canvas'
+  ];
   ids.forEach(id => {
     const c = document.getElementById(id);
     if (c && c.parentElement) {
       c.width = c.parentElement.clientWidth;
-      c.height = c.parentElement.clientHeight;
+      c.height = c.parentElement.clientHeight || 520;
     }
   });
+}
+
+// ==========================================================================
+// Portfolio Graph & Multi-Program Blast Radius (Filar F5)
+// ==========================================================================
+
+async function loadPortfolio() {
+  try {
+    const res = await fetch('/api/portfolio');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    AppState.portfolio.data = data;
+
+    // Update Ribbon Metrics
+    const metrics = data.report.metrics;
+    const nc = metrics.node_counts || {};
+    const calls = metrics.call_metrics || {};
+
+    const elPrograms = document.getElementById('val-port-programs');
+    if (elPrograms) elPrograms.textContent = nc.program || 0;
+    const elJobs = document.getElementById('val-port-jobs');
+    if (elJobs) elJobs.textContent = nc.job || 0;
+    const elSteps = document.getElementById('val-port-steps');
+    if (elSteps) elSteps.textContent = nc.step || 0;
+    const elDatasets = document.getElementById('val-port-datasets');
+    if (elDatasets) elDatasets.textContent = nc.dataset || 0;
+    const elTables = document.getElementById('val-port-tables');
+    if (elTables) elTables.textContent = nc.db2_table || 0;
+    const elCalls = document.getElementById('val-port-calls');
+    if (elCalls) elCalls.textContent = calls.total_calls || 0;
+    const elRatio = document.getElementById('val-port-res-ratio');
+    if (elRatio) elRatio.textContent = `${((calls.call_resolution_ratio || 0) * 100).toFixed(1)}%`;
+
+    // Update Shared Hotspots
+    const sharedBox = document.getElementById('shared-resources-tables');
+    if (sharedBox) {
+      let html = '';
+      if (metrics.shared_tables && metrics.shared_tables.length > 0) {
+        html += '<div style="margin-bottom:0.75rem;"><strong style="font-size:0.75rem; color:#ec4899;">SHARED DB2 TABLES:</strong><br>';
+        metrics.shared_tables.forEach(t => {
+          html += `<span class="shared-table-badge">${t.table_name} (${t.program_count} progs)</span>`;
+        });
+        html += '</div>';
+      }
+      if (metrics.shared_datasets && metrics.shared_datasets.length > 0) {
+        html += '<div><strong style="font-size:0.75rem; color:#f97316;">SHARED DATASETS (DSN):</strong><br>';
+        metrics.shared_datasets.forEach(d => {
+          html += `<span class="shared-dsn-badge">${d.dsn} (${d.accessor_count} accessors)</span>`;
+        });
+        html += '</div>';
+      }
+      if (!html) html = '<p style="font-size:0.75rem; color:var(--text-dim);">No shared resources detected across multiple programs.</p>';
+      sharedBox.innerHTML = html;
+    }
+
+    // Also fetch markdown report for preview
+    fetch('/api/portfolio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ format: 'markdown' })
+    })
+      .then(r => r.text())
+      .then(md => {
+        const mdEl = document.getElementById('portfolio-markdown-content');
+        if (mdEl) mdEl.textContent = md;
+      })
+      .catch(() => {});
+
+    layoutPortfolioGraph();
+    renderPortfolioGraph();
+  } catch (err) {
+    console.error("Failed to load portfolio:", err);
+  }
+}
+
+function layoutPortfolioGraph() {
+  if (!AppState.portfolio.data || !AppState.portfolio.data.graph) return;
+  const canvas = document.getElementById('portfolio-canvas');
+  if (!canvas) return;
+
+  const width = canvas.width || 800;
+  const height = canvas.height || 520;
+  const rawNodes = AppState.portfolio.data.graph.nodes || [];
+  const rawEdges = AppState.portfolio.data.graph.edges || [];
+
+  // Group nodes by category to establish layered mainframe visual hierarchy
+  const groups = {
+    job: [],
+    step: [],
+    program: [],
+    dataset: [],
+    db2_table: [],
+    external_program: []
+  };
+
+  rawNodes.forEach(n => {
+    const t = n.node_type || 'program';
+    if (groups[t]) groups[t].push(n);
+    else groups.program.push(n);
+  });
+
+  const layoutNodes = [];
+  const nodeMap = {};
+
+  const typeConfig = {
+    job:              { color: '#a855f7', radius: 14, colX: 0.12 },
+    step:             { color: '#10b981', radius: 12, colX: 0.28 },
+    program:          { color: '#3b82f6', radius: 15, colX: 0.50 },
+    dataset:          { color: '#f97316', radius: 13, colX: 0.72 },
+    db2_table:        { color: '#ec4899', radius: 14, colX: 0.72 },
+    external_program: { color: '#ef4444', radius: 13, colX: 0.88 }
+  };
+
+  // Place nodes by logical columns
+  Object.keys(groups).forEach(grpKey => {
+    const list = groups[grpKey];
+    const cfg = typeConfig[grpKey] || { color: '#60a5fa', radius: 12, colX: 0.5 };
+    const count = list.length;
+    list.forEach((n, idx) => {
+      let x = width * cfg.colX;
+      let y = height * 0.15 + (height * 0.70) * ((idx + 0.5) / Math.max(1, count));
+      if (grpKey === 'db2_table') {
+        y += 40; // offset tables from datasets
+      }
+      const lNode = {
+        id: n.id,
+        label: n.label || n.id,
+        node_type: n.node_type,
+        x: x,
+        y: y,
+        radius: cfg.radius,
+        color: cfg.color,
+        raw: n
+      };
+      layoutNodes.push(lNode);
+      nodeMap[n.id] = lNode;
+    });
+  });
+
+  const layoutEdges = [];
+  rawEdges.forEach(e => {
+    if (nodeMap[e.source] && nodeMap[e.target]) {
+      layoutEdges.push({
+        source: nodeMap[e.source],
+        target: nodeMap[e.target],
+        edge_type: e.edge_type,
+        label: e.label || '',
+        raw: e
+      });
+    }
+  });
+
+  AppState.portfolio.layoutNodes = layoutNodes;
+  AppState.portfolio.layoutEdges = layoutEdges;
+}
+
+function renderPortfolioGraph() {
+  const canvas = document.getElementById('portfolio-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const nodes = AppState.portfolio.layoutNodes || [];
+  const edges = AppState.portfolio.layoutEdges || [];
+  const selId = AppState.portfolio.selectedNodeId;
+  const downIds = AppState.portfolio.downstreamIds || new Set();
+  const upIds = AppState.portfolio.upstreamIds || new Set();
+
+  // Draw Edges
+  edges.forEach(e => {
+    const isConnected = selId && (e.source.id === selId || e.target.id === selId);
+    const isBlastFlow = selId && downIds.has(e.target.id) && (e.source.id === selId || downIds.has(e.source.id));
+    const isUpFlow = selId && upIds.has(e.source.id) && (e.target.id === selId || upIds.has(e.target.id));
+
+    ctx.beginPath();
+    ctx.moveTo(e.source.x, e.source.y);
+    ctx.lineTo(e.target.x, e.target.y);
+
+    if (selId) {
+      if (isConnected || isBlastFlow) {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.globalAlpha = 1.0;
+      } else if (isUpFlow) {
+        ctx.strokeStyle = '#fb923c';
+        ctx.lineWidth = 2.0;
+        ctx.globalAlpha = 0.9;
+      } else {
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 0.8;
+        ctx.globalAlpha = 0.2;
+      }
+    } else {
+      ctx.strokeStyle = e.edge_type.includes('CALL') ? '#60a5fa' :
+                        e.edge_type.includes('SQL') ? '#ec4899' :
+                        e.edge_type.includes('DSN') ? '#f97316' : '#64748b';
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = 0.65;
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+  });
+
+  // Draw Nodes
+  nodes.forEach(n => {
+    const isSel = n.id === selId;
+    const isDown = downIds.has(n.id);
+    const isUp = upIds.has(n.id);
+
+    ctx.save();
+    if (selId && !isSel && !isDown && !isUp) {
+      ctx.globalAlpha = 0.25;
+    }
+
+    // Outer glow for selected or blast radius nodes
+    if (isSel) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.radius + 6, 0, Math.PI * 2);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    } else if (isDown) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.radius + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else if (isUp) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.radius + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // Node body
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+    ctx.fillStyle = n.color;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Node label
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '10px "Inter", sans-serif';
+    ctx.textAlign = 'center';
+    let shortLabel = n.label.length > 16 ? n.label.substring(0, 14) + '..' : n.label;
+    ctx.fillText(shortLabel, n.x, n.y + n.radius + 12);
+
+    ctx.restore();
+  });
+}
+
+function handlePortfolioCanvasClick(e) {
+  const canvas = document.getElementById('portfolio-canvas');
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
+  const clickY = e.clientY - rect.top;
+
+  const nodes = AppState.portfolio.layoutNodes || [];
+  let clickedNode = null;
+  let minDist = 28;
+
+  nodes.forEach(n => {
+    const dx = n.x - clickX;
+    const dy = n.y - clickY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < minDist) {
+      minDist = dist;
+      clickedNode = n;
+    }
+  });
+
+  if (clickedNode) {
+    AppState.portfolio.selectedNodeId = clickedNode.id;
+    updateBlastRadiusUI(clickedNode);
+  } else {
+    AppState.portfolio.selectedNodeId = null;
+    AppState.portfolio.downstreamIds.clear();
+    AppState.portfolio.upstreamIds.clear();
+    const inspector = document.getElementById('portfolio-inspector');
+    if (inspector) inspector.textContent = 'Click on any program, table, or dataset node to analyze its multi-program blast radius.';
+    const titleEl = document.getElementById('blast-target-title');
+    if (titleEl) titleEl.textContent = 'Target: None selected';
+  }
+
+  renderPortfolioGraph();
+}
+
+function updateBlastRadiusUI(node) {
+  if (!AppState.portfolio.data || !AppState.portfolio.data.graph) return;
+  const rawEdges = AppState.portfolio.data.graph.edges || [];
+
+  // BFS Downstream Reachability
+  const forwardAdj = {};
+  const reverseAdj = {};
+  rawEdges.forEach(e => {
+    if (!forwardAdj[e.source]) forwardAdj[e.source] = [];
+    forwardAdj[e.source].push(e.target);
+    if (!reverseAdj[e.target]) reverseAdj[e.target] = [];
+    reverseAdj[e.target].push(e.source);
+  });
+
+  const downstream = new Set();
+  const qDown = [...(forwardAdj[node.id] || [])];
+  while (qDown.length > 0) {
+    const curr = qDown.shift();
+    if (!downstream.has(curr) && curr !== node.id) {
+      downstream.add(curr);
+      (forwardAdj[curr] || []).forEach(nxt => {
+        if (!downstream.has(nxt) && nxt !== node.id) qDown.push(nxt);
+      });
+    }
+  }
+
+  // BFS Upstream Callers
+  const upstream = new Set();
+  const qUp = [...(reverseAdj[node.id] || [])];
+  while (qUp.length > 0) {
+    const curr = qUp.shift();
+    if (!upstream.has(curr) && curr !== node.id) {
+      upstream.add(curr);
+      (reverseAdj[curr] || []).forEach(prev => {
+        if (!upstream.has(prev) && prev !== node.id) qUp.push(prev);
+      });
+    }
+  }
+
+  AppState.portfolio.downstreamIds = downstream;
+  AppState.portfolio.upstreamIds = upstream;
+
+  const totalNodes = (AppState.portfolio.data.graph.nodes || []).length;
+  const ratio = totalNodes > 1 ? (downstream.size / (totalNodes - 1)) * 100 : 0;
+
+  // Update DOM Inspector & Sidebar
+  const inspector = document.getElementById('portfolio-inspector');
+  if (inspector) {
+    inspector.textContent = `[${node.node_type.toUpperCase()}] ${node.id} &bull; Downstream Impact: ${downstream.size} nodes &bull; Upstream Callers: ${upstream.size} nodes &bull; Impact Ratio: ${ratio.toFixed(1)}%`;
+  }
+
+  const titleEl = document.getElementById('blast-target-title');
+  if (titleEl) titleEl.textContent = `Target: [${node.node_type}] ${node.label}`;
+
+  const subEl = document.getElementById('blast-target-subtext');
+  if (subEl) subEl.textContent = `Calculated sparse reachability for ${node.id} across portfolio topology.`;
+
+  const downVal = document.getElementById('blast-downstream-val');
+  if (downVal) downVal.textContent = downstream.size;
+
+  const upVal = document.getElementById('blast-upstream-val');
+  if (upVal) upVal.textContent = upstream.size;
+
+  const ratioVal = document.getElementById('blast-ratio-val');
+  if (ratioVal) ratioVal.textContent = `${ratio.toFixed(1)}%`;
+
+  const downList = document.getElementById('blast-downstream-list');
+  if (downList) {
+    if (downstream.size === 0) {
+      downList.innerHTML = '<li>None (leaf entity or sink)</li>';
+    } else {
+      downList.innerHTML = Array.from(downstream).map(id => `<li>${id}</li>`).join('');
+    }
+  }
+
+  const upList = document.getElementById('blast-upstream-list');
+  if (upList) {
+    if (upstream.size === 0) {
+      upList.innerHTML = '<li>None (entry point or uncalled asset)</li>';
+    } else {
+      upList.innerHTML = Array.from(upstream).map(id => `<li>${id}</li>`).join('');
+    }
+  }
 }
