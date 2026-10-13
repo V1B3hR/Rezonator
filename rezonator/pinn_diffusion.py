@@ -39,10 +39,19 @@ class PINNGraphDiffusionEngine:
         """
         Computes analytical diffusion trajectory using matrix exponential:
         u(t) = exp(-alpha * L * t) * u_0
+        on the symmetrized Laplacian L (undirected structural dispersion).
+
+        Note: Continuous graph heat diffusion on symmetric L is undirected: heat spreads
+        symmetrically across edges regardless of CFG arrow directions. For directed forward
+        reachability along control/data flow dependencies, see `solve_directed_impact`.
+
+        Relaxation half-life tau_1/2 = ln(2) / (alpha * lambda_min_positive) measures the decay
+        rate of the slowest decaying non-trivial Laplacian eigenmode toward component-wise
+        harmonic steady state (total mass sum(u) is conserved).
         """
         n = L.shape[0]
         if n == 0:
-            return {"timeline": [], "trajectory": [], "bottlenecks": []}
+            return {"timeline": [], "trajectory": [], "bottlenecks": [], "diffusion_half_life": float("inf")}
 
         # Normalize initial impulse
         u0 = initial_impulse.astype(np.float64)
@@ -64,17 +73,29 @@ class PINNGraphDiffusionEngine:
                     final_distribution < DIFFUSION_COLD_NODE_THRESHOLD * np.max(final_distribution)
                 )[0]
             ]
-            if fiedler_value is not None:
-                fiedler_val = float(fiedler_value)
+            if fiedler_value is not None and fiedler_value > DIFFUSION_HALF_LIFE_EIGENVALUE_THRESHOLD:
+                slowest_mode_lambda = float(fiedler_value)
+                half_life = float(np.log(2.0) / (self.alpha * slowest_mode_lambda))
             elif n > 1:
-                evals_sm, _ = spla.eigsh(L_sp, k=min(2, n - 1), sigma=-1e-4, which='LM')
-                fiedler_val = float(np.sort(np.clip(evals_sm, 0.0, None))[1])
+                # Solve for smallest eigenvalues with shift-invert to find the smallest non-zero eigenvalue
+                k_evals = min(max(6, 2), n - 1)
+                try:
+                    evals_sm, _ = spla.eigsh(L_sp, k=k_evals, sigma=-1e-4, which='LM')
+                    evals_sm = np.sort(np.clip(evals_sm, 0.0, None))
+                    pos_evals = evals_sm[evals_sm > DIFFUSION_HALF_LIFE_EIGENVALUE_THRESHOLD]
+                    if len(pos_evals) > 0:
+                        slowest_mode_lambda = float(pos_evals[0])
+                        half_life = float(np.log(2.0) / (self.alpha * slowest_mode_lambda))
+                    else:
+                        slowest_mode_lambda = 0.0
+                        half_life = float("inf")
+                except Exception:
+                    slowest_mode_lambda = 0.0
+                    half_life = float("inf")
             else:
-                fiedler_val = 0.0
-            half_life = (
-                float(np.log(2.0) / (self.alpha * fiedler_val))
-                if fiedler_val > DIFFUSION_HALF_LIFE_EIGENVALUE_THRESHOLD else float("inf")
-            )
+                slowest_mode_lambda = 0.0
+                half_life = float("inf")
+
             if estimate_spectral_radius and n > 1:
                 try:
                     spectral_rad = float(abs(spla.eigsh(L_sp, k=1, which="LM", return_eigenvectors=False)[0]))
@@ -109,12 +130,18 @@ class PINNGraphDiffusionEngine:
                 )[0]
             ]
 
-            # Clean half-life: tau = ln(2) / (alpha * lambda_1) if connected, else inf
-            fiedler_val = evals[1] if n > 1 else evals[0]
-            half_life = (
-                float(np.log(2.0) / (self.alpha * fiedler_val))
-                if fiedler_val > DIFFUSION_HALF_LIFE_EIGENVALUE_THRESHOLD else float("inf")
-            )
+            # Relaxation half-life of the slowest decaying non-trivial mode:
+            # tau = ln(2) / (alpha * lambda_min_positive).
+            # For a connected graph, lambda_min_positive = lambda_1 (the Fiedler value).
+            # For a graph with k components, lambda_0 = ... = lambda_{k-1} = 0, so we select
+            # the smallest strictly positive eigenvalue above numerical zero tolerance.
+            pos_evals = evals[evals > DIFFUSION_HALF_LIFE_EIGENVALUE_THRESHOLD]
+            if len(pos_evals) > 0:
+                slowest_mode_lambda = float(pos_evals[0])
+                half_life = float(np.log(2.0) / (self.alpha * slowest_mode_lambda))
+            else:
+                slowest_mode_lambda = 0.0
+                half_life = float("inf")
             spectral_rad = float(np.max(evals)) if n > 0 else 0.0
             spectral_radius_status = "computed"
 
@@ -138,11 +165,25 @@ class PINNGraphDiffusionEngine:
     ) -> Dict[str, Any]:
         """
         Computes forward directed impact propagation (blast radius) along CFG and DFG edges.
-        Influences propagate strictly forward along dependencies: u(t) = exp((P^T - I) * t) * u0
+        Influences propagate strictly forward along dependencies: u(t) = exp((P^T - I) * t) * u0.
+
+        Note on reachability: For any t > 0, every topologically reachable node in the continuous
+        Markov chain has strictly positive probability mass. Ranking is thresholded by `threshold`
+        to filter out negligible numerical tail concentrations; exact topological reachability is
+        also reported separately via `exact_reachable_count`.
         """
         n = A_dir.shape[0]
         if n == 0 or source_idx < 0 or source_idx >= n:
-            return {"source_idx": source_idx, "impact_ranking": [], "reachable_count": 0}
+            return {
+                "source_idx": source_idx,
+                "propagation_time": t,
+                "threshold": threshold,
+                "impact_ranking": [],
+                "reachable_count": 0,
+                "threshold_filtered_count": 0,
+                "exact_reachable_count": 0,
+                "max_impact": 0.0,
+            }
 
         import scipy.sparse as sp
         import scipy.sparse.linalg as spla
@@ -158,6 +199,12 @@ class PINNGraphDiffusionEngine:
             inv_deg[pos_mask] = 1.0 / out_degrees[pos_mask]
             D_inv = sp.diags(inv_deg, format='csr')
             P_sp = D_inv @ A_sp
+            # Absorbing state semantics: sink nodes retain mass via self-loops
+            sinks = np.flatnonzero(~pos_mask)
+            if len(sinks):
+                P_sp = P_sp + sp.csr_matrix(
+                    (np.ones(len(sinks), dtype=np.float64), (sinks, sinks)), shape=(n, n)
+                )
             Q_sp = P_sp.T - sp.eye(n, format='csr')
             u_t = spla.expm_multiply(Q_sp * t, u0)
         else:
@@ -166,6 +213,10 @@ class PINNGraphDiffusionEngine:
             P = np.zeros_like(A_dense)
             pos_mask = out_degrees > 0
             P[pos_mask, :] = A_dense[pos_mask, :] / out_degrees[pos_mask, np.newaxis]
+            # Absorbing state semantics: sink nodes retain mass via self-loops
+            sinks = np.flatnonzero(~pos_mask)
+            if len(sinks):
+                P[sinks, sinks] = 1.0
 
             generator = P.T - np.eye(n)
             u_t = la.expm(generator * t) @ u0
@@ -179,12 +230,40 @@ class PINNGraphDiffusionEngine:
             if u_t[i] >= threshold
         ]
 
+        # Exact topological reachability via graph traversal (independent of threshold & time t)
+        visited = set()
+        queue = [source_idx]
+        visited.add(source_idx)
+        if sp.issparse(A_dir):
+            A_csr = sp.csr_matrix(A_dir)
+            while queue:
+                curr = queue.pop(0)
+                neighbors = A_csr.indices[A_csr.indptr[curr]:A_csr.indptr[curr+1]]
+                for nbr in neighbors:
+                    nbr_int = int(nbr)
+                    if nbr_int not in visited:
+                        visited.add(nbr_int)
+                        queue.append(nbr_int)
+        else:
+            A_dense_adj = A_dir if not sp.issparse(A_dir) else A_dir.toarray()
+            while queue:
+                curr = queue.pop(0)
+                neighbors = np.where(A_dense_adj[curr] > 0)[0]
+                for nbr in neighbors:
+                    nbr_int = int(nbr)
+                    if nbr_int not in visited:
+                        visited.add(nbr_int)
+                        queue.append(nbr_int)
+
         return {
             "source_idx": source_idx,
             "propagation_time": t,
+            "threshold": threshold,
             "impact_ranking": ranking,
             "reachable_count": len(ranking),
-            "max_impact": float(np.max(u_t)) if n > 0 else 0.0
+            "threshold_filtered_count": len(ranking),
+            "exact_reachable_count": len(visited),
+            "max_impact": float(np.max(u_t)) if n > 0 else 0.0,
         }
 
     def train_pinn_residual(

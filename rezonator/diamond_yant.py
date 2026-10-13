@@ -113,6 +113,7 @@ class DiamondYantSpectralEngine:
 
         # Multi-scale NetLSD signature from Normalized Laplacian
         netlsd_sig: List[float] = []
+        netlsd_stderr: List[float] = []
         fiedler_norm = 0.0
         if L_norm is not None and n > 0:
             times = np.logspace(
@@ -122,6 +123,7 @@ class DiamondYantSpectralEngine:
                 evals_norm = la.eigvalsh(L_norm if not sp.issparse(L_norm) else L_norm.toarray())
                 evals_norm = np.clip(evals_norm, 0.0, 2.0)
                 netlsd_sig = [float(np.mean(np.exp(-t * evals_norm))) for t in times]
+                netlsd_stderr = [0.0] * len(times)
                 fiedler_norm = float(evals_norm[1]) if n > 1 else float(evals_norm[0])
             else:
                 L_norm_sp = sp.csr_matrix(L_norm, dtype=np.float64)
@@ -137,8 +139,14 @@ class DiamondYantSpectralEngine:
                 V = rng.choice([-1.0, 1.0], size=(n, M_samples)) / np.sqrt(n)
                 for t in times:
                     W = spla.expm_multiply(-t * L_norm_sp, V)
-                    tr_est = float(np.sum(V * W))
-                    netlsd_sig.append(tr_est / M_samples)
+                    probe_estimates = np.sum(V * W, axis=0)
+                    tr_mean = float(np.mean(probe_estimates))
+                    tr_stderr = (
+                        float(np.std(probe_estimates, ddof=1) / np.sqrt(M_samples))
+                        if M_samples > 1 else 0.0
+                    )
+                    netlsd_sig.append(tr_mean)
+                    netlsd_stderr.append(tr_stderr)
 
         return {
             "eigenvalues": top_evals,
@@ -149,6 +157,7 @@ class DiamondYantSpectralEngine:
             "algebraic_connectivity": fiedler_val,
             "fiedler_norm": fiedler_norm,
             "netlsd_signature": netlsd_sig,
+            "netlsd_stderr": netlsd_stderr,
             "total_modes": n
         }
 

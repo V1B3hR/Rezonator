@@ -62,8 +62,8 @@ Comparing raw unnormalized eigenvalue spectra across graphs of different sizes $
 $$\Phi(t) = \text{Tr}\left(\exp(-t \mathcal{L}_{\text{norm}})\right) = \sum_{k=0}^{N-1} \exp(-t \lambda_k)$$
 
 Computed across 25 logarithmically spaced time scales $t \in [10^{-2}, 10^2]$, the normalized trace $h(t)=\Phi(t)/N$ provides a size-normalized signature of represented graph topology. For $N<100$ the code uses the exact eigenvalue trace; for $N\ge100$ it uses a seeded 15-probe Hutchinson estimate:
-$$h(t) = \frac{1}{N}\operatorname{Tr}\left(\exp(-t\mathcal{L}_{\text{norm}})\right) \approx \frac{1}{15}\sum_{m=1}^{15}v_m^T\exp(-t\mathcal{L}_{\text{norm}})v_m,$$
-where each Rademacher vector has entries scaled by $1/\sqrt{N}$. This is an estimator with finite-sample error, not an exact trace for larger graphs.
+$$h(t) = \frac{1}{N}\operatorname{Tr}\left(\exp(-t\mathcal{L}_{\text{norm}})\right) \approx \frac{1}{M}\sum_{m=1}^{M}v_m^T\exp(-t\mathcal{L}_{\text{norm}})v_m,$$
+where each Rademacher vector has entries scaled by $1/\sqrt{N}$. The engine reports the sample standard error across the $M$ probes ($\sigma / \sqrt{M}$), providing an explicit stochastic noise floor for topological comparisons.
 - Small $t \to 0$: approaches 1, with its initial slope determined by $-\operatorname{Tr}(\mathcal{L}_{\text{norm}})/N$.
 - Intermediate $t$: captures community structure and modular clusters.
 - Large $t \to \infty$: the normalized trace approaches the component-related nullity divided by $N$ (subject to isolated-node handling).
@@ -73,17 +73,31 @@ $$d_{\text{NetLSD}}(P_A, P_B) = \sqrt{\sum_{t \in T} (\Phi_A(t) - \Phi_B(t))^2}$
 
 ---
 
-### 3. Directed Forward Impact Diffusion (Blast Radius)
+### 3. Continuous Diffusion: Undirected Heat vs. Directed Markov Blast Radius
 
-While symmetric Laplacians evaluate structural cohesion, the directed diffusion operator propagates a model-level perturbation along represented directed edges. This is not a source-level taint analysis or proof of real execution influence. Rezonator models that graph signal via continuous-time Markov transfer:
+Rezonator provides two mathematically distinct continuous diffusion operators:
+
+#### 3.1 Undirected Structural Heat Diffusion
+Governed by the symmetric Combinatorial Laplacian $L = D - A_{\text{sym}}$:
+$$\frac{\partial u}{\partial t} = -\alpha L u \implies u(t) = \exp(-\alpha L t) u_0$$
+- **Undirected Dispersion**: Because $L$ is symmetric, heat propagates bidirectionally across all connections regardless of CFG arrow directions.
+- **Mass Conservation**: Since $\mathbf{1}^T L = \mathbf{0}^T$, total mass is strictly conserved: $\sum_{i=1}^N u_i(t) = \sum_{i=1}^N u_{0, i}$.
+- **Relaxation Half-Life**: Measures the decay rate of the slowest non-trivial eigenmode amplitude toward component-wise steady state:
+  $$\tau_{1/2} = \frac{\ln 2}{\alpha \lambda_{\min > 0}}$$
+  where $\lambda_{\min > 0}$ is the smallest strictly positive eigenvalue above numerical zero tolerance (for $k$ disconnected components, $\lambda_0 = \dots = \lambda_{k-1} = 0$).
+
+#### 3.2 Directed Forward Impact Diffusion (Blast Radius)
+While symmetric Laplacians evaluate undirected structural cohesion, directed forward impact propagates strictly along CFG and DFG dependencies via a continuous-time Markov process:
 
 Let $P \in \mathbb{R}^{N \times N}$ be the row-stochastic transition probability matrix:
 $$P_{ij} = \frac{A_{\text{dir}}[i, j]}{\sum_k A_{\text{dir}}[i, k]} \quad (\text{if out-degree } > 0)$$
+Terminal sink nodes (`STOP RUN`, `GOBACK`) receive absorbing self-loops ($P_{ii} = 1.0$), ensuring probability mass is strictly conserved.
 
-The forward propagation of an impulse $u_0$ introduced at statement $i$ is governed by the infinitesimal generator $(P^T - I)$:
+The forward propagation of an impulse $u_0$ introduced at statement $i$ is governed by the infinitesimal generator $Q = P^T - I$:
 $$\dot{u}(t) = (P^T - I) u(t) \implies u(t) = \exp((P^T - I) t) u_0$$
 
-This yields model-level impact scores $u_j(t)$ under the selected graph, transition weights, and seed. Whether a ranking predicts real change impact must be evaluated against labeled examples; it is not source-level ground truth by definition.
+- **Exact Reachability vs Ranking**: For any $t > 0$, every topologically reachable node in the continuous chain receives strictly positive mass. Exact reachability is computed via BFS graph search, while continuous diffusion mass ranks relative impact and can be degree-normalized ($u_j / d_{\text{in}}(j)$) to mitigate hub bias.
+- **Physical Interpretation**: This yields model-level impact scores $u_j(t)$ under the selected graph, transition weights, and seed. Whether a ranking predicts real change impact must be evaluated against labeled examples; it is not a formal taint proof or source-level ground truth.
 
 ---
 

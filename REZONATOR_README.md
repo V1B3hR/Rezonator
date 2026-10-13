@@ -76,10 +76,12 @@ Rezonator includes project documentation for architecture, experiments, implemen
 
 ### 2. 🌡️ Graph Heat Diffusion Engine
 - Computes graph diffusion over the modeled adjacency/Laplacian operators; this is not a source-level taint proof:
-  $$\frac{\partial u}{\partial t} = -\alpha L u \implies u(t) = \exp(-\alpha L t) u_0$$
-- Injects impulse into any variable (e.g. `WS-ACCOUNT-BALANCE`) to observe downstream dispersion.
-- Computes directed forward blast radius via continuous Markov generator $Q = P^T - I$:
-  $$u(t) = \exp((P^T - I)t) u_0$$
+  - **Undirected Structural Dispersion**: Continuous heat diffusion on the symmetric Laplacian $L$ propagates bidirectionally across topological neighbors:
+    $$\frac{\partial u}{\partial t} = -\alpha L u \implies u(t) = \exp(-\alpha L t) u_0$$
+    Injects an impulse into any statement or variable (e.g. `WS-ACCOUNT-BALANCE`) to observe structural connectivity and modal equilibration. Total mass $\sum u_i(t) = \sum u_{0, i}$ is strictly conserved; the relaxation half-life $\tau_{1/2} = \ln(2)/(\alpha \lambda_{\min > 0})$ captures the decay rate of the slowest non-trivial eigenmode toward component-wise steady state.
+  - **Directed Forward Blast Radius**: Forward impact propagation along directed CFG and DFG edges is governed strictly by the continuous-time Markov generator $Q = P^T - I$ (with absorbing sink states):
+    $$u(t) = \exp((P^T - I)t) u_0$$
+    Total probability mass is conserved ($\sum u_i(t) = 1.0$). Structural reachability is exact via graph traversal, while continuous diffusion mass ranks downstream impact and supports degree normalization to reduce in-degree hub bias.
 - The ordinary `GraphField` and comparator path use CSR operators. A generated COBOL benchmark exercises the full analyzer at 2,050 and 5,001 graph nodes; see [`REZONATOR_BENCHMARKS.md`](REZONATOR_BENCHMARKS.md). These are bounded synthetic observations, not production-corpus or 50,000-node capacity claims.
 
 ### 3. Cycle and Control-Flow Analysis

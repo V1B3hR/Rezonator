@@ -7,12 +7,12 @@
 
 The **Rezonator** test harness exercises selected parser fixtures, graph invariants, spectral and diffusion routines, cycle reporting, embedded CICS/SQL forms, copybook preprocessing, provenance fields, and local/remote HTTP access controls. This report is a test snapshot, not a code-coverage measurement, complete COBOL conformance result, security certification, or proof of production readiness.
 
-- **Total Test Cases**: 75
-- **Latest Run (2026-10-13)**: 75 Passed, 0 Failed, 0 Skipped, 0 Errors.
-- **Latest Suite Time**: 5.348 seconds on the Rezonator worktree; platform and dependency details are recorded by the runtime provenance manifest. This is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
-- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, spectral and diffusion routines, slicing/ranking, bounded context-slice beta with line/token budgets and omission disclosures, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, versioned provenance and graph digests, JSON/Markdown audit reports, bounded versioned Sokół JSONL event envelopes, enterprise corpus evaluation, Sokół versioned project memory (`sokol.fact.v1`), anchor remapping, staleness invalidation, verification non-transfer, REST API (/api/audit, /api/slice), neutral comparator verdicts, and backward compatibility.
+- **Total Test Cases**: 84
+- **Latest Run (2026-10-13)**: 84 Passed, 0 Failed, 0 Skipped, 0 Errors.
+- **Latest Suite Time**: 3.754 seconds on the Rezonator worktree; platform and dependency details are recorded by the runtime provenance manifest. This is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
+- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, continuous physical & mathematical invariants (heat & Markov mass conservation, Laplacian nullspace, disconnected relaxation half-life), spectral and diffusion routines, NetLSD Hutchinson estimator error reporting, slicing/ranking, bounded context-slice beta with line/token budgets and omission disclosures, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, versioned provenance and graph digests, JSON/Markdown audit reports, bounded versioned Sokół JSONL event envelopes, enterprise corpus evaluation, Sokół versioned project memory (`sokol.fact.v1`), anchor remapping, staleness invalidation, verification non-transfer, REST API (/api/audit, /api/slice), neutral comparator verdicts, and backward compatibility.
 
-The recorded suite ran against the main worktree with Increment D, Sokół event-export, Corpus Evaluator, and Project Memory additions present. Per-module timings below are historical unless marked as latest. Re-run against the exact submitted revision before treating the result as a release gate.
+The recorded suite ran against the main worktree with Increment D, Sokół event-export, Corpus Evaluator, Project Memory, and Mathematical Invariant additions present. Per-module timings below are historical unless marked as latest. Re-run against the exact submitted revision before treating the result as a release gate.
 
 ---
 
@@ -35,7 +35,8 @@ The recorded suite ran against the main worktree with Increment D, Sokół event
 | **Sokół Evidence Events** | `tests/test_sokol_evidence_events.py` | 5 | **PASS** | Included in full suite | Verifies stable snapshot IDs, JSONL round-trips/checksum rejection, source/value omission, bounded interpreter traces, and invalid-input rejection. |
 | **Enterprise Corpus Evaluator** | `tests/test_corpus_evaluator.py` | 7 | **PASS** | 0.080 s | Verifies 6-program enterprise corpus, parser coverage metrics, copybook resolution, unsupported verb gap inventory, cycle heuristics, and Sokół evidence event integrity. |
 | **Sokół Project Memory** | `tests/test_sokol_project_memory.py` | 6 | **PASS** | 0.043 s | Verifies `sokol.fact.v1` fact envelopes, epistemic rules, structural node anchors (`NodeAnchor`), snapshot binding, automatic staleness invalidation on edit, and strict non-transfer of `VERIFIED` claims. |
-| **TOTAL** | | **75** | **PASS** | **5.348 s (latest run)** | **All 75 tests passed on 2026-10-13** |
+| **Mathematical Invariants** | `tests/test_mathematical_invariants.py` | 9 | **PASS** | 0.067 s | Validates heat and Markov continuous mass conservation ($\sum u = 1.0$), Laplacian nullspace ($L \mathbf{1} = \mathbf{0}$), disconnected relaxation half-life ($\lambda_{\min > 0}$), exact BFS vs threshold reachability, NetLSD Hutchinson standard error floor, and degree-normalized ranking. |
+| **TOTAL** | | **84** | **PASS** | **3.754 s (latest run)** | **All 84 tests passed on 2026-10-13** |
 
 ---
 

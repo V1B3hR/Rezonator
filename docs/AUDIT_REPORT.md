@@ -47,7 +47,7 @@ The manifest hashes source text as UTF-8. Copybooks are normalized by trimming q
 | `unsupported_statement_count` | Materialized statement nodes outside the modeled subset. | Does not count constructs the parser fails to recognize as statements at all. |
 | `graph_node_count` / `graph_edge_count` | Parsed statement graph plus declared-variable nodes and generated read/write edges. | Edge count preserves parallel relations; sparse matrix assembly can sum edges with matching endpoints. |
 | `fiedler_value` | Second-smallest eigenvalue reported for the symmetric Laplacian. | Structural property of this graph snapshot, not business correctness. |
-| `diffusion_half_life` | `ln(2) / (alpha * Fiedler value)` under the solver's threshold rule. | Model-derived value, not measured execution time. An infinite value is represented by `value: null` and `value_status: "positive_infinity"`. |
+| `diffusion_half_life` | `ln(2) / (alpha * lambda_min_positive)` for the slowest decaying non-trivial mode above threshold. | Model-derived value, not measured execution time. An infinite value is represented by `value: null` and `value_status: "positive_infinity"`. |
 | `enumerated_cycle_count` | Simple cycles returned by the bounded SCC-local enumerator. | Not necessarily the total cycle count; consult `cycle_budget_exhausted`. |
 | `trapped_scc_count` | Non-trivial SCCs with no static CFG path to a recognized terminal. | No path in this parsed graph is not proof of runtime nontermination. |
 | `reaches_terminal` | Whether the selected entry node has a CFG path to a recognized `STOP RUN`/`GOBACK` node. | A path's existence does not mean every execution reaches it. |

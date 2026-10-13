@@ -126,29 +126,37 @@ This distance is:
 
 ---
 
-### 4. Continuous Directed Heat Diffusion & Taint Flow
+### 4. Continuous Diffusion Operators: Undirected Heat vs Directed Blast Radius
 
+Rezonator implements two distinct continuous diffusion mechanisms with strict physical conservation laws:
+
+#### 4.1 Undirected Structural Heat Diffusion
+Governed by the symmetric Combinatorial Laplacian $L = D - A$:
+$$\frac{\partial u}{\partial t} = -\alpha L u \implies u(t) = \exp(-\alpha L t) u_0$$
+- **Undirected Physical Dispersion**: Because $L$ is symmetric, heat propagates symmetrically across topological connections regardless of CFG execution flow directions.
+- **Strict Mass Conservation**: The row and column sums of $L$ equal zero ($\mathbf{1}^T L = \mathbf{0}^T$), guaranteeing that total signal mass is strictly conserved: $\sum_{i=1}^N u_i(t) = \sum_{i=1}^N u_{0, i}$.
+- **Relaxation Half-Life**:
+  $$\tau_{1/2} = \frac{\ln 2}{\alpha \lambda_{\min > 0}}$$
+  where $\lambda_{\min > 0}$ is the smallest strictly positive eigenvalue above numerical zero tolerance ($10^{-4}$). For a connected graph, this equals the Fiedler value $\lambda_1$. For a disconnected graph with $k$ components ($\lambda_0 = \dots = \lambda_{k-1} = 0$), it correctly identifies the relaxation rate toward component-wise steady state, avoiding false infinite half-lives.
+
+#### 4.2 Directed Forward Blast Radius (Continuous Markov Chain)
 To model directed causality—where execution flows strictly forward and outputs depend only on preceding inputs—we define a continuous-time Markov process on the directed graph.
 
-#### 4.1 Transition Matrix & Markov Generator
 Let $d_{\text{out}}(i) = \sum_{j=1}^N A_{\text{dir}}[i, j]$. The row-stochastic transition probability matrix $P \in \mathbb{R}^{N \times N}$ is:
 $$P_{ij} = \begin{cases} \frac{A_{\text{dir}}[i, j]}{d_{\text{out}}(i)}, & \text{if } d_{\text{out}}(i) > 0 \\ 0, & \text{otherwise} \end{cases}$$
-For terminal sink nodes (`STOP RUN`, `GOBACK`), $P_{ii} = 1.0$ (absorbing state).
+Terminal sink nodes (`STOP RUN`, `GOBACK`) receive absorbing self-loops ($P_{ii} = 1.0$), ensuring that probability mass is conserved and absorbed rather than dropped.
 
 The continuous-time Markov generator $Q \in \mathbb{R}^{N \times N}$ governing forward probability flow is:
 $$Q = P^T - I$$
+Since $P \mathbf{1} = \mathbf{1}$, the columns of $Q$ sum to zero ($\mathbf{1}^T Q = \mathbf{0}^T$), preserving total probability mass $\sum_{i=1}^N u_i(t) = 1.0$.
 
-#### 4.2 Forward Diffusion Blast Radius
-Let $u(t) \in \mathbb{R}^N$ be the concentration of information at time $t$. Given a seed perturbation at statement $v_0$ (represented as impulse $u_0 = e_{v_0}$):
-$$\frac{du}{dt} = Q u = (P^T - I) u$$
-The exact analytical solution is:
-$$u(t) = \exp(Q t) u_0 = \exp\left((P^T - I) t\right) u_0$$
+Given a seed perturbation at statement $v_0$ (represented as impulse $u_0 = e_{v_0}$):
+$$\frac{du}{dt} = Q u = (P^T - I) u \implies u(t) = \exp(Q t) u_0 = \exp\left((P^T - I) t\right) u_0$$
 
-#### 4.3 Physical Interpretation:
-- $u_i(t)$ represents the **continuous probability/taint concentration** reaching statement $i$ by time $t$.
-- Statements with $u_i(t) \ge 10^{-4}$ constitute the **forward blast radius** of the mutated or refactored node.
-- The **diffusion half-life** $\tau_{1/2}$ measures how rapidly transactional impulses reach asymptotic equilibrium:
-  $$\tau_{1/2} = \frac{\ln 2}{\alpha \lambda_1}$$
+#### 4.3 Physical Interpretation & Reachability:
+- **Topological Reachability vs Ranking**: For any $t > 0$, every topologically reachable node in the continuous chain receives strictly positive probability mass. The analyzer reports exact reachability via graph traversal (`exact_reachable_count`), while numerical thresholding ($u_i(t) \ge 10^{-4}$) filters negligible numerical tails for impact ranking.
+- **In-Degree Normalization**: Raw $\exp(Q t) u_0$ mass naturally accumulates at high in-degree structural hubs. Degree normalization ($u_i(t) / d_{\text{in}}(i)$) is supported to isolate genuine perturbation flow from topological convergence.
+- **Model Bound**: Diffusion scores are structural graph signals, not formal source-level taint proofs or execution guarantees.
 
 ---
 
@@ -171,7 +179,7 @@ On the recorded environment, the isolated synthetic $N=10{,}000$ sparse kernel p
 #### 5.3 Hutchinson Stochastic Trace Estimator
 For graphs with $N \ge 100$, computing the exact NetLSD heat trace is replaced with a 15-probe Hutchinson estimate of its normalized trace:
 $$h(t) = \frac{1}{N}\text{Tr}\left(\exp(-t \mathcal{L}_{\text{norm}})\right) \approx \frac{1}{M} \sum_{m=1}^M v_m^T \exp\left(-t \mathcal{L}_{\text{norm}}\right) v_m$$
-where each entry of $v_m$ is an independent Rademacher sign scaled by $1/\sqrt{N}$, so $\mathbb{E}[v_m v_m^T] = I/N$. The implementation fixes the random seed for repeatable probes. The estimator is unbiased for the normalized trace; a finite 15-probe estimate still has sampling error.
+where each entry of $v_m$ is an independent Rademacher sign scaled by $1/\sqrt{N}$, so $\mathbb{E}[v_m v_m^T] = I/N$. The implementation fixes the random seed for repeatable probes. The estimator is unbiased for the normalized trace; the engine additionally computes and exposes the sample standard error across the $M$ probes ($\sigma / \sqrt{M}$) to quantify the stochastic noise floor.
 
 ---
 

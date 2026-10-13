@@ -76,15 +76,26 @@ class DiffusionRanker:
         seed_node_id: str,
         slice_nodes: Optional[Set[str]] = None,
         t: float = 1.5,
+        degree_normalized: bool = False,
     ) -> List[str]:
-        """Rank by ``exp((P.T-I)t) u0`` without an N-by-N dense allocation."""
+        """
+        Rank downstream statements by continuous Markov propagation ``exp((P.T-I)t) u0``.
+        If degree_normalized=True, normalizes raw probability mass by node in-degree to reduce
+        bias toward high in-degree structural hubs.
+        """
         seed_idx, u0 = self._seed(seed_node_id)
         if seed_idx is None:
             return []
         generator = self.P.transpose().tocsr() - sp.eye(self.N, format="csr")
         scores = spla.expm_multiply(generator * t, u0)
+        if degree_normalized:
+            in_degrees = np.asarray(self.A_dir.sum(axis=0)).ravel()
+            norm_factors = np.maximum(in_degrees, 1.0)
+            adjusted_scores = scores / norm_factors
+        else:
+            adjusted_scores = scores
         candidates = self._candidates(seed_node_id, slice_nodes)
-        candidates.sort(key=lambda node_id: (-scores[self.node_id_to_idx[node_id]], node_id))
+        candidates.sort(key=lambda node_id: (-adjusted_scores[self.node_id_to_idx[node_id]], node_id))
         return candidates
 
     def rank_by_ppr(
