@@ -1,6 +1,8 @@
 # Rezonator audit report and provenance contract
 
-Increment C adds a report over one deterministic Rezonator analysis snapshot. It is intended to help a reviewer inspect the parser's modeled scope, graph signals, assumptions, and source evidence. It is not a native COBOL execution record, proof of termination, behavioral-equivalence result, or safety certificate.
+**Status:** 🟢 **DELIVERED (Increment C)**
+
+Increment C adds a report over one deterministic Rezonator analysis snapshot. It is intended to help a reviewer inspect the parser's modeled scope, graph signals, assumptions, and source evidence. It is not a native COBOL execution record, proof of termination, behavioral-equivalence result, or safety certificate. Snapshot IDs and digests produced here serve as authoritative anchors for Sokół evidence events (`sokol.event.v1`) and project memory (`sokol.fact.v1`).
 
 ## HTTP interface
 

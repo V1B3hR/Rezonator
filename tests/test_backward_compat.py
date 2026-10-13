@@ -38,6 +38,11 @@ class TestBackwardCompat(unittest.TestCase):
             "PINNGraphDiffusionEngine",
             "ProgramComparator",
             "ProgramSlicer",
+            "ProjectMemory",
+            "NodeAnchor",
+            "build_fact_anchor",
+            "create_fact",
+            "validate_fact",
         ]
 
         for sym in symbols:

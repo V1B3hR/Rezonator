@@ -1,5 +1,7 @@
 # Sokół Evidence Events v1
 
+**Status:** 🟢 **DELIVERED (Sokół Step 1)**
+
 This document specifies the first opt-in transport envelope for Rezonator evidence. The implementation is a bounded in-memory JSONL serializer; it does **not** write a file, watch Git, expose an HTTP endpoint, retain project memory, or contact an AI service. Callers choose the opaque `project_id`, any Git commit identifier, when to export, and where (if anywhere) to store the returned text.
 
 ## Envelope

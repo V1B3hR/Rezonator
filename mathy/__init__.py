@@ -30,6 +30,11 @@ from rezonator import (
     CorpusEvaluator,
     evaluate_corpus,
     corpus_evaluation_to_markdown,
+    ProjectMemory,
+    NodeAnchor,
+    build_fact_anchor,
+    create_fact,
+    validate_fact,
 )
 
 __all__ = [
@@ -39,6 +44,7 @@ __all__ = [
     "build_interpreter_run_event",
     "serialize_jsonl_events",
     "parse_jsonl_events",
+    "build_fact_anchor",
     "CobolASTGraphBuilder",
     "CobolParser",
     "CobolRuntime",
@@ -46,6 +52,7 @@ __all__ = [
     "context_slice_to_markdown",
     "CorpusEvaluator",
     "corpus_evaluation_to_markdown",
+    "create_fact",
     "CycleDetector",
     "DiamondYantSpectralEngine",
     "DiffusionRanker",
@@ -53,7 +60,10 @@ __all__ = [
     "GraphField",
     "LLMSynthesizer",
     "MutationBenchmark",
+    "NodeAnchor",
     "PINNGraphDiffusionEngine",
     "ProgramComparator",
     "ProgramSlicer",
+    "ProjectMemory",
+    "validate_fact",
 ]

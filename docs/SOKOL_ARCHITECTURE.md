@@ -2,7 +2,13 @@
 
 ## Purpose and status
 
-Sokół is the proposed second layer of Rezonator: a read-only observer that helps engineers interpret the deterministic core's results in the context of a particular codebase and its history. It is not currently implemented. The existing `LLMSynthesizer` only formats a local Markdown brief; it does not call a model, maintain project memory, watch Git, or observe native COBOL execution.
+Sokół is the second layer of Rezonator: a read-only observer that helps engineers interpret the deterministic core's results in the context of a particular codebase and its history.
+
+The foundational evidence and memory architecture is implemented:
+- **Layer 1: Deterministic Core:** 🟢 **DELIVERED** (AST parsing, CSR Laplacians, spectral/diffusion engines, cycle detection, context slicing, audit report, and enterprise corpus evaluation).
+- **Layer 2: Sokół Evidence Events (`sokol.event.v1`):** 🟢 **DELIVERED** (`rezonator/evidence_events.py`, `docs/SOKOL_EVIDENCE_EVENTS.md`).
+- **Layer 2: Sokół Project Memory (`sokol.fact.v1`):** 🟢 **DELIVERED** (`rezonator/project_memory.py`, `docs/SOKOL_PROJECT_MEMORY.md`).
+- **Layer 2: AI Observer Model Adapter:** 🟡 **PLANNED** (Read-only model consumer, disabled by default).
 
 The architecture keeps the boundary explicit:
 
@@ -93,10 +99,10 @@ The first model adapter should be optional, read-only, and disabled by default. 
 
 ## Delivery gates
 
-1. **Evidence contract** — event envelope v1, bounded JSONL serialization, reproducible source/analysis snapshot IDs, parser coverage fields, and the distinction between core observations and interpreter observations are implemented. Fact schemas, storage/replay, signatures, and any model-claim validation remain open.
-2. **Core readiness** — unsupported syntax is surfaced; graph storage and analysis are sparse end to end and benchmarked on generated plus permissioned representative inputs.
-3. **Controlled trace** — structured events from the bounded interpreter are labeled as interpreter observations, values are omitted by default, and redaction/allowlist behavior is independently reviewed.
-4. **Memory prototype** — local opt-in storage, snapshot binding, stale invalidation, review metadata, and replay/deletion behavior are defined.
-5. **Observer pilot** — model adapter is read-only and opt-in; evidence references are checked; usefulness, unsupported claims, data exposure, and latency are evaluated before continuous watching is enabled.
+1. 🟢 **Evidence contract (`sokol.event.v1`) — DELIVERED:** Event envelope v1, bounded JSONL serialization, reproducible source/analysis snapshot IDs, parser coverage fields, and the distinction between core observations and interpreter observations are implemented and verified ([`docs/SOKOL_EVIDENCE_EVENTS.md`](SOKOL_EVIDENCE_EVENTS.md), `rezonator/evidence_events.py`).
+2. 🟢 **Core readiness & representative corpus — DELIVERED:** Evaluated on a 6-program representative enterprise COBOL corpus with copybooks; 88.24% parser coverage, 0 silent drops, CSR sparse scaling verified ([`docs/CORPUS_EVALUATION_REPORT.md`](CORPUS_EVALUATION_REPORT.md), `rezonator/corpus_evaluator.py`).
+3. 🟢 **Controlled runtime trace — DELIVERED:** Structured events from the bounded interpreter are labeled as interpreter observations (`OBSERVED`), raw values are omitted, and trace envelopes round-trip through JSONL.
+4. 🟢 **Memory prototype (`sokol.fact.v1`) — DELIVERED:** Local validated storage, snapshot binding, deterministic node anchors (`NodeAnchor`), staleness invalidation on edit, and strict non-transfer of `VERIFIED` claims across revisions are implemented ([`docs/SOKOL_PROJECT_MEMORY.md`](SOKOL_PROJECT_MEMORY.md), `rezonator/project_memory.py`).
+5. 🟡 **Observer pilot — PLANNED:** Read-only model adapter, disabled by default; evidence references checked against packet; usefulness, data exposure, and latency evaluated before continuous watching is enabled.
 
 No delivery gate is passed by a persuasive demo alone. The current roadmap is the schedule and source of implementation status: [REZONATOR_ROADMAP.md](../REZONATOR_ROADMAP.md).

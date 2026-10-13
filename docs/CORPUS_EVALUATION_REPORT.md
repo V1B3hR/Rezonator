@@ -1,5 +1,7 @@
 # Rezonator Enterprise COBOL Corpus Evaluation Report
 
+**Status:** 🟢 **DELIVERED (Near-Term Pilot Gate)**
+
 ## 1. Executive Summary
 
 - **Corpus Directory:** `examples\corpus`

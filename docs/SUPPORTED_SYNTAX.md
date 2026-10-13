@@ -18,13 +18,13 @@ Rezonator is designed for mathematical software analysis, spectral graph decompo
 
 | Construct | Status | Notes |
 |---|---|---|
-| `IDENTIFICATION DIVISION.` | **Supported** | Extracts `PROGRAM-ID. <name>` |
-| `ENVIRONMENT DIVISION.` | **Ignored** | Passed through without creating graph nodes |
-| `DATA DIVISION.` | **Supported** | Enters data item extraction scope |
-| `WORKING-STORAGE SECTION.` | **Supported** | Parses declared state variables |
-| `LOCAL-STORAGE SECTION.` | **Planned (Increment B)** | Currently treated as unmodeled data section |
-| `LINKAGE SECTION.` | **Planned (Increment B)** | Currently treated as unmodeled data section |
-| `PROCEDURE DIVISION.` | **Supported** | Parses paragraphs, statements, and control transfers |
+| `IDENTIFICATION DIVISION.` | 🟢 **Supported** | Extracts `PROGRAM-ID. <name>` |
+| `ENVIRONMENT DIVISION.` | 🟢 **Parsed (Pass-through)** | Passed through without creating graph nodes; recognizes `INPUT-OUTPUT SECTION` & `FILE-CONTROL` |
+| `DATA DIVISION.` | 🟢 **Supported** | Enters data item extraction scope |
+| `WORKING-STORAGE SECTION.` | 🟢 **Supported** | Parses declared state variables |
+| `LOCAL-STORAGE SECTION.` | 🟡 **Planned** | Currently treated as unmodeled data section |
+| `LINKAGE SECTION.` | 🟡 **Planned** | Currently treated as unmodeled data section |
+| `PROCEDURE DIVISION.` | 🟢 **Supported** | Parses paragraphs, statements, and control transfers |
 
 ---
 
@@ -32,13 +32,13 @@ Rezonator is designed for mathematical software analysis, spectral graph decompo
 
 Variables declared in the `WORKING-STORAGE SECTION.` are modeled as program state definitions:
 
-| Construct | Syntax Example | Model & Representation |
-|---|---|---|
-| Level Numbers | `01`, `05`, `10`, `77` | Recorded in `level` field |
-| Alphanumeric PIC | `PIC X(10)`, `PIC A(5)` | Preserved as normalized picture string |
-| Numeric PIC | `PIC 9(7)`, `PIC 9(5)V99`, `PIC S9(4)` | Preserved with sign and implied decimals |
-| Initial VALUE | `VALUE "DEFAULT"` or `VALUE 1000.00` | Normalized literal value stripped of quotes |
-| Copybook Variables | `COPY <member>.` | Inlined with `source_origin` pointing to copybook file |
+| Construct | Syntax Example | Model & Representation | Status |
+|---|---|---|:---:|
+| Level Numbers | `01`, `05`, `10`, `77` | Recorded in `level` field | 🟢 **Supported** |
+| Alphanumeric PIC | `PIC X(10)`, `PIC A(5)` | Preserved as normalized picture string | 🟢 **Supported** |
+| Numeric PIC | `PIC 9(7)`, `PIC 9(5)V99`, `PIC S9(4)` | Preserved with sign and implied decimals | 🟢 **Supported** |
+| Initial VALUE | `VALUE "DEFAULT"` or `VALUE 1000.00` | Normalized literal value stripped of quotes | 🟢 **Supported** |
+| Copybook Variables | `COPY <member>.` | Inlined with `source_origin` pointing to copybook file | 🟢 **Supported** |
 
 ---
 
@@ -46,18 +46,18 @@ Variables declared in the `WORKING-STORAGE SECTION.` are modeled as program stat
 
 The following verbs are parsed directly into dedicated AST classes and graph node types:
 
-| Verb / Subsystem | AST Node Class | Graph Node Type | Control / Data Flow Semantics |
-|---|---|---|---|
-| `PERFORM <paragraph>` | `PerformStatement` | `perform` | Creates sequential flow, `cfg_call` to target entry, and `cfg_return` from target exits |
-| `IF <cond> ... ELSE ... END-IF` | `IfStatement` | `branch` | Parses simple and compound (`AND`/`OR`) conditions; creates `cfg_branch_true` and `cfg_branch_false` edges |
-| `MOVE <src> TO <dest> [, <dest2>]` | `MoveStatement` | `stmt` | Creates sequential CFG edge; generates `dfg_def_use` data flow edges from previous writers to readers |
-| `ADD <op> TO <dest> [GIVING <res>]` | `AddStatement` | `stmt` | Creates sequential CFG edge; marks operands as reads and destination as write |
-| `SUBTRACT <op> FROM <base> [GIVING <res>]` | `SubtractStatement` | `stmt` | Creates sequential CFG edge; marks operands as reads and destination as write |
-| `COMPUTE <dest> = <expr>` | `ComputeStatement` | `stmt` | Extracts variables from expression as reads; marks destination as write |
-| `STOP RUN` | `StopStatement` | `stop` | Terminal barrier; halts forward sequential fallthrough |
-| `GOBACK` | `GobackStatement` | `stop` | Terminal barrier; halts forward sequential fallthrough |
-| `EXEC SQL <statement> END-EXEC` | `ExecSqlStatement` | `db_access` | Extracts SQL CRUD operation (`SELECT`, `INSERT`, `UPDATE`, `DELETE`), referenced DB2 tables (`db_table` nodes), and host variable reads/writes |
-| `EXEC CICS <command> END-EXEC` | `ExecCicsStatement` | `external` | Extracts CICS command and external resources (`cics_resource` nodes) with `cfg_external` edge |
+| Verb / Subsystem | AST Node Class | Graph Node Type | Control / Data Flow Semantics | Status |
+|---|---|---|---|:---:|
+| `PERFORM <paragraph>` | `PerformStatement` | `perform` | Creates sequential flow, `cfg_call` to target entry, and `cfg_return` from target exits | 🟢 **Supported** |
+| `IF <cond> ... ELSE ... END-IF` | `IfStatement` | `branch` | Parses simple and compound (`AND`/`OR`) conditions; creates `cfg_branch_true` and `cfg_branch_false` edges | 🟢 **Supported** |
+| `MOVE <src> TO <dest> [, <dest2>]` | `MoveStatement` | `stmt` | Creates sequential CFG edge; generates `dfg_def_use` data flow edges from previous writers to readers | 🟢 **Supported** |
+| `ADD <op> TO <dest> [GIVING <res>]` | `AddStatement` | `stmt` | Creates sequential CFG edge; marks operands as reads and destination as write | 🟢 **Supported** |
+| `SUBTRACT <op> FROM <base> [GIVING <res>]` | `SubtractStatement` | `stmt` | Creates sequential CFG edge; marks operands as reads and destination as write | 🟢 **Supported** |
+| `COMPUTE <dest> = <expr>` | `ComputeStatement` | `stmt` | Extracts variables from expression as reads; marks destination as write | 🟢 **Supported** |
+| `STOP RUN` | `StopStatement` | `stop` | Terminal barrier; halts forward sequential fallthrough | 🟢 **Supported** |
+| `GOBACK` | `GobackStatement` | `stop` | Terminal barrier; halts forward sequential fallthrough | 🟢 **Supported** |
+| `EXEC SQL <statement> END-EXEC` | `ExecSqlStatement` | `db_access` | Extracts SQL CRUD operation (`SELECT`, `INSERT`, `UPDATE`, `DELETE`), referenced DB2 tables (`db_table` nodes), and host variable reads/writes | 🟢 **Supported** |
+| `EXEC CICS <command> END-EXEC` | `ExecCicsStatement` | `external` | Extracts CICS command and external resources (`cics_resource` nodes) with `cfg_external` edge | 🟢 **Supported** |
 
 ---
 
