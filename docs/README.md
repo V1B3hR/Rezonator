@@ -9,6 +9,7 @@ This folder contains the complete technical specifications, architectural bluepr
 | Document | Topic | Status | Scope & Implementation |
 |---|---|:---:|---|
 | [`SOKOL_ARCHITECTURE.md`](SOKOL_ARCHITECTURE.md) | Sokół AI Observer & Memory Architecture | 🟢 **DELIVERED** | Two-layer model, epistemic boundaries (`OBSERVED`, `INFERRED`, `VERIFIED`), and delivery sequence. |
+| [`SOKOL_OBSERVER_AND_RADAR.md`](SOKOL_OBSERVER_AND_RADAR.md) | Spectral Radar, Idioms & Observer | 🟢 **DELIVERED** | Spectral change radar (`sokol.radar.v1`), idiom miner (`sokol.idiom.v1`), data transfer policy, and read-only AI adapter. |
 | [`SOKOL_PROJECT_MEMORY.md`](SOKOL_PROJECT_MEMORY.md) | Sokół Versioned Project Memory (`sokol.fact.v1`) | 🟢 **DELIVERED** | Content-addressed fact envelopes, node anchors (`NodeAnchor`), snapshot binding, and staleness invalidation. |
 | [`SOKOL_EVIDENCE_EVENTS.md`](SOKOL_EVIDENCE_EVENTS.md) | Sokół Evidence Events Transport (`sokol.event.v1`) | 🟢 **DELIVERED** | Bounded in-memory JSONL export for source snapshots, deterministic analyses, and value-free interpreter runs. |
 | [`CORPUS_EVALUATION_REPORT.md`](CORPUS_EVALUATION_REPORT.md) | Enterprise COBOL Corpus Evaluation | 🟢 **DELIVERED** | Empirical benchmark across 6 enterprise programs (339 LOC, 88.24% coverage, copybooks, CICS/DB2, cycle analysis). |
@@ -33,14 +34,16 @@ Layer 1: Deterministic Mathematical Core 🟢 DELIVERED
 ├── Auditable Report & Provenance (audit_report.py, provenance.py)
 └── Enterprise Corpus Evaluation Harness (corpus_evaluator.py)
 
-Layer 2: Sokół Read-Only Observer & Memory
+Layer 2: Sokół Read-Only Observer & Memory 🟢 DELIVERED
 ├── Evidence Events Contract (sokol.event.v1) 🟢 DELIVERED (evidence_events.py)
 ├── Versioned Project Memory (sokol.fact.v1) 🟢 DELIVERED (project_memory.py)
 │   ├── Content-Addressed Envelopes (fact:sha256:...)
 │   ├── Structural Node Anchors (NodeAnchor remapping)
 │   ├── Strict Non-Transfer of VERIFIED Claims
 │   └── Staleness Invalidation Engine
-└── AI Observer Model Adapter 🟡 PLANNED (read-only, opt-in)
+├── Spectral Change Radar (sokol.radar.v1) 🟢 DELIVERED (sokol_radar.py)
+├── Project Idiom Miner (sokol.idiom.v1) 🟢 DELIVERED (idiom_miner.py)
+└── Read-Only AI Observer Adapter (sokol.observer.v1) 🟢 DELIVERED (sokol_observer.py)
 ```
 
 ---

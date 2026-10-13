@@ -8,7 +8,7 @@ The foundational evidence and memory architecture is implemented:
 - **Layer 1: Deterministic Core:** 🟢 **DELIVERED** (AST parsing, CSR Laplacians, spectral/diffusion engines, cycle detection, context slicing, audit report, and enterprise corpus evaluation).
 - **Layer 2: Sokół Evidence Events (`sokol.event.v1`):** 🟢 **DELIVERED** (`rezonator/evidence_events.py`, `docs/SOKOL_EVIDENCE_EVENTS.md`).
 - **Layer 2: Sokół Project Memory (`sokol.fact.v1`):** 🟢 **DELIVERED** (`rezonator/project_memory.py`, `docs/SOKOL_PROJECT_MEMORY.md`).
-- **Layer 2: AI Observer Model Adapter:** 🟡 **PLANNED** (Read-only model consumer, disabled by default).
+- **Layer 2: AI Observer, Radar & Idioms:** 🟢 **DELIVERED** (`rezonator/sokol_radar.py`, `rezonator/idiom_miner.py`, `rezonator/sokol_observer.py`, `docs/SOKOL_OBSERVER_AND_RADAR.md`).
 
 The architecture keeps the boundary explicit:
 
@@ -103,6 +103,6 @@ The first model adapter should be optional, read-only, and disabled by default. 
 2. 🟢 **Core readiness & representative corpus — DELIVERED:** Evaluated on a 6-program representative enterprise COBOL corpus with copybooks; 88.24% parser coverage, 0 silent drops, CSR sparse scaling verified ([`docs/CORPUS_EVALUATION_REPORT.md`](CORPUS_EVALUATION_REPORT.md), `rezonator/corpus_evaluator.py`).
 3. 🟢 **Controlled runtime trace — DELIVERED:** Structured events from the bounded interpreter are labeled as interpreter observations (`OBSERVED`), raw values are omitted, and trace envelopes round-trip through JSONL.
 4. 🟢 **Memory prototype (`sokol.fact.v1`) — DELIVERED:** Local validated storage, snapshot binding, deterministic node anchors (`NodeAnchor`), staleness invalidation on edit, and strict non-transfer of `VERIFIED` claims across revisions are implemented ([`docs/SOKOL_PROJECT_MEMORY.md`](SOKOL_PROJECT_MEMORY.md), `rezonator/project_memory.py`).
-5. 🟡 **Observer pilot — PLANNED:** Read-only model adapter, disabled by default; evidence references checked against packet; usefulness, data exposure, and latency evaluated before continuous watching is enabled.
+5. 🟢 **Radar, idioms, and read-only observer pilot — DELIVERED:** Spectral change radar with compatibility verification, idiom miner emitting strictly `INFERRED` candidates, and read-only observer adapter with privacy policy and untrusted data boundary ([`docs/SOKOL_OBSERVER_AND_RADAR.md`](SOKOL_OBSERVER_AND_RADAR.md), `rezonator/sokol_radar.py`, `rezonator/idiom_miner.py`, `rezonator/sokol_observer.py`).
 
 No delivery gate is passed by a persuasive demo alone. The current roadmap is the schedule and source of implementation status: [REZONATOR_ROADMAP.md](../REZONATOR_ROADMAP.md).

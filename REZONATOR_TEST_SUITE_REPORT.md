@@ -7,12 +7,12 @@
 
 The **Rezonator** test harness exercises selected parser fixtures, graph invariants, spectral and diffusion routines, cycle reporting, embedded CICS/SQL forms, copybook preprocessing, provenance fields, and local/remote HTTP access controls. This report is a test snapshot, not a code-coverage measurement, complete COBOL conformance result, security certification, or proof of production readiness.
 
-- **Total Test Cases**: 84
-- **Latest Run (2026-10-13)**: 84 Passed, 0 Failed, 0 Skipped, 0 Errors.
-- **Latest Suite Time**: 3.754 seconds on the Rezonator worktree; platform and dependency details are recorded by the runtime provenance manifest. This is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
-- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, continuous physical & mathematical invariants (heat & Markov mass conservation, Laplacian nullspace, disconnected relaxation half-life), spectral and diffusion routines, NetLSD Hutchinson estimator error reporting, slicing/ranking, bounded context-slice beta with line/token budgets and omission disclosures, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, versioned provenance and graph digests, JSON/Markdown audit reports, bounded versioned Sokół JSONL event envelopes, enterprise corpus evaluation, Sokół versioned project memory (`sokol.fact.v1`), anchor remapping, staleness invalidation, verification non-transfer, REST API (/api/audit, /api/slice), neutral comparator verdicts, and backward compatibility.
+- **Total Test Cases**: 92
+- **Latest Run (2026-10-13)**: 92 Passed, 0 Failed, 0 Skipped, 0 Errors.
+- **Latest Suite Time**: 3.887 seconds on the Rezonator worktree; platform and dependency details are recorded by the runtime provenance manifest. This is not a performance guarantee. Per-module timings below are from an earlier recorded snapshot unless noted.
+- **Areas Exercised**: Front-End AST fixtures, truthful unhandled statement reporting, Tarjan SCC cycle analysis, continuous physical & mathematical invariants, spectral and diffusion routines, NetLSD Hutchinson estimator error reporting, slicing/ranking, bounded context-slice beta with line/token budgets and omission disclosures, cycle reporting, selected CICS/SQL forms, copybook inlining, basic HTTP controls, versioned provenance and graph digests, JSON/Markdown audit reports, bounded versioned Sokół JSONL event envelopes, enterprise corpus evaluation, Sokół versioned project memory (`sokol.fact.v1`), anchor remapping, staleness invalidation, verification non-transfer, Sokół spectral radar (`sokol.radar.v1`) with compatibility checking and review candidate nomination, idiom miner (`sokol.idiom.v1`) with strict `INFERRED` status, read-only observer adapter (`sokol.observer.v1`) with privacy policy and untrusted code boundary, REST API (/api/audit, /api/slice), neutral comparator verdicts, and backward compatibility.
 
-The recorded suite ran against the main worktree with Increment D, Sokół event-export, Corpus Evaluator, Project Memory, and Mathematical Invariant additions present. Per-module timings below are historical unless marked as latest. Re-run against the exact submitted revision before treating the result as a release gate.
+The recorded suite ran against the main worktree with Increment D, Sokół event-export, Corpus Evaluator, Project Memory, Mathematical Invariants, and Sokół Step 5 Radar/Observer additions present. Per-module timings below are historical unless marked as latest. Re-run against the exact submitted revision before treating the result as a release gate.
 
 ---
 
@@ -36,7 +36,8 @@ The recorded suite ran against the main worktree with Increment D, Sokół event
 | **Enterprise Corpus Evaluator** | `tests/test_corpus_evaluator.py` | 7 | **PASS** | 0.080 s | Verifies 6-program enterprise corpus, parser coverage metrics, copybook resolution, unsupported verb gap inventory, cycle heuristics, and Sokół evidence event integrity. |
 | **Sokół Project Memory** | `tests/test_sokol_project_memory.py` | 6 | **PASS** | 0.043 s | Verifies `sokol.fact.v1` fact envelopes, epistemic rules, structural node anchors (`NodeAnchor`), snapshot binding, automatic staleness invalidation on edit, and strict non-transfer of `VERIFIED` claims. |
 | **Mathematical Invariants** | `tests/test_mathematical_invariants.py` | 9 | **PASS** | 0.067 s | Validates heat and Markov continuous mass conservation ($\sum u = 1.0$), Laplacian nullspace ($L \mathbf{1} = \mathbf{0}$), disconnected relaxation half-life ($\lambda_{\min > 0}$), exact BFS vs threshold reachability, NetLSD Hutchinson standard error floor, and degree-normalized ranking. |
-| **TOTAL** | | **84** | **PASS** | **3.754 s (latest run)** | **All 84 tests passed on 2026-10-13** |
+| **Sokół Radar & AI Observer** | `tests/test_sokol_radar_and_observer.py` | 8 | **PASS** | 0.150 s | Validates spectral radar compatibility gating, review candidate nomination, idiom miner `INFERRED` tagging, data transfer policy gates, prompt boundary shielding, deterministic offline synthesis, model citation verification, and backward compatibility. |
+| **TOTAL** | | **92** | **PASS** | **3.887 s (latest run)** | **All 92 tests passed on 2026-10-13** |
 
 ---
 
