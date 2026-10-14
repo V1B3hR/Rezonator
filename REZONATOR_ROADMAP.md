@@ -104,6 +104,35 @@ Ranked, explainable decomposition candidates and an auditable migration-validati
 
 **Delivered outcome:** Rezonator recommends and gathers evidence; it does not autonomously rewrite or certify production systems. Structural signals and dynamic differential testing are clearly demarcated under strict epistemic discipline. A Rust `rezonator-core` remains an optional optimization considered only if future profiling identifies sparse kernel bottlenecks on million-node graphs.
 
+### 3.1. Near-Term & Mid-Term Approved Execution Milestones
+
+Following the completion of the mathematical core and robustness testing (135 passing tests), the project enters active enterprise operationalization:
+
+```mermaid
+graph LR
+    subgraph M_Pilot ["Milestone 1: Commercial Pre-Migration Pilot"]
+        P1["Scale Portfolio Ingestion<br/>(100–500 programs, JCL jobs)"] --> P2["Cheeger Spectral Decomposition"]
+        P2 --> P3["Bank Architecture Board Dossier<br/>(Auditable Decomposition Plan)"]
+    end
+
+    subgraph M_Sokol ["Milestone 2: Active Sokół LLM Integration"]
+        S1["Configurable Model Adapter<br/>(Local / Gemini / Claude)"] --> S2["Domain Rationale Synthesizer<br/>(Spectral Metric -> Business Context)"]
+        S2 --> S3["Versioned Fact Ingestion<br/>(sokol.fact.v1 institutional memory)"]
+    end
+
+    M_Pilot --> M_Sokol
+```
+
+1. **Milestone 1: Pre-Migration Audit Pilot na Realnym Portfelu Klienta**:
+   - **Scope:** Scale beyond the 6-program synthetic corpus to anonymized commercial enterprise mainframe estates (100–500 COBOL programs, thousands of JCL execution steps).
+   - **Objective:** Generate a comprehensive, auditable **Monolith Decomposition Dossier** that withstands review by a bank's Architecture Review Board (ARB).
+   - **Key Deliverables:** Multi-program CSR graph scaling, automated DB2/dataset friction matrices, JCL batch step transactional crossing analysis, and automated export of candidate service boundaries (`sokol.partition.v1`).
+
+2. **Milestone 2: Pełne Uruchomienie Aktywnego Sokoła (LLM Integration)**:
+   - **Scope:** Connect the read-only observer adapter ([`rezonator/sokol_observer.py`](rezonator/sokol_observer.py)) to external model endpoints (e.g. Gemini, Claude, or local Ollama/vLLM) under strict privacy governance ([`DataTransferPolicy`](rezonator/sokol_observer.py)).
+   - **Objective:** Bridge discrete geometry and human decision-makers by translating mathematical signals (Cheeger conductance $\phi$, algebraic connectivity $\Delta \lambda_1$, crossing edges, heat diffusion retention) into human-readable, domain-specific architectural justifications.
+   - **Key Deliverables:** Production model callable adapter, structured JSON schema response parser, automated generation of content-addressed fact envelopes ([`sokol.fact.v1`](rezonator/project_memory.py)), and conversational architect Q&A over bounded context packets.
+
 ## 4. Longer-range direction (target horizon: 2031)
 
 Add language frontends one at a time behind a versioned intermediate graph model. Start with one adjacent representation (for example, a compiler IR or a second language frontend) and require conformance fixtures for control flow, data dependencies, calls, and source mapping before claiming language independence.
