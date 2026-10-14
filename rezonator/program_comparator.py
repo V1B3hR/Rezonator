@@ -119,6 +119,7 @@ class ProgramComparator:
 
         # 1. NetLSD Topological Distance (Size-invariant heat trace L2 distance)
         netlsd_dist = self.yant_engine.compute_spectral_distance(res_a["spectrum"], res_b["spectrum"])
+        netlsd_3d_dist = self.yant_engine.compute_reduced_spectral_distance(res_a["spectrum"], res_b["spectrum"])
 
         # 2. Algebraic Connectivity Shift (Fiedler value delta)
         fiedler_a = res_a["spectrum"]["fiedler_value"]
@@ -177,6 +178,7 @@ class ProgramComparator:
             "metrics": {
                 "spectral_distance_L2": netlsd_dist,
                 "spectral_distance_netlsd": netlsd_dist,
+                "spectral_distance_3d_reduced": netlsd_3d_dist,
                 "fiedler_delta": fiedler_delta,
                 "fiedler_norm_delta": fiedler_norm_delta,
                 "cymatic_cross_similarity": cymatic_similarity,

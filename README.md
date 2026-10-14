@@ -207,8 +207,8 @@ C:\Projekty\Rezonator\
 │   ├── cobol_runtime.py       # Deterministic Operational Semantics (AST Evaluator)
 │   ├── copybooks.py           # Nested COPYBOOK inlining & REPLACING preprocessor
 │   ├── cycle_detector.py      # CFG cycle enumeration and heuristic hazard analysis
-│   ├── diamond_yant.py        # Shift-Invert Lanczos & NetLSD Signatures
-│   ├── diffusion_ranker.py    # Continuous Impact & Blast Radius Ranker
+│   ├── diamond_yant.py        # Shift-Invert Lanczos, 3D Spectral Embedding & NetLSD
+│   ├── diffusion_ranker.py    # Continuous Impact, 3D Spectral Distance & Blast Radius
 │   ├── graph_field.py         # Tensorization & Fan Chung Laplacian
 │   ├── limits.py              # Defense-in-depth resource & size limits
 │   ├── llm_synthesizer.py     # Deterministic analysis brief (legacy module name)

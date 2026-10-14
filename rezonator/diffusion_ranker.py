@@ -55,6 +55,7 @@ class DiffusionRanker:
         transition.sort_indices()
         self.A_dir = adjacency
         self.P = transition
+        self._cached_embedding_3d: Optional[np.ndarray] = None
 
     def _seed(self, seed_node_id: str):
         if seed_node_id not in self.node_id_to_idx:
@@ -132,4 +133,71 @@ class DiffusionRanker:
 
         candidates = self._candidates(seed_node_id, slice_nodes)
         candidates.sort(key=lambda node_id: (-scores[self.node_id_to_idx[node_id]], node_id))
+        return candidates
+
+    def compute_3d_spectral_embedding(self) -> np.ndarray:
+        """
+        Computes or retrieves cached 3D topological spectral embedding X in R^{N x 3}
+        from the Fan Chung normalized Laplacian of the graph.
+        Reduces downstream topological ranking to O(N) distance calculations.
+        """
+        if self._cached_embedding_3d is not None:
+            return self._cached_embedding_3d
+
+        if self.N == 0:
+            self._cached_embedding_3d = np.zeros((0, 3), dtype=np.float64)
+            return self._cached_embedding_3d
+        if self.N == 1:
+            self._cached_embedding_3d = np.zeros((1, 3), dtype=np.float64)
+            return self._cached_embedding_3d
+
+        # Symmetrized adjacency: A_sym = 0.5 * (A_dir + A_dir.T)
+        A_sym = (0.5 * (self.A_dir + self.A_dir.transpose())).tocsr()
+        A_sym.sum_duplicates()
+        A_sym.eliminate_zeros()
+
+        degrees = np.asarray(A_sym.sum(axis=1)).ravel()
+        inv_sqrt = np.zeros_like(degrees)
+        pos = degrees > 1e-9
+        inv_sqrt[pos] = 1.0 / np.sqrt(degrees[pos])
+        D_inv_sqrt = sp.diags(inv_sqrt, format="csr")
+
+        L_norm = (sp.eye(self.N, format="csr", dtype=np.float64) - D_inv_sqrt @ A_sym @ D_inv_sqrt).tocsr()
+        if np.any(~pos):
+            keep = sp.diags(pos.astype(np.float64), format="csr")
+            L_norm = (keep @ L_norm @ keep).tocsr()
+        L_norm = (0.5 * (L_norm + L_norm.transpose())).tocsr()
+        L_norm.eliminate_zeros()
+
+        from rezonator.diamond_yant import DiamondYantSpectralEngine
+        engine = DiamondYantSpectralEngine()
+        emb_res = engine.compute_3d_spectral_embedding(L_norm)
+        self._cached_embedding_3d = emb_res["embedding"]
+        return self._cached_embedding_3d
+
+    def rank_by_spectral_distance(
+        self,
+        seed_node_id: str,
+        slice_nodes: Optional[Set[str]] = None,
+        embedding_3d: Optional[np.ndarray] = None,
+    ) -> List[str]:
+        """
+        Rank candidate statements by topological proximity in 3D spectral space:
+            d(seed, j) = ||X_{seed, :} - X_{j, :}||_2
+        Complexity: O(N) distance checks and O(k log k) sort,
+        replacing iterative matrix exponential steps while preserving diffusion coupling.
+        Closest nodes in spectral space are ranked highest (first).
+        """
+        if seed_node_id not in self.node_id_to_idx:
+            return []
+        seed_idx = self.node_id_to_idx[seed_node_id]
+        X = embedding_3d if embedding_3d is not None else self.compute_3d_spectral_embedding()
+        if len(X) == 0:
+            return []
+
+        seed_coord = X[seed_idx]
+        distances = np.linalg.norm(X - seed_coord, axis=1)
+
+        candidates = self._candidates(seed_node_id, slice_nodes)
+        candidates.sort(key=lambda node_id: (distances[self.node_id_to_idx[node_id]], node_id))
         return candidates

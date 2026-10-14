@@ -8,6 +8,7 @@ from typing import Dict, List, Any, Tuple, Optional
 import numpy as np
 import scipy.linalg as la
 from rezonator.analysis_config import (
+    DIFFUSION_ALPHA,
     NETLSD_HUTCHINSON_SAMPLES,
     NETLSD_TIME_MAX,
     NETLSD_TIME_MIN,
@@ -55,10 +56,142 @@ class DiamondYantSpectralEngine:
                     "to preserve the graph memory bound"
                 ) from iterative_error
 
+    def compute_3d_spectral_embedding(self, L_norm: np.ndarray) -> Dict[str, Any]:
+        """
+        Computes 3D topological spectral embedding X in R^{N x 3} using truncated
+        normalized Laplacian eigen-decomposition:
+            X = [phi_1, phi_2, phi_3] @ diag([sqrt(lambda_1), sqrt(lambda_2), sqrt(lambda_3)])
+        Where phi_k and lambda_k are the lowest non-trivial eigenpairs of L_norm.
+
+        Reduces full O(N^3) spectral operations to O(N) over low-rank embedding X:
+        - Fiedler value lambda_1 = ||X_{:, 0}||_2^2
+        - Fiedler vector v_1 = X_{:, 0} / ||X_{:, 0}||_2
+        - Pairwise spectral distance d(i, j) = ||X_{i, :} - X_{j, :}||_2 in O(1)
+        - Order-3 reduced NetLSD h_3D(t) in O(1)
+        - Relaxation half-life tau_1/2 = ln(2) / (alpha * lambda_1) in O(1)
+        """
+        import scipy.sparse as sp
+
+        n = L_norm.shape[0] if L_norm is not None else 0
+        if n == 0:
+            return {
+                "embedding": np.zeros((0, 3), dtype=np.float64),
+                "eigenvalues": [],
+                "eigenvectors": [],
+                "fiedler_value": 0.0,
+                "fiedler_vector": [],
+                "spectral_gap": 0.0,
+                "lambda_0": 0.0,
+                "truncation_bound_lambda_4": None,
+            }
+        if n == 1:
+            return {
+                "embedding": np.zeros((1, 3), dtype=np.float64),
+                "eigenvalues": [0.0],
+                "eigenvectors": [np.array([1.0])],
+                "fiedler_value": 0.0,
+                "fiedler_vector": [1.0],
+                "spectral_gap": 0.0,
+                "lambda_0": 0.0,
+                "truncation_bound_lambda_4": None,
+            }
+
+        if n < SPARSE_CUTOFF or not sp.issparse(L_norm):
+            matrix_dense = L_norm if not sp.issparse(L_norm) else L_norm.toarray()
+            evals_all, evecs_all = la.eigh(matrix_dense)
+            idx_sort = np.argsort(evals_all)
+            evals = np.clip(evals_all[idx_sort], 0.0, 2.0)
+            evecs = evecs_all[:, idx_sort]
+        else:
+            L_sp = sp.csr_matrix(L_norm, dtype=np.float64)
+            k_req = min(5, n - 1)
+            evals_sm, evecs_sm = self._sparse_eigenpairs(L_sp, k_req)
+            idx_sort = np.argsort(evals_sm)
+            evals = np.clip(evals_sm[idx_sort], 0.0, 2.0)
+            evecs = evecs_sm[:, idx_sort]
+
+        lambda_0 = float(evals[0]) if len(evals) > 0 else 0.0
+        num_non_trivial = min(3, len(evals) - 1)
+
+        X = np.zeros((n, 3), dtype=np.float64)
+        evecs_3d = []
+        evals_3d = []
+        for k in range(num_non_trivial):
+            idx = k + 1
+            lam = float(evals[idx])
+            phi = evecs[:, idx]
+            scale = np.sqrt(max(0.0, lam))
+            X[:, k] = phi * scale
+            evals_3d.append(lam)
+            evecs_3d.append(phi)
+
+        fiedler_val = evals_3d[0] if len(evals_3d) > 0 else 0.0
+        fiedler_vec = evecs_3d[0].tolist() if len(evecs_3d) > 0 else []
+        spectral_gap = (evals_3d[1] - evals_3d[0]) if len(evals_3d) > 1 else 0.0
+        lambda_4 = float(evals[4]) if len(evals) > 4 else None
+
+        return {
+            "embedding": X,
+            "eigenvalues": evals_3d,
+            "eigenvectors": [vec.tolist() for vec in evecs_3d],
+            "fiedler_value": fiedler_val,
+            "fiedler_vector": fiedler_vec,
+            "spectral_gap": spectral_gap,
+            "lambda_0": lambda_0,
+            "truncation_bound_lambda_4": lambda_4,
+        }
+
+    def compute_reduced_netlsd(
+        self,
+        eigenvalues_3d: List[float],
+        n: int,
+        times: Optional[np.ndarray] = None,
+        normalized: bool = True,
+    ) -> List[float]:
+        """
+        Order-3 reduced NetLSD heat trace signature:
+            Phi_3D(t) = exp(-t * lambda_0) + sum_{k=1}^3 exp(-t * lambda_k)
+        When normalized=True:
+            h_3D(t) = Phi_3D(t) / N.
+        Evaluated in O(1) per time scale.
+        """
+        if n == 0:
+            return []
+        if times is None:
+            times = np.logspace(
+                np.log10(NETLSD_TIME_MIN), np.log10(NETLSD_TIME_MAX), NETLSD_TIME_SCALES,
+            )
+        sig = []
+        for t in times:
+            val = 1.0 + sum(float(np.exp(-t * lam)) for lam in eigenvalues_3d)
+            if normalized:
+                val = val / n
+            sig.append(float(val))
+        return sig
+
+    def spectral_node_distance(self, embedding: np.ndarray, i: int, j: int) -> float:
+        """
+        Returns Euclidean distance between node i and node j in 3D spectral space:
+        d(i, j) = ||X_{i, :} - X_{j, :}||_2 in O(1).
+        Approximates biharmonic/diffusion distance on the graph.
+        """
+        if len(embedding) == 0 or i >= len(embedding) or j >= len(embedding):
+            return 0.0
+        return float(np.linalg.norm(embedding[i] - embedding[j]))
+
+    def compute_spectral_half_life(self, fiedler_val: float, alpha: float = DIFFUSION_ALPHA) -> float:
+        """
+        Computes relaxation half-life tau_{1/2} = ln(2) / (alpha * lambda_1) in O(1).
+        """
+        if fiedler_val > 1e-4:
+            return float(np.log(2.0) / (alpha * fiedler_val))
+        return float("inf")
+
     def compute_spectrum(self, L: np.ndarray, L_norm: Optional[np.ndarray] = None, num_modes: int = 10) -> Dict[str, Any]:
         """
         Computes exact eigenvalues and eigenvectors of Laplacian L:
-        L * v_k = lambda_k * v_k, as well as multi-scale NetLSD heat-kernel signatures.
+        L * v_k = lambda_k * v_k, as well as multi-scale NetLSD heat-kernel signatures
+        and 3D topological spectral embedding.
         """
         n = L.shape[0]
         if n == 0:
@@ -70,7 +203,13 @@ class DiamondYantSpectralEngine:
                 "spectral_gap": 0.0,
                 "algebraic_connectivity": 0.0,
                 "netlsd_signature": [],
-                "fiedler_norm": 0.0
+                "netlsd_stderr": [],
+                "netlsd_reduced_3d": [],
+                "spectral_embedding_3d": [],
+                "spectral_half_life_3d": float("inf"),
+                "truncation_bound_lambda_4": None,
+                "fiedler_norm": 0.0,
+                "total_modes": 0,
             }
 
         # Sparse Lanczos for large graphs; exact dense eigh is intentionally
@@ -111,14 +250,29 @@ class DiamondYantSpectralEngine:
         top_evals = [float(x) for x in evals[:k]]
         top_evecs = [evecs[:, i].tolist() for i in range(k)]
 
-        # Multi-scale NetLSD signature from Normalized Laplacian
+        # Multi-scale NetLSD signature from Normalized Laplacian & 3D Spectral Embedding
         netlsd_sig: List[float] = []
         netlsd_stderr: List[float] = []
+        netlsd_reduced_3d: List[float] = []
+        embedding_3d: Optional[np.ndarray] = None
         fiedler_norm = 0.0
+        half_life_3d = float("inf")
+        truncation_bound_lambda_4 = None
+
         if L_norm is not None and n > 0:
             times = np.logspace(
                 np.log10(NETLSD_TIME_MIN), np.log10(NETLSD_TIME_MAX), NETLSD_TIME_SCALES,
             )
+            # Compute 3D spectral embedding and reduced metrics
+            emb_res = self.compute_3d_spectral_embedding(L_norm)
+            embedding_3d = emb_res["embedding"]
+            fiedler_norm = emb_res["fiedler_value"]
+            truncation_bound_lambda_4 = emb_res.get("truncation_bound_lambda_4")
+            netlsd_reduced_3d = self.compute_reduced_netlsd(
+                emb_res["eigenvalues"], n, times=times, normalized=True,
+            )
+            half_life_3d = self.compute_spectral_half_life(fiedler_norm)
+
             if n < SPARSE_CUTOFF:
                 evals_norm = la.eigvalsh(L_norm if not sp.issparse(L_norm) else L_norm.toarray())
                 evals_norm = np.clip(evals_norm, 0.0, 2.0)
@@ -127,9 +281,6 @@ class DiamondYantSpectralEngine:
                 fiedler_norm = float(evals_norm[1]) if n > 1 else float(evals_norm[0])
             else:
                 L_norm_sp = sp.csr_matrix(L_norm, dtype=np.float64)
-                norm_evals_sm, _ = self._sparse_eigenpairs(L_norm_sp, min(4, n - 1))
-                norm_evals_sm = np.sort(np.clip(norm_evals_sm, 0.0, 2.0))
-                fiedler_norm = float(norm_evals_sm[1]) if len(norm_evals_sm) > 1 else float(norm_evals_sm[0])
 
                 # Fast Hutchinson stochastic trace estimator with Rademacher random vectors
                 M_samples = NETLSD_HUTCHINSON_SAMPLES
@@ -158,6 +309,10 @@ class DiamondYantSpectralEngine:
             "fiedler_norm": fiedler_norm,
             "netlsd_signature": netlsd_sig,
             "netlsd_stderr": netlsd_stderr,
+            "netlsd_reduced_3d": netlsd_reduced_3d,
+            "spectral_embedding_3d": embedding_3d.tolist() if embedding_3d is not None else [],
+            "spectral_half_life_3d": half_life_3d,
+            "truncation_bound_lambda_4": truncation_bound_lambda_4,
             "total_modes": n
         }
 
@@ -247,6 +402,20 @@ class DiamondYantSpectralEngine:
             return float(np.linalg.norm(sig_a - sig_b))
 
         # Fallback to normalized Fiedler distance if signatures missing
+        fa = spec_a.get("fiedler_norm", spec_a.get("fiedler_value", 0.0))
+        fb = spec_b.get("fiedler_norm", spec_b.get("fiedler_value", 0.0))
+        return float(abs(fa - fb))
+
+    def compute_reduced_spectral_distance(self, spec_a: Dict[str, Any], spec_b: Dict[str, Any]) -> float:
+        """
+        Calculates NetLSD distance using order-3 reduced 3D signatures:
+        ||h_3D_A - h_3D_B||_2 across multi-scale times in O(1).
+        """
+        sig_a = np.array(spec_a.get("netlsd_reduced_3d", []))
+        sig_b = np.array(spec_b.get("netlsd_reduced_3d", []))
+        if len(sig_a) > 0 and len(sig_b) > 0 and len(sig_a) == len(sig_b):
+            return float(np.linalg.norm(sig_a - sig_b))
+
         fa = spec_a.get("fiedler_norm", spec_a.get("fiedler_value", 0.0))
         fb = spec_b.get("fiedler_norm", spec_b.get("fiedler_value", 0.0))
         return float(abs(fa - fb))

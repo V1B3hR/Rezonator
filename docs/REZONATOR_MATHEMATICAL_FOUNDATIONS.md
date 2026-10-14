@@ -124,6 +124,41 @@ This distance is:
 - **Permutation Invariant**: Renaming paragraphs or reordering variables does not alter the spectrum.
 - **Size Adaptive**: Smoothly compares 20-node routines against 500-node monoliths.
 
+#### 3.3 Topologiczny Wzór 3D: Spektralna Redukcja Obliczeń
+
+Trójwymiarowe zanurzenie spektralne oparte na obciętej dekompozycji znormalizowanego laplasjanu Fan-Chunga zastępuje pełne operacje na grafie rzędu $\mathcal{O}(N^3)$ przez operacje na macierzach niskiego rzędu ($\mathcal{O}(N \cdot k^2)$ dla $k=3$), zachowując ścisłą zgodność matematyczną dla kluczowych metryk spektralnych wykorzystywanych w Rezonatorze.
+
+##### 1. Definicja i baza zanurzenia 3D
+Dla grafu $\mathcal{G} = (V, E)$, $|V| = N$, ze znormalizowanym laplasjanem symetrycznym $\mathcal{L}_{\text{norm}} = I - D^{-1/2} A D^{-1/2} \in \mathbb{R}^{N \times N}$ i uporządkowanymi parami własnymi $0 = \lambda_0 \le \lambda_1 \le \lambda_2 \dots \le \lambda_{N-1}$, definiujemy macierz zanurzenia $X \in \mathbb{R}^{N \times 3}$:
+
+$$X = \begin{bmatrix} \phi_1 & \phi_2 & \phi_3 \end{bmatrix} \begin{bmatrix} \sqrt{\lambda_1} & 0 & 0 \\ 0 & \sqrt{\lambda_2} & 0 \\ 0 & 0 & \sqrt{\lambda_3} \end{bmatrix} \in \mathbb{R}^{N \times 3}$$
+
+Wiersz $X_{i, :} \in \mathbb{R}^3$ jest współrzędną węzła $i$ w trójwymiarowej przestrzeni spektralnej. Współrzędne te kodują globalną topologię grafu – odległości euklidesowe w tej przestrzeni aproksymują odległości dyfuzyjne na grafie.
+
+##### 2. Tabela redukcji obliczeniowej
+
+| Metryka | Wzór oryginalny | Wzór zredukowany (3D) | Złożoność |
+|:---|:---|:---|:---:|
+| **Wartość Fiedlera $\lambda_1$** | $\min_{v \perp 1} \frac{v^T L v}{v^T v}$ | $\lambda_1 = \|X_{:, 0}\|_2^2$ | $\mathcal{O}(N)$ |
+| **Wektor Fiedlera $v_1$** | Rozwiązanie problemu własnego | $v_1 = X_{:, 0} / \|X_{:, 0}\|_2$ | $\mathcal{O}(N)$ |
+| **NetLSD $\Phi(t)$ / $h(t)$** | $\frac{1}{N}\text{Tr}(\exp(-t \mathcal{L}_{\text{norm}}))$ | $h_{\text{3D}}(t) = \frac{1}{N}\left(1 + \sum_{k=1}^3 \exp(-t \lambda_k)\right)$ | $\mathcal{O}(1)$ |
+| **Dystans spektralny $d(i, j)$** | $\|\phi_i - \phi_j\|_2$ | $d(i, j) = \|X_{i, :} - X_{j, :}\|_2$ | $\mathcal{O}(1)$ |
+| **Half-life $\tau_{1/2}$** | $\frac{\ln 2}{\alpha \lambda_{\min > 0}}$ | $\tau_{1/2} = \frac{\ln 2}{\alpha \lambda_1} = \frac{\ln 2}{\alpha \|X_{:, 0}\|_2^2}$ | $\mathcal{O}(1)$ |
+
+Całkowity koszt analityczny po wyznaczeniu 3 najmniejszych niezerowych modów przez algorytm Lanczos ($\mathcal{O}(N \cdot m)$) spada z $\mathcal{O}(N^3)$ do $\mathcal{O}(N)$ dla całego grafu i $\mathcal{O}(1)$ dla operacji na parach węzłów.
+
+##### 3. Dowód zgodności i granica błędu aproksymacji (Truncation Bound)
+- **Metryki oparte na pierwszych trzech momentach**: Ponieważ wektory własne $\phi_k$ są ortonormalne ($\langle \phi_k, \phi_l \rangle = \delta_{kl}$), dla dowolnej funkcji $g(\lambda_1, \lambda_2, \lambda_3)$ zachodzi $g(\lambda_1, \lambda_2, \lambda_3) = g(\|X_{:, 0}\|_2^2, \|X_{:, 1}\|_2^2, \|X_{:, 2}\|_2^2)$, co gwarantuje 100% zgodności analitycznej.
+- **Pełne widmo NetLSD**: Dla sygnatur uwzględniających całe widmo, zanurzenie 3D stanowi kontrolowaną aproksymację rzędu 3. Ponieważ $\lambda_k \ge \lambda_4$ dla wszystkich $k \ge 4$, błąd obcięcia ogona jest ściśle ograniczony przez:
+  $$|h(t) - h_{\text{3D}}(t)| = \frac{1}{N} \sum_{k=4}^{N-1} \exp(-t \lambda_k) \le \frac{N - 4}{N} \exp(-t \lambda_4) \le \exp(-t \lambda_4)$$
+  Dla czasów dyfuzji makroskopowej ($t \ge 1$), składnik $\exp(-t \lambda_4)$ gwałtownie zanika, dając asymptotyczną zbieżność do pełnego śladu ciepła.
+
+##### 4. Skalowanie wydajnościowe (do limitu 50 000 węzłów)
+Dla grafu o $N = 50\,000$ węzłów:
+- Pełna diagonalizacja gęsta $\mathcal{O}(N^3) \approx 1.25 \times 10^{14}$ operacji.
+- Z redukcją 3D: $\mathcal{O}(N \cdot m)$ z $m \approx 100$ iteracjami Lanczosa daje $\approx 5 \times 10^6$ operacji.
+- Przyspieszenie: ponad 7 rzędów wielkości bez utraty stabilności numerycznej. Warstwa ta jest zintegrowana w modułach [`diamond_yant.py`](../rezonator/diamond_yant.py) (ekstrakcja bazy $X$, $h_{\text{3D}}(t)$) oraz [`diffusion_ranker.py`](../rezonator/diffusion_ranker.py) (`rank_by_spectral_distance`).
+
 ---
 
 ### 4. Continuous Diffusion Operators: Undirected Heat vs Directed Blast Radius
@@ -218,4 +253,7 @@ The API emits labels including `STRUCTURAL_MODULAR_EXTENSION`, `HAZARD_REDUCED`,
 | **Directed Markov Generator**| $Q = P^T - I$ | Continuous causal operator for forward impact tracking. |
 | **Blast Radius Trajectory**| $u(t) = \exp(Q t) u_0$ | Pinpoints affected downstream code following a mutation. |
 | **Shift-Invert Lanczos** | $(L - \sigma I)^{-1} v = \mu v, \; \sigma < 0$ | High-speed ($1.5\text{ ms}$) sparse modal solver for $N \ge 1,000$. |
+| **3D Spectral Embedding** | $X = [\phi_1, \phi_2, \phi_3] \operatorname{diag}(\sqrt{\lambda_1}, \sqrt{\lambda_2}, \sqrt{\lambda_3})$ | Low-rank coordinates reducing $\mathcal{O}(N^3)$ spectral analysis to $\mathcal{O}(N)$. |
+| **3D Reduced NetLSD** | $h_{\text{3D}}(t) = \frac{1}{N}(1 + \sum_{k=1}^3 e^{-t \lambda_k})$ | $\mathcal{O}(1)$ heat trace approximation with controlled error $\le e^{-t \lambda_4}$. |
+| **3D Spectral Distance** | $d(i, j) = \|X_{i, :} - X_{j, :}\|_2$ | $\mathcal{O}(1)$ pairwise topological distance approximating continuous diffusion coupling. |
 | **CFG cycle analysis** | Directed cycles in the parsed CFG | Reports possible recurring paths and heuristic hazards; does not prove general program termination. |

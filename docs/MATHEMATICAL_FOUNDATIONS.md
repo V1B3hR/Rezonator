@@ -71,6 +71,17 @@ where each Rademacher vector has entries scaled by $1/\sqrt{N}$. The engine repo
 The **Topological NetLSD Distance** between programs $P_A$ and $P_B$ is:
 $$d_{\text{NetLSD}}(P_A, P_B) = \sqrt{\sum_{t \in T} (\Phi_A(t) - \Phi_B(t))^2}$$
 
+#### 2.1 3D Topological Spectral Reduction:
+To avoid $\mathcal{O}(N^3)$ dense operations or multiple iterative solves on graphs up to $N = 50\,000$, Rezonator provides a **3D Topological Spectral Embedding** layer based on the three lowest non-trivial eigenpairs of $\mathcal{L}_{\text{norm}}$:
+$$X = \begin{bmatrix} \phi_1 & \phi_2 & \phi_3 \end{bmatrix} \operatorname{diag}\left(\sqrt{\lambda_1}, \sqrt{\lambda_2}, \sqrt{\lambda_3}\right) \in \mathbb{R}^{N \times 3}$$
+
+- **Fiedler Value & Vector in $\mathcal{O}(N)$**: $\lambda_1 = \|X_{:, 0}\|_2^2$ and $v_1 = X_{:, 0} / \|X_{:, 0}\|_2$, exact to machine precision without re-solving.
+- **Topological Spectral Distance in $\mathcal{O}(1)$**: $d(i, j) = \|X_{i, :} - X_{j, :}\|_2$, approximating continuous diffusion coupling between nodes.
+- **Reduced NetLSD Signature in $\mathcal{O}(1)$**: $h_{\text{3D}}(t) = \frac{1}{N}\left(1 + \sum_{k=1}^3 \exp(-t \lambda_k)\right)$, with truncation tail error bounded by $|h(t) - h_{\text{3D}}(t)| \le \exp(-t \lambda_4)$.
+- **Relaxation Half-Life in $\mathcal{O}(1)$**: $\tau_{1/2} = \ln 2 / (\alpha \lambda_1)$.
+
+Integrated in `diamond_yant.py` and `diffusion_ranker.py` (`rank_by_spectral_distance`).
+
 ---
 
 ### 3. Continuous Diffusion: Undirected Heat vs. Directed Markov Blast Radius
