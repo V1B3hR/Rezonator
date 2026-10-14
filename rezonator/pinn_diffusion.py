@@ -5,6 +5,7 @@ Solves the parabolic heat diffusion PDE on the program graph:
 Models transactional propagation, variable taint, deadlock bottlenecks, and asymptotic stability.
 """
 
+from collections import deque
 from typing import Dict, List, Any, Optional
 import numpy as np
 import scipy.linalg as la
@@ -232,12 +233,12 @@ class PINNGraphDiffusionEngine:
 
         # Exact topological reachability via graph traversal (independent of threshold & time t)
         visited = set()
-        queue = [source_idx]
+        queue = deque([source_idx])
         visited.add(source_idx)
         if sp.issparse(A_dir):
             A_csr = sp.csr_matrix(A_dir)
             while queue:
-                curr = queue.pop(0)
+                curr = queue.popleft()
                 neighbors = A_csr.indices[A_csr.indptr[curr]:A_csr.indptr[curr+1]]
                 for nbr in neighbors:
                     nbr_int = int(nbr)
@@ -247,7 +248,7 @@ class PINNGraphDiffusionEngine:
         else:
             A_dense_adj = A_dir if not sp.issparse(A_dir) else A_dir.toarray()
             while queue:
-                curr = queue.pop(0)
+                curr = queue.popleft()
                 neighbors = np.where(A_dense_adj[curr] > 0)[0]
                 for nbr in neighbors:
                     nbr_int = int(nbr)

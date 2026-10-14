@@ -278,9 +278,56 @@ class CobolProgramAST:
 # Hermetic Pure-Python COBOL Parser
 # ============================================================================
 
+def normalize_cobol_relational_phrases(expr: str) -> str:
+    """
+    Normalize English COBOL relational phrases to symbolic operators,
+    strictly preserving string literals enclosed in single or double quotes.
+    """
+    parts: List[str] = []
+    index = 0
+    length = len(expr)
+
+    replacements = [
+        (r'(?<![\w-])(?:IS\s+)?(?:GREATER\s+THAN\s+OR\s+EQUAL(?:\s+TO)?|GREATER\s+OR\s+EQUAL(?:\s+TO)?|NOT\s+LESS\s+THAN)(?![\w-])', '>='),
+        (r'(?<![\w-])(?:IS\s+)?(?:LESS\s+THAN\s+OR\s+EQUAL(?:\s+TO)?|LESS\s+OR\s+EQUAL(?:\s+TO)?|NOT\s+GREATER\s+THAN)(?![\w-])', '<='),
+        (r'(?<![\w-])(?:IS\s+)?NOT\s+EQUAL(?:\s+TO|S)?(?![\w-])', '!='),
+        (r'(?<![\w-])(?:IS\s+)?EQUAL(?:\s+TO|S)?(?![\w-])', '='),
+        (r'(?<![\w-])(?:IS\s+)?GREATER(?:\s+THAN)?(?![\w-])', '>'),
+        (r'(?<![\w-])(?:IS\s+)?LESS(?:\s+THAN)?(?![\w-])', '<'),
+    ]
+
+    while index < length:
+        char = expr[index]
+        if char in ("'", '"'):
+            quote = char
+            end = index + 1
+            while end < length:
+                if expr[end] == "\\":
+                    end += 2
+                    continue
+                if expr[end] == quote:
+                    end += 1
+                    break
+                end += 1
+            parts.append(expr[index:end])
+            index = end
+        else:
+            end = index + 1
+            while end < length and expr[end] not in ("'", '"'):
+                end += 1
+            chunk = expr[index:end]
+            for pattern, repl in replacements:
+                chunk = re.sub(pattern, repl, chunk, flags=re.IGNORECASE)
+            parts.append(chunk)
+            index = end
+
+    return "".join(parts)
+
+
 def parse_condition_expr(cond_text: str) -> Any:
     """Parses COBOL conditional expressions into Condition or ComplexCondition tree."""
     cond_text = cond_text.strip()
+    cond_text = normalize_cobol_relational_phrases(cond_text)
     and_split = re.split(r'\s+AND\s+', cond_text, flags=re.IGNORECASE)
     if len(and_split) > 1:
         left = parse_condition_expr(and_split[0])

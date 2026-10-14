@@ -87,10 +87,10 @@ class DiamondYantSpectralEngine:
         if n == 1:
             return {
                 "embedding": np.zeros((1, 3), dtype=np.float64),
-                "eigenvalues": [0.0],
-                "eigenvectors": [np.array([1.0])],
+                "eigenvalues": [],
+                "eigenvectors": [],
                 "fiedler_value": 0.0,
-                "fiedler_vector": [1.0],
+                "fiedler_vector": [],
                 "spectral_gap": 0.0,
                 "lambda_0": 0.0,
                 "truncation_bound_lambda_4": None,
@@ -147,6 +147,7 @@ class DiamondYantSpectralEngine:
         n: int,
         times: Optional[np.ndarray] = None,
         normalized: bool = True,
+        lambda_0: float = 0.0,
     ) -> List[float]:
         """
         Order-3 reduced NetLSD heat trace signature:
@@ -163,7 +164,7 @@ class DiamondYantSpectralEngine:
             )
         sig = []
         for t in times:
-            val = 1.0 + sum(float(np.exp(-t * lam)) for lam in eigenvalues_3d)
+            val = float(np.exp(-t * lambda_0)) + sum(float(np.exp(-t * lam)) for lam in eigenvalues_3d)
             if normalized:
                 val = val / n
             sig.append(float(val))
@@ -270,6 +271,7 @@ class DiamondYantSpectralEngine:
             truncation_bound_lambda_4 = emb_res.get("truncation_bound_lambda_4")
             netlsd_reduced_3d = self.compute_reduced_netlsd(
                 emb_res["eigenvalues"], n, times=times, normalized=True,
+                lambda_0=emb_res.get("lambda_0", 0.0),
             )
             half_life_3d = self.compute_spectral_half_life(fiedler_norm)
 

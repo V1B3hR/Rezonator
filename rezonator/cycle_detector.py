@@ -63,14 +63,18 @@ class CycleDetector:
             if len(scc) > 1 or (len(scc) == 1 and self.cfg.has_edge(next(iter(scc)), next(iter(scc))))
         ]
 
+        # Single precomputed reverse reachability from terminal nodes: O(terminals * (V + E))
+        if terminal_nodes:
+            nodes_can_reach_terminal: Set[str] = set()
+            for term in terminal_nodes:
+                if term in self.cfg:
+                    nodes_can_reach_terminal.add(term)
+                    nodes_can_reach_terminal.update(nx.ancestors(self.cfg, term))
+        else:
+            nodes_can_reach_terminal = set()
+
         def scc_can_reach_terminal(scc_nodes: Set[str]) -> bool:
-            if not terminal_nodes:
-                return False
-            for nid in scc_nodes:
-                for term in terminal_nodes:
-                    if nx.has_path(self.cfg, nid, term):
-                        return True
-            return False
+            return not scc_nodes.isdisjoint(nodes_can_reach_terminal)
 
         # Check trapped SCCs (SCCs from which no terminal node can ever be reached)
         trapped_sccs = [scc for scc in non_trivial_sccs if not scc_can_reach_terminal(scc)]
@@ -140,23 +144,10 @@ class CycleDetector:
                 invariant_hazard_cycles.append(cycle_info)
 
         # 3. Terminal reachability analysis per cycle:
-        trapped_cycles = []
-        for c in raw_cycles:
-            can_escape = False
-            for nid in c:
-                for term in terminal_nodes:
-                    if nx.has_path(self.cfg, nid, term):
-                        can_escape = True
-                        break
-                if can_escape:
-                    break
-            if not can_escape:
-                trapped_cycles.append(c)
+        trapped_cycles = [c for c in raw_cycles if set(c).isdisjoint(nodes_can_reach_terminal)]
 
         # Reachability from entry to terminals
-        can_reach_terminal = False
-        if entry_node and terminal_nodes:
-            can_reach_terminal = any(nx.has_path(self.cfg, entry_node, term) for term in terminal_nodes)
+        can_reach_terminal = bool(entry_node in nodes_can_reach_terminal) if entry_node else False
 
         # SCC summary objects
         scc_summaries = []

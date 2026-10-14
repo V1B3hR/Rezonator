@@ -194,6 +194,8 @@ class DiffusionRanker:
         X = embedding_3d if embedding_3d is not None else self.compute_3d_spectral_embedding()
         if len(X) == 0:
             return []
+        if len(X) != self.N:
+            raise ValueError(f"embedding_3d row count {len(X)} does not match ranker node count {self.N}")
 
         seed_coord = X[seed_idx]
         distances = np.linalg.norm(X - seed_coord, axis=1)

@@ -20,6 +20,7 @@ import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
 from rezonator.portfolio_graph import PortfolioGraph
+from rezonator.analysis_config import SPARSE_EIGENSOLVER_SHIFT
 
 
 def _canonical_json(payload: Any) -> bytes:
@@ -329,7 +330,7 @@ class PartitionRecommender:
             return fiedler_val, fiedler_vec
 
         try:
-            evals, evecs = spla.eigsh(L_sp, k=2, sigma=1e-5, which="LM")
+            evals, evecs = spla.eigsh(L_sp, k=2, sigma=SPARSE_EIGENSOLVER_SHIFT, which="LM")
             idx = np.argsort(evals)
             evals = np.clip(evals[idx], 0.0, None)
             evecs = evecs[:, idx]

@@ -66,6 +66,8 @@ class CobolRuntime:
             return 0
 
         try:
+            from rezonator.ast_graph_builder import normalize_cobol_relational_phrases
+            expr_str = normalize_cobol_relational_phrases(expr_str)
             rewritten, aliases = self._rewrite_expression(expr_str, variables)
             tree = ast.parse(rewritten, mode="eval")
             if sum(1 for _ in ast.walk(tree)) > MAX_EXPRESSION_AST_NODES:
