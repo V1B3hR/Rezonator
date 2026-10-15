@@ -39,6 +39,13 @@ from rezonator.rbac_guard import (
     RateLimitExceededError,
 )
 from rezonator.crypto_signer import SbomGenerator
+from rezonator.sokol_observer import SokolObserver, ObserverContextPacket
+from rezonator.sokol_llm_bridge import (
+    ModelCallableAdapter,
+    DomainRationaleSynthesizer,
+    ArchitectQnASession,
+)
+from rezonator.partition_recommender import PartitionCandidate, CrossingEdge
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -224,6 +231,12 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
                 self._handle_partition(data)
             elif path == "/api/migration":
                 self._handle_migration(data)
+            elif path == "/api/sokol/observe":
+                self._handle_sokol_observe(data)
+            elif path == "/api/sokol/explain_cut":
+                self._handle_sokol_explain_cut(data)
+            elif path == "/api/sokol/qna":
+                self._handle_sokol_qna(data)
             else:
                 self._send_error_json(f"Endpoint not found: {path}", 404)
         except ResourceLimitError as exc:
@@ -550,6 +563,123 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
             )
         else:
             self._send_json(evidence.to_dict())
+
+    def _handle_sokol_observe(self, data: dict):
+        code = data.get("code", "")
+        if not isinstance(code, str) or not code.strip():
+            self._send_error_json("Code parameter is required", 400)
+            return
+
+        copybooks = self._request_copybooks(data)
+        comparator = ProgramComparator(lattice_size=32, copybooks=copybooks)
+        analysis = comparator.analyze_single(code)
+
+        parser = CobolParser(copybooks=copybooks)
+        graph = parser.parse(code)
+        slicer = ProgramSlicer(graph)
+        seed_node = data.get("seed_node_id") or data.get("seed_node")
+        seed_line = data.get("seed_line")
+        seed_var = data.get("seed_variable")
+        if not seed_node and seed_line is None and not seed_var:
+            nodes = slicer.graph_data.get("nodes", [])
+            seed_node = nodes[0]["id"] if nodes else None
+
+        direction = data.get("direction", "forward")
+        max_lines = int(data.get("max_lines", 80))
+        context_slice = slicer.extract_bounded_slice(
+            seed_node_id=seed_node,
+            seed_line=seed_line,
+            seed_variable=seed_var,
+            direction=direction,
+            max_lines=max_lines,
+        )
+
+        packet = ObserverContextPacket(
+            source_snapshot_id=str(analysis["provenance"].get("source_sha256", "unknown")),
+            analysis_snapshot_id=str(analysis["provenance"].get("graph_digest") or analysis["provenance"].get("analysis_fingerprint", "unknown")),
+            context_slice=context_slice,
+            truncation_disclosed=True,
+        )
+
+        observer = SokolObserver()
+        observation = observer.observe(packet)
+        self._send_json(observation)
+
+    def _handle_sokol_explain_cut(self, data: dict):
+        candidate_data = data.get("candidate")
+        if not isinstance(candidate_data, dict):
+            self._send_error_json("candidate object is required", 400)
+            return
+
+        crossing_edges = [
+            CrossingEdge(**e) for e in candidate_data.get("crossing_edges", [])
+        ]
+        candidate = PartitionCandidate(
+            candidate_id=candidate_data.get("candidate_id", "cand-01"),
+            name=candidate_data.get("name", "Partition Candidate"),
+            partition_a=candidate_data.get("partition_a", []),
+            partition_b=candidate_data.get("partition_b", []),
+            conductance=float(candidate_data.get("conductance", 0.05)),
+            cheeger_bound_lower=float(candidate_data.get("cheeger_bound_lower", 0.02)),
+            cheeger_bound_upper=float(candidate_data.get("cheeger_bound_upper", 0.15)),
+            fiedler_threshold=float(candidate_data.get("fiedler_threshold", 0.0)),
+            crossing_edges=crossing_edges,
+            shared_tables=candidate_data.get("shared_tables", []),
+            shared_datasets=candidate_data.get("shared_datasets", []),
+            transaction_boundaries_violated=int(candidate_data.get("transaction_boundaries_violated", 0)),
+            uncertainty_score=float(candidate_data.get("uncertainty_score", 0.0)),
+        )
+
+        synthesizer = DomainRationaleSynthesizer()
+        rationale = synthesizer.explain_partition_candidate(
+            candidate,
+            system_name=data.get("system_name", "Core Mainframe System"),
+        )
+        self._send_json(rationale)
+
+    def _handle_sokol_qna(self, data: dict):
+        question = data.get("question", "")
+        code = data.get("code", "")
+        if not isinstance(question, str) or not question.strip():
+            self._send_error_json("question parameter is required", 400)
+            return
+        if not isinstance(code, str) or not code.strip():
+            self._send_error_json("code parameter is required", 400)
+            return
+
+        copybooks = self._request_copybooks(data)
+        comparator = ProgramComparator(lattice_size=32, copybooks=copybooks)
+        analysis = comparator.analyze_single(code)
+
+        parser = CobolParser(copybooks=copybooks)
+        graph = parser.parse(code)
+        slicer = ProgramSlicer(graph)
+        seed_node = data.get("seed_node_id") or data.get("seed_node")
+        seed_line = data.get("seed_line")
+        seed_var = data.get("seed_variable")
+        if not seed_node and seed_line is None and not seed_var:
+            nodes = slicer.graph_data.get("nodes", [])
+            seed_node = nodes[0]["id"] if nodes else None
+
+        context_slice = slicer.extract_bounded_slice(
+            seed_node_id=seed_node,
+            seed_line=seed_line,
+            seed_variable=seed_var,
+            direction=data.get("direction", "forward"),
+            max_lines=int(data.get("max_lines", 80)),
+        )
+
+        packet = ObserverContextPacket(
+            source_snapshot_id=str(analysis["provenance"].get("source_sha256", "unknown")),
+            analysis_snapshot_id=str(analysis["provenance"].get("graph_digest") or analysis["provenance"].get("analysis_fingerprint", "unknown")),
+            context_slice=context_slice,
+            truncation_disclosed=True,
+        )
+
+        adapter = ModelCallableAdapter()
+        qna = ArchitectQnASession(adapter=adapter)
+        answer = qna.answer_question(question=question, packet=packet)
+        self._send_json(answer)
 
     @staticmethod
     def _request_copybooks(data: dict):

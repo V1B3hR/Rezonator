@@ -103,6 +103,12 @@ _LAZY_EXPORTS = {
     "Ed25519Verifier": (".crypto_signer", "Ed25519Verifier"),
     "SignatureVerificationError": (".crypto_signer", "SignatureVerificationError"),
     "SbomGenerator": (".crypto_signer", "SbomGenerator"),
+    "LlmProvider": (".sokol_llm_bridge", "LlmProvider"),
+    "ModelEndpointConfig": (".sokol_llm_bridge", "ModelEndpointConfig"),
+    "ModelCallableAdapter": (".sokol_llm_bridge", "ModelCallableAdapter"),
+    "DomainRationaleSynthesizer": (".sokol_llm_bridge", "DomainRationaleSynthesizer"),
+    "FactIngestionPipeline": (".sokol_llm_bridge", "FactIngestionPipeline"),
+    "ArchitectQnASession": (".sokol_llm_bridge", "ArchitectQnASession"),
 }
 
 
@@ -200,4 +206,10 @@ __all__ = [
     "Ed25519Verifier",
     "SignatureVerificationError",
     "SbomGenerator",
+    "LlmProvider",
+    "ModelEndpointConfig",
+    "ModelCallableAdapter",
+    "DomainRationaleSynthesizer",
+    "FactIngestionPipeline",
+    "ArchitectQnASession",
 ]

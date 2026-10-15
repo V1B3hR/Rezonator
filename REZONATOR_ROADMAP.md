@@ -126,7 +126,7 @@ graph LR
         C3 --> C4["Hermetic Sandboxing & SBOM"]
     end
 
-    subgraph M4 ["Milestone 4: Active Sokół LLM 🟡"]
+    subgraph M4 ["Milestone 4: Active Sokół LLM 🟢"]
         S1["Model Callable Adapter<br/>(Local / Gemini / Claude)"] --> S2["Domain Rationale Synthesizer"]
         S2 --> S3["Versioned Fact Ingestion<br/>(sokol.fact.v1)"]
     end
@@ -163,10 +163,16 @@ graph LR
      - 🟢 **3.5. Software Bill of Materials (SBOM) (`SbomGenerator` in `rezonator/crypto_signer.py`):** Generates compliant CycloneDX 1.5 JSON and SPDX 2.3 JSON bills of materials; accessible via `GET /api/sbom` HTTP endpoint.
      - 🟢 **Test Coverage:** Validated with 24 dedicated security, redaction, RBAC, and signing tests in [`tests/test_bank_cybersecurity_and_shield.py`](tests/test_bank_cybersecurity_and_shield.py) (171 total tests passing across full codebase with 0 regressions).
 
-4. **Milestone 4: Pełne Uruchomienie Aktywnego Sokoła (LLM Integration)** — 🟡 **UP NEXT**:
-   - **Scope:** Connect the read-only observer adapter ([`rezonator/sokol_observer.py`](rezonator/sokol_observer.py)) to external model endpoints (e.g. Gemini, Claude, or local Ollama/vLLM) under strict privacy governance ([`DataTransferPolicy`](rezonator/sokol_observer.py)).
-   - **Objective:** Bridge discrete geometry and human decision-makers by translating mathematical signals (Cheeger conductance $\phi$, algebraic connectivity $\Delta \lambda_1$, crossing edges, heat diffusion retention) into human-readable, domain-specific architectural justifications.
-   - **Key Deliverables:** Production model callable adapter, structured JSON schema response parser, automated generation of content-addressed fact envelopes ([`sokol.fact.v1`](rezonator/project_memory.py)), and conversational architect Q&A over bounded context packets.
+4. **Milestone 4: Pełne Uruchomienie Aktywnego Sokoła (LLM Integration)** — 🟢 **DELIVERED**:
+   - **Scope:** Connect the read-only observer adapter ([`rezonator/sokol_observer.py`](rezonator/sokol_observer.py)) to external and local model endpoints (Gemini, Claude, OpenAI, Ollama/vLLM, offline deterministic) under strict privacy governance and untrusted code shielding ([`rezonator/sokol_llm_bridge.py`](rezonator/sokol_llm_bridge.py)).
+   - **Objective:** Bridge discrete geometry and human decision-makers by translating mathematical signals (Cheeger conductance $\phi$, algebraic connectivity $\Delta \lambda_1$, crossing edges, heat diffusion retention) into human-readable, domain-specific architectural justifications for bank architecture review boards.
+   - **Key Deliverables Delivered:**
+     - 🟢 **4.1. Model Callable Adapter & Secure Bridge (`ModelCallableAdapter` in `rezonator/sokol_llm_bridge.py`):** Pluggable provider adapter supporting `GEMINI`, `ANTHROPIC`, `OPENAI`, `LOCAL_OLLAMA`, and `OFFLINE_DETERMINISTIC`. Enforces input/output prompt injection scanning (`PromptInjectionShield`), automatic PII/secrets redaction (`PiiSecretsRedactor`), structured JSON schema extraction, and graceful offline fallback on network or API failures.
+     - 🟢 **4.2. Domain Rationale Synthesizer (`DomainRationaleSynthesizer` in `rezonator/sokol_llm_bridge.py`):** Synthesizes mathematical cut metrics into banking architecture rationales: explains Cheeger conductance bounds ($\phi$), Fiedler partition separation, DB2 table coupling friction, batch JCL transaction risks, and recommends phased Strangler Fig migration patterns.
+     - 🟢 **4.3. Versioned Fact Ingestion Pipeline (`FactIngestionPipeline` in `rezonator/sokol_llm_bridge.py`):** Automatically ingests AI observer hypotheses into project memory (`sokol.fact.v1`). Epistemic safety invariant enforced: all model-generated claims are strictly marked `EpistemicStatus.INFERRED` and anchored to exact graph nodes (`NodeAnchor`). Models are forbidden from verifying their own claims.
+     - 🟢 **4.4. Conversational Architect Q&A Session (`ArchitectQnASession` in `rezonator/sokol_llm_bridge.py`):** Interactive Q&A over bounded context packets (`ObserverContextPacket`). Screens user queries for prompt injections and generates grounded answers citing specific source line numbers and variables.
+     - 🟢 **4.5. REST API Endpoints in Web Studio Server (`rezonator/server.py`):** Added secure endpoints `POST /api/sokol/observe`, `POST /api/sokol/explain_cut`, and `POST /api/sokol/qna` integrated with RBAC (`ARCHITECT`, `ADMIN`, `AUDITOR`) and rate limiting.
+     - 🟢 **Test Coverage:** Validated with 12 comprehensive unit and integration tests in [`tests/test_sokol_active_llm_integration.py`](tests/test_sokol_active_llm_integration.py). Total test suite expanded to **183 passing tests** across 40 source modules with 0 type errors in MyPy.
 
 ## 4. Longer-range direction (target horizon: 2031)
 

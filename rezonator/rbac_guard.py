@@ -204,12 +204,15 @@ class EndpointSecurityEnforcer:
         "/api/audit": Role.AUDITOR,
         "/api/slice": Role.AUDITOR,
         "/api/provenance": Role.AUDITOR,
+        "/api/sbom": Role.AUDITOR,
         "/api/matrix": Role.ARCHITECT,
         "/api/friction": Role.ARCHITECT,
         "/api/partition": Role.ARCHITECT,
         "/api/dossier": Role.ARCHITECT,
         "/api/radar": Role.ARCHITECT,
         "/api/migration": Role.ARCHITECT,
+        "/api/sokol/": Role.ARCHITECT,
+        "/api/sokol": Role.ARCHITECT,
         "/api/admin": Role.ADMIN,
     }
 
@@ -218,11 +221,15 @@ class EndpointSecurityEnforcer:
         "/api/health": 120,
         "/api/audit": 60,
         "/api/slice": 40,
+        "/api/sbom": 60,
         "/api/matrix": 20,
         "/api/friction": 20,
         "/api/partition": 10,  # Heavy spectral eigensolver
         "/api/dossier": 10,    # Heavy portfolio analysis
         "/api/migration": 15,
+        "/api/sokol/observe": 20,
+        "/api/sokol/explain_cut": 20,
+        "/api/sokol/qna": 20,
     }
 
     def __init__(self, token_manager: AuthTokenManager, rate_limiter: Optional[SlidingWindowRateLimiter] = None):
