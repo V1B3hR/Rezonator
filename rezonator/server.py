@@ -33,6 +33,12 @@ from rezonator.migration_verifier import (
     DomainInvariant,
 )
 from rezonator.limits import ResourceLimitError, MAX_SOURCE_BYTES
+from rezonator.rbac_guard import (
+    EndpointSecurityEnforcer,
+    AuthSecurityError,
+    RateLimitExceededError,
+)
+from rezonator.crypto_signer import SbomGenerator
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -55,9 +61,19 @@ class RezonatorHTTPServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, server_address, RequestHandlerClass, *, mode="local", auth_token=None, allowed_origins=None):
+    def __init__(
+        self,
+        server_address,
+        RequestHandlerClass,
+        *,
+        mode="local",
+        auth_token=None,
+        allowed_origins=None,
+        security_enforcer: Optional[EndpointSecurityEnforcer] = None,
+    ):
         self.mode = mode
         self.auth_token = auth_token
+        self.security_enforcer = security_enforcer
         super().__init__(server_address, RequestHandlerClass)
         if allowed_origins is None and mode == "local":
             port = self.server_address[1]
@@ -116,6 +132,35 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
         if not self._origin_allowed():
             self._send_error_json("Origin not allowed", 403)
             return False
+
+        if self.rezonator_server.security_enforcer is not None:
+            parsed = urlparse(self.path)
+            auth_header = self.headers.get("Authorization")
+            client_ip = self.client_address[0] if self.client_address else "127.0.0.1"
+            try:
+                self.rezonator_server.security_enforcer.authorize_request(
+                    path=parsed.path,
+                    auth_header=auth_header,
+                    client_ip=client_ip,
+                )
+            except AuthSecurityError as e:
+                status_code = 403 if "Insufficient privileges" in str(e) else 401
+                self.send_response(status_code)
+                self.send_header("WWW-Authenticate", "Bearer")
+                self.send_header("Content-Type", "application/json")
+                err_bytes = json.dumps({"error": str(e)}).encode("utf-8")
+                self.send_header("Content-Length", str(len(err_bytes)))
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.wfile.write(err_bytes)
+                self.close_connection = True
+                return False
+            except RateLimitExceededError as e:
+                self._send_error_json(str(e), 429)
+                self.close_connection = True
+                return False
+            return True
+
         if not self._authorized():
             self.send_response(401)
             self.send_header("WWW-Authenticate", "Bearer")
@@ -139,6 +184,12 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({"status": "healthy", "service": "Rezonator Engine"})
             elif path == "/api/portfolio":
                 self._handle_get_portfolio()
+            elif path == "/api/sbom":
+                query = parsed.query.lower()
+                if "spdx" in query:
+                    self._send_json(SbomGenerator.generate_spdx())
+                else:
+                    self._send_json(SbomGenerator.generate_cyclonedx())
             else:
                 # Fall back to serving static files from web/
                 super().do_GET()

@@ -19,6 +19,13 @@ import hashlib
 import json
 from datetime import datetime, timezone
 
+from rezonator.security_shield import (
+    PiiSecretsRedactor,
+    PromptInjectionRisk,
+    PromptInjectionShield,
+    SecurityInjectionError,
+)
+
 
 class PolicyViolationError(ValueError):
     """Raised when an observer context packet violates the data transfer policy."""
@@ -38,12 +45,16 @@ class DataTransferPolicy:
         require_truncation_disclosure: bool = True,
         allow_variable_values: bool = False,
         max_packet_tokens: int = 4000,
+        block_prompt_injection: bool = True,
+        redact_pii: bool = True,
     ):
         self.local_only = local_only
         self.allow_remote_transfer = allow_remote_transfer
         self.require_truncation_disclosure = require_truncation_disclosure
         self.allow_variable_values = allow_variable_values
         self.max_packet_tokens = max_packet_tokens
+        self.block_prompt_injection = block_prompt_injection
+        self.redact_pii = redact_pii
 
     def validate_packet(self, packet_dict: Dict[str, Any]) -> None:
         """Validates that a context packet complies with all policy rules."""
@@ -71,6 +82,16 @@ class DataTransferPolicy:
                 "DataTransferPolicy violation: Remote model transfer is disabled by project policy. "
                 "Explicit user approval (allow_remote_transfer=True) is required."
             )
+
+        # 4. Strict prompt injection boundary
+        if self.block_prompt_injection:
+            shield = PromptInjectionShield(strict_mode=True)
+            slice_obj = packet_dict.get("context_slice", {})
+            slice_text = str(slice_obj.get("source_text") or slice_obj.get("markdown", ""))
+            try:
+                shield.scan_text(slice_text)
+            except SecurityInjectionError as e:
+                raise PolicyViolationError(f"DataTransferPolicy violation: {e}")
 
 
 class ObserverContextPacket:
@@ -184,7 +205,14 @@ class ObserverContextPacket:
             f"Direction: {self.context_slice.get('direction', 'forward')}",
         ])
         slice_text = self.context_slice.get("source_text") or self.context_slice.get("markdown", "")
-        lines.append(slice_text if slice_text else "[Empty context slice]")
+        if slice_text:
+            # Defang prompt injection directives
+            sanitized = PromptInjectionShield().sanitize_text(slice_text)
+            # Redact any credit card numbers, PESELs, DB2 passwords, or API tokens
+            clean_slice, _ = PiiSecretsRedactor().redact_text(sanitized)
+            lines.append(clean_slice)
+        else:
+            lines.append("[Empty context slice]")
 
         lines.extend([
             "================================================================================",

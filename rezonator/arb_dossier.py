@@ -12,9 +12,11 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set
 
+from rezonator.crypto_signer import Ed25519Signer
 from rezonator.friction_matrix import DatabaseTransactionFrictionMatrix
 from rezonator.partition_recommender import PartitionCandidate, PartitionRecommender
 from rezonator.portfolio_graph import PortfolioGraph
+from rezonator.security_shield import PiiSecretsRedactor
 
 
 @dataclass
@@ -49,9 +51,13 @@ class ArbDossierGenerator:
         self,
         recommender: Optional[PartitionRecommender] = None,
         friction_evaluator: Optional[DatabaseTransactionFrictionMatrix] = None,
+        signer: Optional[Ed25519Signer] = None,
+        redactor: Optional[PiiSecretsRedactor] = None,
     ):
         self.recommender = recommender or PartitionRecommender()
         self.friction_evaluator = friction_evaluator or DatabaseTransactionFrictionMatrix()
+        self.signer = signer
+        self.redactor = redactor
 
     def generate_dossier(
         self,
@@ -60,6 +66,8 @@ class ArbDossierGenerator:
         friction_data: Optional[Dict[str, Any]] = None,
         system_name: str = "Core Mainframe System",
         target_cloud_platform: str = "Cloud-Native Hybrid Microservices",
+        signer: Optional[Ed25519Signer] = None,
+        redactor: Optional[PiiSecretsRedactor] = None,
     ) -> Dict[str, Any]:
         """
         Synthesizes all layers into the official ARB Monolith Decomposition Dossier.
@@ -123,6 +131,17 @@ class ArbDossierGenerator:
             },
             "migration_waves": [w.to_dict() for w in waves],
         }
+
+        # Apply PII/Credential redaction if configured
+        effective_redactor = redactor or self.redactor
+        if effective_redactor is not None:
+            dossier_data, redaction_report = effective_redactor.redact_data_structure(dossier_data)
+            dossier_data["redaction_report"] = redaction_report.to_dict()
+
+        # Apply Ed25519 digital signature if configured
+        effective_signer = signer or self.signer
+        if effective_signer is not None:
+            dossier_data = effective_signer.sign_dossier(dossier_data)
 
         return dossier_data
 

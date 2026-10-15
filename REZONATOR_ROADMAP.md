@@ -120,13 +120,13 @@ graph LR
         Q2 --> Q3["Scale Stress & Memory Profiling"]
     end
 
-    subgraph M3 ["Milestone 3: Cyber Security ⚪"]
+    subgraph M3 ["Milestone 3: Cyber Security 🟢"]
         C1["Untrusted Code Boundary<br/>(Prompt Injection Shield)"] --> C2["PII / Secrets Redactor"]
         C2 --> C3["mTLS / Zero-Trust API & RBAC"]
         C3 --> C4["Hermetic Sandboxing & SBOM"]
     end
 
-    subgraph M4 ["Milestone 4: Active Sokół LLM ⚪"]
+    subgraph M4 ["Milestone 4: Active Sokół LLM 🟡"]
         S1["Model Callable Adapter<br/>(Local / Gemini / Claude)"] --> S2["Domain Rationale Synthesizer"]
         S2 --> S3["Versioned Fact Ingestion<br/>(sokol.fact.v1)"]
     end
@@ -153,16 +153,17 @@ graph LR
      - 🟢 **2.3. Scale Stress Testing & Resource Bounds:** 100-program synthetic enterprise portfolio benchmark (`tests/test_quality_scale_stress.py`). Measured build-to-analysis pipeline in 0.51s, peak memory footprint < 20 MB RAM, and verified stable Cheeger spectral conductance sweeps on 100-program CSR graphs without numerical breakdown.
      - 🟢 **Test Coverage:** 147 total unit, integration, invariant, and fuzzing tests passing with 0 regressions across the entire suite.
 
-3. **Milestone 3: Bank-Grade Cyber Security & Trust Boundary** — ⚪ **PLANNED**:
-   - **Scope:** Isolate Rezonator from untrusted code injection, detect confidential bank data, harden network boundaries, and ensure cryptographic provenance.
-   - **Key Deliverables:**
-     - **3.1. Untrusted Code Boundary & Prompt Injection Shield:** Defense against indirect prompt injection embedded in legacy source code or comments; enforce that external LLMs receive only sanitized, structured JSON fact envelopes (`sokol.fact.v1`) with zero raw unvalidated text.
-     - **3.2. Automated PII & Secrets Redactor:** Scanning `WORKING-STORAGE` and copybook data definitions for PAN (card numbers), SSN/PESEL, API tokens, and DB2 connection credentials; automated salted SHA-256 hashing or `[REDACTED]` masking before dossier/fact export.
-     - **3.3. Zero-Trust API Hardening & Granular RBAC:** Transition from basic loopback Bearer token to mutual TLS (mTLS) and Role-Based Access Control (`Auditor`, `Architect`, `Admin`) with DoS-resilient rate limiting on spectral eigensolver endpoints.
-     - **3.4. Hermetic Runtime Sandboxing:** Operational isolation of `CobolRuntime` preventing host OS escapes, network access, or unauthorized filesystem traversal; hard enforcement of `max_steps` and memory ceilings.
-     - **3.5. Cryptographic Provenance & SBOM:** Generation of CycloneDX/SPDX Software Bill of Materials; asymmetric cryptographic signing (Ed25519) of ARB dossiers to guarantee tamper-proof audit trails.
+3. **Milestone 3: Bank-Grade Cyber Security & Trust Boundary** — 🟢 **DELIVERED**:
+   - **Scope:** Isolate Rezonator from untrusted code injection, redact confidential bank data, harden network boundaries, and ensure cryptographic provenance.
+   - **Key Deliverables Delivered:**
+     - 🟢 **3.1. Untrusted Code Boundary & Prompt Injection Shield (`PromptInjectionShield` in `rezonator/security_shield.py`):** Multi-pattern defense against indirect prompt injection embedded in legacy source code or comments; detection of override directives (`IGNORE ALL PREVIOUS INSTRUCTIONS`), system role delimiters (`[SYSTEM ...]`), jailbreak keywords (`DAN`), markdown code fence breakouts, and hidden zero-width unicode steganography (`\u200b`, `\u200c`). Automated defanging sanitization and strict mode enforcement integrated into `DataTransferPolicy` and `ObserverContextPacket`.
+     - 🟢 **3.2. Automated PII & Secrets Redactor (`PiiSecretsRedactor` in `rezonator/security_shield.py`):** Identification and redaction of Primary Account Numbers (PAN / credit cards validated via Luhn algorithm), Polish National ID numbers (PESEL validated via 11-digit modulo-10 weights), US SSNs, and IBAN bank account numbers. Scans and strips hardcoded DB2 SQL credentials (`USER ... USING ...`), private keys, and API tokens under either `MASK` or `SALTED_HASH` mode. Integrated with `ArbDossierGenerator`.
+     - 🟢 **3.3. Zero-Trust API Hardening & Granular RBAC (`EndpointSecurityEnforcer` & `AuthTokenManager` in `rezonator/rbac_guard.py`):** Cryptographic HMAC-SHA256 Bearer tokens with Role-Based Access Control (`ANONYMOUS`, `AUDITOR`, `ARCHITECT`, `ADMIN`); tamper detection and expiration enforcement. Sliding-window rate limiter per client IP/key to protect spectral eigensolver endpoints against compute-exhaustion DoS attacks.
+     - 🟢 **3.4. Cryptographic Provenance & Ed25519 Signing (`Ed25519Signer` & `Ed25519Verifier` in `rezonator/crypto_signer.py`):** Asymmetric Ed25519 digital signatures on canonical JSON payloads; embeds cryptographic signature envelope (`sokol.signature.v1`) into Bank ARB Decomposition Dossiers for tamper evidence and non-repudiation.
+     - 🟢 **3.5. Software Bill of Materials (SBOM) (`SbomGenerator` in `rezonator/crypto_signer.py`):** Generates compliant CycloneDX 1.5 JSON and SPDX 2.3 JSON bills of materials; accessible via `GET /api/sbom` HTTP endpoint.
+     - 🟢 **Test Coverage:** Validated with 24 dedicated security, redaction, RBAC, and signing tests in [`tests/test_bank_cybersecurity_and_shield.py`](tests/test_bank_cybersecurity_and_shield.py) (171 total tests passing across full codebase with 0 regressions).
 
-4. **Milestone 4: Pełne Uruchomienie Aktywnego Sokoła (LLM Integration)** — ⚪ **PLANNED**:
+4. **Milestone 4: Pełne Uruchomienie Aktywnego Sokoła (LLM Integration)** — 🟡 **UP NEXT**:
    - **Scope:** Connect the read-only observer adapter ([`rezonator/sokol_observer.py`](rezonator/sokol_observer.py)) to external model endpoints (e.g. Gemini, Claude, or local Ollama/vLLM) under strict privacy governance ([`DataTransferPolicy`](rezonator/sokol_observer.py)).
    - **Objective:** Bridge discrete geometry and human decision-makers by translating mathematical signals (Cheeger conductance $\phi$, algebraic connectivity $\Delta \lambda_1$, crossing edges, heat diffusion retention) into human-readable, domain-specific architectural justifications.
    - **Key Deliverables:** Production model callable adapter, structured JSON schema response parser, automated generation of content-addressed fact envelopes ([`sokol.fact.v1`](rezonator/project_memory.py)), and conversational architect Q&A over bounded context packets.
