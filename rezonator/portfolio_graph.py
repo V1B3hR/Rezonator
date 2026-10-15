@@ -113,6 +113,11 @@ class PortfolioGraph:
         self.metadata: Dict[str, Any] = dict(metadata or {})
         self._adj_cache: Optional[Tuple[sp.csr_matrix, Dict[str, int], List[str]]] = None
 
+    @property
+    def programs(self) -> List[str]:
+        """Returns sorted list of distinct program IDs registered in this portfolio graph."""
+        return sorted([n.label for n in self.nodes.values() if n.node_type == "program"])
+
     def get_node(self, node_id: str) -> Optional[PortfolioNode]:
         return self.nodes.get(node_id)
 

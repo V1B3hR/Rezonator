@@ -81,6 +81,12 @@ _LAZY_EXPORTS = {
     "DifferentialTestRun": (".migration_verifier", "DifferentialTestRun"),
     "DomainInvariant": (".migration_verifier", "DomainInvariant"),
     "StructuralSignals": (".migration_verifier", "StructuralSignals"),
+    "PdsDirectoryScanner": (".pds_scanner", "PdsDirectoryScanner"),
+    "ScanResult": (".pds_scanner", "ScanResult"),
+    "DatabaseTransactionFrictionMatrix": (".friction_matrix", "DatabaseTransactionFrictionMatrix"),
+    "PairwiseFriction": (".friction_matrix", "PairwiseFriction"),
+    "ArbDossierGenerator": (".arb_dossier", "ArbDossierGenerator"),
+    "MigrationWave": (".arb_dossier", "MigrationWave"),
 }
 
 
@@ -156,4 +162,10 @@ __all__ = [
     "DifferentialTestRun",
     "DomainInvariant",
     "StructuralSignals",
+    "PdsDirectoryScanner",
+    "ScanResult",
+    "DatabaseTransactionFrictionMatrix",
+    "PairwiseFriction",
+    "ArbDossierGenerator",
+    "MigrationWave",
 ]

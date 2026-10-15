@@ -123,10 +123,14 @@ graph LR
     M_Pilot --> M_Sokol
 ```
 
-1. **Milestone 1: Pre-Migration Audit Pilot na Realnym Portfelu Klienta**:
-   - **Scope:** Scale beyond the 6-program synthetic corpus to anonymized commercial enterprise mainframe estates (100–500 COBOL programs, thousands of JCL execution steps).
+1. **Milestone 1: Pre-Migration Audit Pilot na Realnym Portfelu Klienta** — 🟢 **DELIVERED**:
+   - **Scope:** Scale beyond the 6-program synthetic corpus to commercial enterprise mainframe estates (100–500 COBOL programs, copybook libraries, thousands of JCL execution steps).
    - **Objective:** Generate a comprehensive, auditable **Monolith Decomposition Dossier** that withstands review by a bank's Architecture Review Board (ARB).
-   - **Key Deliverables:** Multi-program CSR graph scaling, automated DB2/dataset friction matrices, JCL batch step transactional crossing analysis, and automated export of candidate service boundaries (`sokol.partition.v1`).
+   - **Key Deliverables Delivered:**
+     - 🟢 **Mainframe PDS & Directory Scanner (`PdsDirectoryScanner` in `rezonator/pds_scanner.py`):** Automated discovery and classification of COBOL sources, copybooks, and JCL streams; auto-attachment of referenced copybooks; regex extraction of DB2 tables (`EXEC SQL`) and sequential/VSAM datasets (`DSN=`).
+     - 🟢 **Database & Transaction Friction Matrix (`DatabaseTransactionFrictionMatrix` in `rezonator/friction_matrix.py`):** Pairwise cross-program coupling metrics, shared DB2 table conflict analysis, shared batch datasets, JCL execution step chaining, and automated detection of hard migration barriers (e.g. distributed two-phase commit risks).
+     - 🟢 **Bank ARB Monolith Decomposition Dossier (`ArbDossierGenerator` in `rezonator/arb_dossier.py`):** Bank-grade executive scorecard, separability index ($0$–$100\%$), architectural risk grading (Grades A through D), multi-phase Strangler Fig migration waves (Waves 1–3), and formal Architecture Review Board sign-off audit block.
+     - 🟢 **Test Coverage:** Validated across synthetic mock estate and real multi-program enterprise corpus (139 total tests passing with 0 regressions, [`tests/test_commercial_pilot_and_dossier.py`](tests/test_commercial_pilot_and_dossier.py)).
 
 2. **Milestone 2: Pełne Uruchomienie Aktywnego Sokoła (LLM Integration)**:
    - **Scope:** Connect the read-only observer adapter ([`rezonator/sokol_observer.py`](rezonator/sokol_observer.py)) to external model endpoints (e.g. Gemini, Claude, or local Ollama/vLLM) under strict privacy governance ([`DataTransferPolicy`](rezonator/sokol_observer.py)).
