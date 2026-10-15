@@ -307,7 +307,7 @@ class ProjectMemory:
     def register_fact(self, fact: Mapping[str, Any]) -> str:
         """Register a validated fact. Rejects duplicate IDs or capacity overflow."""
         validate_fact(fact)
-        fact_id = fact["fact_id"]
+        fact_id: str = str(fact["fact_id"])
         if fact_id not in self._facts and len(self._facts) >= self.max_facts:
             raise ValueError(f"Project memory capacity limit reached ({self.max_facts} facts)")
         self._facts[fact_id] = dict(fact)

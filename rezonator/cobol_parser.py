@@ -4,7 +4,7 @@ Extracts basic blocks, control transfers, variable definitions, and usage chains
 """
 
 import re
-from typing import Dict, List, Set, Any, Tuple
+from typing import Dict, List, Set, Any, Tuple, Optional
 
 from rezonator.copybooks import CopybookResolutionError
 from rezonator.limits import ResourceLimitError, validate_graph_payload, validate_source_size
@@ -81,7 +81,7 @@ class CobolParser:
     Extracts Data Division state variables and Procedure Division Control/Data flow graphs.
     """
 
-    def __init__(self, copybooks: Dict[str, str] = None):
+    def __init__(self, copybooks: Optional[Dict[str, str]] = None):
         self.variables: Dict[str, VariableDef] = {}
         self.nodes: Dict[str, ProgramNode] = {}
         self.edges: List[GraphEdge] = []
@@ -89,7 +89,7 @@ class CobolParser:
         self.copybooks = copybooks
 
     def clean_cobol_text(self, source: str) -> List[str]:
-        """Cleans columns 1-6 (sequence numbers) and column 7 (indicator area) if fixed format."""
+        """Cleans columns 1-6 (sequence numbers), col 7 (indicator), and col 73-80 (identification)."""
         lines = []
         for raw_line in source.splitlines():
             line = raw_line.rstrip()
@@ -97,14 +97,14 @@ class CobolParser:
                 continue
 
             # Standard 80-column fixed format check
-            if len(line) >= 7 and line[6] in ('*', '/'):
-                continue  # Comment line
-
-            # Strip sequence numbers if 6 digits or spaces at start
-            if len(line) > 6 and (line[:6].isdigit() or line[:6].isspace()):
-                line = line[6:]
-                if len(line) > 0 and line[0] in (' ', '-'):
-                    line = line[1:]
+            if len(line) >= 7 and (line[:6].isdigit() or line[:6].isspace()):
+                if line[6] in ('*', '/'):
+                    continue  # Comment line in col 7
+                if len(line) > 72:
+                    line = line[:72]
+                line = line[7:]
+            elif len(line) >= 7 and line[6] in ('*', '/'):
+                continue
 
             # Strip inline comments (e.g., *> )
             if "*>" in line:
@@ -124,6 +124,11 @@ class CobolParser:
                 builder = CobolASTGraphBuilder(copybooks=self.copybooks)
                 payload = builder.build_from_source(source_code)
                 payload["parser_engine"] = "CobolASTGraphBuilder"
+                self.variables = {
+                    v["name"]: VariableDef(v["name"], v.get("pic", ""), v.get("initial_value", ""), v.get("level", 1))
+                    for v in payload.get("variables", [])
+                    if isinstance(v, dict) and "name" in v
+                }
                 return payload
         except ResourceLimitError:
             raise
@@ -285,8 +290,8 @@ class CobolParser:
     def _break_statements(self, text: str) -> List[str]:
         """Splits IF/ELSE/END-IF and sequential verbs into granular statement nodes."""
         tokens = text.split()
-        pieces = []
-        curr = []
+        pieces: List[str] = []
+        curr: List[str] = []
 
         delimiters = {
             "PERFORM", "IF", "ELSE", "END-IF", "MOVE", "SUBTRACT",

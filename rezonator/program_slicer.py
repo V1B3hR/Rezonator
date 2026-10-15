@@ -91,17 +91,17 @@ class ProgramSlicer:
         if seed_line is not None and seed_line in self.nodes_by_line:
             nodes_at_line = self.nodes_by_line[seed_line]
             if nodes_at_line:
-                return nodes_at_line[0]["id"]
+                return str(nodes_at_line[0]["id"])
 
         if seed_variable is not None:
             norm_var = seed_variable.strip().upper()
             if norm_var in self.nodes_by_var:
-                return self.nodes_by_var[norm_var][0]["id"]
+                return str(self.nodes_by_var[norm_var][0]["id"])
 
         if seed_node_id:
             for nid in self.nodes_by_id:
                 if seed_node_id.lower() in nid.lower():
-                    return nid
+                    return str(nid)
 
         return None
 
@@ -541,7 +541,7 @@ class ContextSliceEvaluator:
                 if not res:
                     continue
 
-                ground_truth = set()
+                ground_truth: Set[str] = set()
                 # Re-extract ground truth
                 seed_id = mut.seed_node_id
                 slicer = ProgramSlicer(graph)

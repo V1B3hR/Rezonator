@@ -171,7 +171,7 @@ class GraphField:
         self.L_norm.sort_indices()
 
     def get_node_by_index(self, idx: int) -> Dict[str, Any]:
-        return self.nodes[idx]
+        return dict(self.nodes[idx])
 
     def get_operator_storage_bytes(self) -> int:
         """Return exact NumPy-buffer bytes held by the five CSR operators."""

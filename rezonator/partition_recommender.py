@@ -166,7 +166,7 @@ class PartitionRecommender:
         vol_total = float(np.sum(degrees))
 
         candidates: List[PartitionCandidate] = []
-        best_cuts: List[Tuple[float, int, Set[str], Set[str]]] = []
+        best_cuts: List[Tuple[float, int, Set[str], Set[str], float]] = []
 
         for split_pos in range(1, n):
             set_a_idx = set(sorted_indices[:split_pos])

@@ -22,6 +22,11 @@ from rezonator.analysis_config import (
 )
 
 
+def _to_dense(matrix: Any) -> np.ndarray:
+    arr: np.ndarray = np.asarray(matrix.toarray() if hasattr(matrix, "toarray") else matrix)
+    return arr
+
+
 class DiamondYantSpectralEngine:
     """
     Solves the modal spectrum of the Graph Laplacian and generates
@@ -97,7 +102,7 @@ class DiamondYantSpectralEngine:
             }
 
         if n < SPARSE_CUTOFF or not sp.issparse(L_norm):
-            matrix_dense = L_norm if not sp.issparse(L_norm) else L_norm.toarray()
+            matrix_dense = _to_dense(L_norm)
             evals_all, evecs_all = la.eigh(matrix_dense)
             idx_sort = np.argsort(evals_all)
             evals = np.clip(evals_all[idx_sort], 0.0, 2.0)
@@ -224,7 +229,7 @@ class DiamondYantSpectralEngine:
             L_sp = sp.csr_matrix(L, dtype=np.float64)
             k_solve = min(max(num_modes + 2, 6), n - 1)
             if n < SPARSE_CUTOFF:
-                evals, evecs = la.eigh(L if not sp.issparse(L) else L.toarray())
+                evals, evecs = la.eigh(_to_dense(L))
                 idx_sort = np.argsort(evals)
                 evals = np.clip(evals[idx_sort], a_min=0.0, a_max=None)
                 evecs = evecs[:, idx_sort]
@@ -234,7 +239,7 @@ class DiamondYantSpectralEngine:
                 evals = np.clip(evals_sm[idx_sort], a_min=0.0, a_max=None)
                 evecs = evecs_sm[:, idx_sort]
         else:
-            evals, evecs = la.eigh(L if not sp.issparse(L) else L.toarray())
+            evals, evecs = la.eigh(_to_dense(L))
             idx_sort = np.argsort(evals)
             evals = np.clip(evals[idx_sort], a_min=0.0, a_max=None)
             evecs = evecs[:, idx_sort]
@@ -276,7 +281,7 @@ class DiamondYantSpectralEngine:
             half_life_3d = self.compute_spectral_half_life(fiedler_norm)
 
             if n < SPARSE_CUTOFF:
-                evals_norm = la.eigvalsh(L_norm if not sp.issparse(L_norm) else L_norm.toarray())
+                evals_norm = la.eigvalsh(_to_dense(L_norm))
                 evals_norm = np.clip(evals_norm, 0.0, 2.0)
                 netlsd_sig = [float(np.mean(np.exp(-t * evals_norm))) for t in times]
                 netlsd_stderr = [0.0] * len(times)

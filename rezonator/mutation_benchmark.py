@@ -161,10 +161,10 @@ class MutationBenchmark:
         ground_truth: Set[str] = set()
         
         # Any node whose execution frequency differs
-        base_counts = {}
+        base_counts: Dict[str, int] = {}
         for nid in base_run.trace:
             base_counts[nid] = base_counts.get(nid, 0) + 1
-        mut_counts = {}
+        mut_counts: Dict[str, int] = {}
         for nid in mut_run.trace:
             mut_counts[nid] = mut_counts.get(nid, 0) + 1
 
@@ -283,7 +283,7 @@ class MutationBenchmark:
             vals = [r["metrics"][method][metric_name] for r in all_results]
             return float(np.mean(vals))
 
-        summary = {
+        summary: Dict[str, Any] = {
             "total_programs": len(cbl_files),
             "total_mutations_generated": total_discovered_mutations,
             "valid_behavioral_experiments": num_valid,

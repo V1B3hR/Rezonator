@@ -110,17 +110,30 @@ Following the completion of the mathematical core and robustness testing (135 pa
 
 ```mermaid
 graph LR
-    subgraph M_Pilot ["Milestone 1: Commercial Pre-Migration Pilot"]
-        P1["Scale Portfolio Ingestion<br/>(100–500 programs, JCL jobs)"] --> P2["Cheeger Spectral Decomposition"]
-        P2 --> P3["Bank Architecture Board Dossier<br/>(Auditable Decomposition Plan)"]
+    subgraph M1 ["Milestone 1: Commercial Pilot 🟢"]
+        P1["Scale Portfolio Ingestion<br/>(100–500 programs, JCL)"] --> P2["Friction Matrix & Barriers"]
+        P2 --> P3["Bank ARB Dossier<br/>(Auditable Decomposition)"]
     end
 
-    subgraph M_Sokol ["Milestone 2: Active Sokół LLM Integration"]
-        S1["Configurable Model Adapter<br/>(Local / Gemini / Claude)"] --> S2["Domain Rationale Synthesizer<br/>(Spectral Metric -> Business Context)"]
-        S2 --> S3["Versioned Fact Ingestion<br/>(sokol.fact.v1 institutional memory)"]
+    subgraph M2 ["Milestone 2: Quality & Hardening 🟢"]
+        Q1["Strict MyPy Typing & Invariants"] --> Q2["AST/Lexer Fuzzing & Mutation"]
+        Q2 --> Q3["Scale Stress & Memory Profiling"]
     end
 
-    M_Pilot --> M_Sokol
+    subgraph M3 ["Milestone 3: Cyber Security ⚪"]
+        C1["Untrusted Code Boundary<br/>(Prompt Injection Shield)"] --> C2["PII / Secrets Redactor"]
+        C2 --> C3["mTLS / Zero-Trust API & RBAC"]
+        C3 --> C4["Hermetic Sandboxing & SBOM"]
+    end
+
+    subgraph M4 ["Milestone 4: Active Sokół LLM ⚪"]
+        S1["Model Callable Adapter<br/>(Local / Gemini / Claude)"] --> S2["Domain Rationale Synthesizer"]
+        S2 --> S3["Versioned Fact Ingestion<br/>(sokol.fact.v1)"]
+    end
+
+    M1 --> M2
+    M2 --> M3
+    M3 --> M4
 ```
 
 1. **Milestone 1: Pre-Migration Audit Pilot na Realnym Portfelu Klienta** — 🟢 **DELIVERED**:
@@ -132,7 +145,24 @@ graph LR
      - 🟢 **Bank ARB Monolith Decomposition Dossier (`ArbDossierGenerator` in `rezonator/arb_dossier.py`):** Bank-grade executive scorecard, separability index ($0$–$100\%$), architectural risk grading (Grades A through D), multi-phase Strangler Fig migration waves (Waves 1–3), and formal Architecture Review Board sign-off audit block.
      - 🟢 **Test Coverage:** Validated across synthetic mock estate and real multi-program enterprise corpus (139 total tests passing with 0 regressions, [`tests/test_commercial_pilot_and_dossier.py`](tests/test_commercial_pilot_and_dossier.py)).
 
-2. **Milestone 2: Pełne Uruchomienie Aktywnego Sokoła (LLM Integration)**:
+2. **Milestone 2: Quality & Pre-Cybersecurity Hardening** — 🟢 **DELIVERED**:
+   - **Scope:** Eliminate loose dynamic typing, verify parser/lexer resilience against malformed legacy code, and establish empirical memory/scale envelopes for mass-portfolio execution.
+   - **Key Deliverables Delivered:**
+     - 🟢 **2.1. Strict Static Typing & MyPy Baseline:** Comprehensive type safety enforced across all 36 source modules in `rezonator/` (`mypy.ini` configured for Python 3.12). 46 type ambiguities resolved; 0 type errors on `python -m mypy rezonator/`.
+     - 🟢 **2.2. AST & Lexer Fuzzing / Mutation Resilience:** Hypothesis property-based and mutation fuzzing suite (`tests/test_quality_fuzzing_and_mutations.py`); resilient parsing of 80-column fixed-format lines (columns 1–6 sequence, column 7 indicator, columns 73–80 punch-card tags), unclosed `EXEC SQL` / `EXEC CICS` blocks, circular copybook recursion detection, and malformed JCL streams.
+     - 🟢 **2.3. Scale Stress Testing & Resource Bounds:** 100-program synthetic enterprise portfolio benchmark (`tests/test_quality_scale_stress.py`). Measured build-to-analysis pipeline in 0.51s, peak memory footprint < 20 MB RAM, and verified stable Cheeger spectral conductance sweeps on 100-program CSR graphs without numerical breakdown.
+     - 🟢 **Test Coverage:** 147 total unit, integration, invariant, and fuzzing tests passing with 0 regressions across the entire suite.
+
+3. **Milestone 3: Bank-Grade Cyber Security & Trust Boundary** — ⚪ **PLANNED**:
+   - **Scope:** Isolate Rezonator from untrusted code injection, detect confidential bank data, harden network boundaries, and ensure cryptographic provenance.
+   - **Key Deliverables:**
+     - **3.1. Untrusted Code Boundary & Prompt Injection Shield:** Defense against indirect prompt injection embedded in legacy source code or comments; enforce that external LLMs receive only sanitized, structured JSON fact envelopes (`sokol.fact.v1`) with zero raw unvalidated text.
+     - **3.2. Automated PII & Secrets Redactor:** Scanning `WORKING-STORAGE` and copybook data definitions for PAN (card numbers), SSN/PESEL, API tokens, and DB2 connection credentials; automated salted SHA-256 hashing or `[REDACTED]` masking before dossier/fact export.
+     - **3.3. Zero-Trust API Hardening & Granular RBAC:** Transition from basic loopback Bearer token to mutual TLS (mTLS) and Role-Based Access Control (`Auditor`, `Architect`, `Admin`) with DoS-resilient rate limiting on spectral eigensolver endpoints.
+     - **3.4. Hermetic Runtime Sandboxing:** Operational isolation of `CobolRuntime` preventing host OS escapes, network access, or unauthorized filesystem traversal; hard enforcement of `max_steps` and memory ceilings.
+     - **3.5. Cryptographic Provenance & SBOM:** Generation of CycloneDX/SPDX Software Bill of Materials; asymmetric cryptographic signing (Ed25519) of ARB dossiers to guarantee tamper-proof audit trails.
+
+4. **Milestone 4: Pełne Uruchomienie Aktywnego Sokoła (LLM Integration)** — ⚪ **PLANNED**:
    - **Scope:** Connect the read-only observer adapter ([`rezonator/sokol_observer.py`](rezonator/sokol_observer.py)) to external model endpoints (e.g. Gemini, Claude, or local Ollama/vLLM) under strict privacy governance ([`DataTransferPolicy`](rezonator/sokol_observer.py)).
    - **Objective:** Bridge discrete geometry and human decision-makers by translating mathematical signals (Cheeger conductance $\phi$, algebraic connectivity $\Delta \lambda_1$, crossing edges, heat diffusion retention) into human-readable, domain-specific architectural justifications.
    - **Key Deliverables:** Production model callable adapter, structured JSON schema response parser, automated generation of content-addressed fact envelopes ([`sokol.fact.v1`](rezonator/project_memory.py)), and conversational architect Q&A over bounded context packets.

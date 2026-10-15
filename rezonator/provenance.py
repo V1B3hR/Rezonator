@@ -48,7 +48,7 @@ def _copybook_manifest(copybooks: Optional[Mapping[str, str]]) -> list:
 
 def dependency_versions() -> Dict[str, Optional[str]]:
     """Return installed numerical/analysis dependency versions, including absence."""
-    versions = {}
+    versions: Dict[str, Optional[str]] = {}
     for distribution in DEPENDENCY_DISTRIBUTIONS:
         try:
             versions[distribution] = importlib.metadata.version(distribution)

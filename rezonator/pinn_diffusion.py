@@ -18,6 +18,11 @@ from rezonator.analysis_config import (
 )
 
 
+def _to_dense(matrix: Any) -> np.ndarray:
+    arr: np.ndarray = np.asarray(matrix.toarray() if hasattr(matrix, "toarray") else matrix)
+    return arr
+
+
 class PINNGraphDiffusionEngine:
     """
     Simulates temporal diffusion of data flow and transactional impulses
@@ -111,7 +116,7 @@ class PINNGraphDiffusionEngine:
             spectral_radius_status = "computed" if spectral_rad is not None else "not_computed_sparse"
         else:
             # Eigen-decomposition for fast, exact matrix exponential:
-            evals, evecs = la.eigh(L if not sp.issparse(L) else L.toarray())
+            evals, evecs = la.eigh(_to_dense(L))
             evals = np.clip(evals, a_min=0.0, a_max=None)
 
             trajectory = []
@@ -209,7 +214,7 @@ class PINNGraphDiffusionEngine:
             Q_sp = P_sp.T - sp.eye(n, format='csr')
             u_t = spla.expm_multiply(Q_sp * t, u0)
         else:
-            A_dense = A_dir if not sp.issparse(A_dir) else A_dir.toarray()
+            A_dense = _to_dense(A_dir)
             out_degrees = np.sum(A_dense, axis=1)
             P = np.zeros_like(A_dense)
             pos_mask = out_degrees > 0
@@ -246,7 +251,7 @@ class PINNGraphDiffusionEngine:
                         visited.add(nbr_int)
                         queue.append(nbr_int)
         else:
-            A_dense_adj = A_dir if not sp.issparse(A_dir) else A_dir.toarray()
+            A_dense_adj = _to_dense(A_dir)
             while queue:
                 curr = queue.popleft()
                 neighbors = np.where(A_dense_adj[curr] > 0)[0]
@@ -291,7 +296,7 @@ class PINNGraphDiffusionEngine:
 
         import scipy.sparse as sp
         if sp.issparse(L):
-            coo = L.tocoo()
+            coo = sp.coo_matrix(L)
             indices = torch.as_tensor(
                 np.vstack((coo.row, coo.col)), dtype=torch.int64
             )

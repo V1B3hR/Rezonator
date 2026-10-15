@@ -379,7 +379,12 @@ def parse_cobol_source(
 
     # 1. Parse Program-ID
     for line in lines:
-        m = re.search(r'PROGRAM-ID\.\s+([A-Za-z0-9_-]+)', line, re.IGNORECASE)
+        line_clean = line.rstrip()
+        if len(line_clean) >= 7 and (line_clean[:6].isdigit() or line_clean[:6].isspace()):
+            if len(line_clean) > 72:
+                line_clean = line_clean[:72]
+            line_clean = line_clean[7:]
+        m = re.search(r'PROGRAM-ID\.\s+([A-Za-z0-9_-]+)', line_clean, re.IGNORECASE)
         if m:
             prog_name = m.group(1).upper()
             break
@@ -390,7 +395,17 @@ def parse_cobol_source(
     proc_lines: List[Tuple[int, str]] = []
 
     for lineno, raw_line in enumerate(lines, 1):
-        clean = raw_line.strip()
+        line_clean = raw_line.rstrip()
+        if len(line_clean) >= 7 and (line_clean[:6].isdigit() or line_clean[:6].isspace()):
+            if line_clean[6] in ('*', '/'):
+                continue
+            if len(line_clean) > 72:
+                line_clean = line_clean[:72]
+            line_clean = line_clean[7:]
+        elif len(line_clean) >= 7 and line_clean[6] in ('*', '/'):
+            continue
+
+        clean = line_clean.strip()
         if not clean or clean.startswith("*"):
             continue
 
@@ -473,10 +488,10 @@ def parse_cobol_source(
         m_giv = re.match(r'^(?:SUBTRACT|SUB)\s+(.+?)\s+FROM\s+(.+?)\s+GIVING\s+([A-Za-z0-9_-]+)', full_text, re.IGNORECASE | re.DOTALL)
         if m_giv:
             src, base, giving = m_giv.groups()
-            stmt = SubtractStatement(operand=src.strip(), target=giving.strip().rstrip("."), line=start_lineno)
-            stmt.operands = [src.strip(), base.strip()]
-            stmt.giving = giving.strip().rstrip(".")
-            return stmt
+            sub_stmt = SubtractStatement(operand=src.strip(), target=giving.strip().rstrip("."), line=start_lineno)
+            sub_stmt.operands = [src.strip(), base.strip()]
+            sub_stmt.giving = giving.strip().rstrip(".")
+            return sub_stmt
 
         m = re.match(r'^(?:SUBTRACT|SUB)\s+(.+?)\s+FROM\s+([A-Za-z0-9_-]+)', full_text, re.IGNORECASE | re.DOTALL)
         if m:
@@ -486,10 +501,10 @@ def parse_cobol_source(
         m_giv = re.match(r'^ADD\s+(.+?)\s+TO\s+(.+?)\s+GIVING\s+([A-Za-z0-9_-]+)', full_text, re.IGNORECASE | re.DOTALL)
         if m_giv:
             src, base, giving = m_giv.groups()
-            stmt = AddStatement(operand=src.strip(), target=giving.strip().rstrip("."), line=start_lineno)
-            stmt.operands = [src.strip(), base.strip()]
-            stmt.giving = giving.strip().rstrip(".")
-            return stmt
+            add_stmt = AddStatement(operand=src.strip(), target=giving.strip().rstrip("."), line=start_lineno)
+            add_stmt.operands = [src.strip(), base.strip()]
+            add_stmt.giving = giving.strip().rstrip(".")
+            return add_stmt
 
         m = re.match(r'^ADD\s+(.+?)\s+TO\s+([A-Za-z0-9_-]+)', full_text, re.IGNORECASE | re.DOTALL)
         if m:
@@ -516,7 +531,7 @@ def parse_cobol_source(
             line_up = line.upper()
 
             # Check if this line is paragraph header: e.g. "1000-VALIDATE-REQUEST."
-            m_para = re.match(r'^([A-Za-z0-9_-]+)\.\s*$', line)
+            m_para = re.match(r'^([A-Za-z0-9_-]+)\.(?:\s+.*)?$', line)
             if m_para and not any(kw in line_up for kw in ["END-IF", "ELSE", "PERFORM", "STOP", "GOBACK", "EXIT"]):
                 break
 
@@ -590,7 +605,7 @@ def parse_cobol_source(
 
     while idx < total:
         lineno, line = proc_lines[idx]
-        m_para = re.match(r'^([A-Za-z0-9_-]+)\.\s*$', line)
+        m_para = re.match(r'^([A-Za-z0-9_-]+)\.(?:\s+.*)?$', line)
         if m_para and not any(kw in line.upper() for kw in ["END-IF", "ELSE", "STOP", "GOBACK"]):
             flush_para()
             current_para = m_para.group(1).upper()
@@ -651,12 +666,32 @@ class CobolASTGraphBuilder:
             source_origins = list(expanded.line_origins)
             validate_source_size(source_code)
 
+        # Pre-clean fixed-format lines (strip sequence cols 1-6 and identification cols 73-80)
+        cleaned_lines = []
+        is_fixed = False
+        for raw_line in source_code.splitlines():
+            line_r = raw_line.rstrip()
+            if len(line_r) >= 7 and (line_r[:6].isdigit() or line_r[:6].isspace()):
+                is_fixed = True
+                if line_r[6] in ('*', '/'):
+                    cleaned_lines.append(f"* {line_r[7:]}")
+                    continue
+                if len(line_r) > 72:
+                    line_r = line_r[:72]
+                cleaned_lines.append(f"       {line_r[7:]}")
+            else:
+                cleaned_lines.append(raw_line)
+        if is_fixed:
+            source_code = "\n".join(cleaned_lines)
+
         ast_obj = None
         if COBOLPARSER_AVAILABLE:
             try:
                 res = cobolparser.parse_cobol(source_code)
                 if res.success and res.ast is not None:
-                    ast_obj = res.ast
+                    procs = res.ast.get_procedures() if hasattr(res.ast, "get_procedures") else []
+                    if procs or "PROCEDURE DIVISION" not in source_code.upper():
+                        ast_obj = res.ast
             except Exception:
                 ast_obj = None
 
@@ -767,7 +802,7 @@ class CobolASTGraphBuilder:
 
     def _extract_vars_from_expr(self, obj: Any) -> Set[str]:
         """Recursively extracts declared variable names from an AST expression or string."""
-        found = set()
+        found: Set[str] = set()
         if obj is None:
             return found
 

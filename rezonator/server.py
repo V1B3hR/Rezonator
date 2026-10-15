@@ -11,6 +11,7 @@ import struct
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
+from typing import cast, Optional, Set
 
 from rezonator.cobol_parser import CobolParser
 from rezonator.program_comparator import ProgramComparator
@@ -77,6 +78,10 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
     # unnecessary for the local analysis API and complicate failure recovery.
     protocol_version = "HTTP/1.0"
 
+    @property
+    def rezonator_server(self) -> RezonatorHTTPServer:
+        return cast(RezonatorHTTPServer, self.server)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=WEB_DIR, **kwargs)
 
@@ -96,16 +101,16 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
 
     def _origin_allowed(self) -> bool:
         origin = self.headers.get("Origin")
-        return not origin or origin in self.server.allowed_origins
+        return not origin or origin in self.rezonator_server.allowed_origins
 
     def _authorized(self) -> bool:
-        if self.server.mode == "local":
+        if self.rezonator_server.mode == "local":
             return True
         authorization = self.headers.get("Authorization", "")
         prefix = "Bearer "
-        if not authorization.startswith(prefix) or not self.server.auth_token:
+        if not authorization.startswith(prefix) or not self.rezonator_server.auth_token:
             return False
-        return hmac.compare_digest(authorization[len(prefix):], self.server.auth_token)
+        return hmac.compare_digest(authorization[len(prefix):], self.rezonator_server.auth_token)
 
     def _check_request_access(self) -> bool:
         if not self._origin_allowed():
@@ -515,7 +520,7 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         origin = self.headers.get("Origin")
-        if origin and origin in self.server.allowed_origins:
+        if origin and origin in self.rezonator_server.allowed_origins:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -540,7 +545,7 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
             return
         self.send_response(200)
         origin = self.headers.get("Origin")
-        if origin and origin in self.server.allowed_origins:
+        if origin and origin in self.rezonator_server.allowed_origins:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -554,7 +559,7 @@ class RezonatorRequestHandler(SimpleHTTPRequestHandler):
 MathyRequestHandler = RezonatorRequestHandler
 
 
-def run_server(port: int = 8080, mode: str = "local", token: str = None):
+def run_server(port: int = 8080, mode: str = "local", token: Optional[str] = None):
     if mode not in {"local", "remote"}:
         raise ValueError("mode must be 'local' or 'remote'")
     if mode == "remote" and not token:

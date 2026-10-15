@@ -9,7 +9,7 @@ import hashlib
 import json
 import math
 import re
-from typing import Any, Dict, Iterable, Mapping, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
 from rezonator import __version__
 from rezonator.limits import MAX_SOURCE_BYTES
@@ -114,7 +114,8 @@ def _validate_event(event: Mapping[str, Any]) -> None:
         raise ValueError("unsupported evidence epistemic_status")
     if not isinstance(event.get("payload"), Mapping):
         raise ValueError("event payload must be an object")
-    _project_id(event.get("project_id"))
+    proj_id = event.get("project_id")
+    _project_id(str(proj_id) if proj_id is not None else "")
     normalized_timestamp = _timestamp(event.get("observed_at_utc"))
     if normalized_timestamp != event.get("observed_at_utc"):
         raise ValueError("observed_at_utc must be normalized to UTC with a Z suffix")
@@ -158,7 +159,7 @@ def _source_hashes(provenance: Mapping[str, Any]) -> Dict[str, str]:
 def _safe_source_origin(value: Any) -> Optional[Dict[str, Any]]:
     if not isinstance(value, Mapping):
         return None
-    origin = {}
+    origin: Dict[str, Any] = {}
     for key in ("source", "line", "copybook_stack"):
         if key in value:
             item = value[key]
@@ -229,7 +230,7 @@ def build_analysis_events(
             })
 
     finding_counts: Dict[str, int] = {}
-    anchors = []
+    anchors: List[Dict[str, Any]] = []
     for finding in audit_report.get("findings", []):
         if not isinstance(finding, Mapping):
             continue
@@ -363,7 +364,7 @@ def build_interpreter_run_event(
 
 def serialize_jsonl_events(events: Iterable[Mapping[str, Any]]) -> str:
     """Serialize validated events as a bounded UTF-8 JSON Lines string."""
-    lines = []
+    lines: List[str] = []
     total_bytes = 0
     for event in events:
         if len(lines) >= MAX_EVENTS_PER_STREAM:

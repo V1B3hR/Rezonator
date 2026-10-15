@@ -22,17 +22,17 @@ from rezonator.project_memory import (
 )
 def _get_verb(node: Dict[str, Any]) -> str:
     """Extract normalized statement verb from a node's code, label, or type."""
-    code = node.get("code", "").strip()
+    code = str(node.get("code", "")).strip()
     if code:
         parts = code.split()
         if parts:
             first = parts[0].rstrip(".").upper()
             if first in {"EXEC", "EXECUTE"} and len(parts) > 1:
                 return f"EXEC_{parts[1].rstrip('.').upper()}"
-            return first
-    label = node.get("label", "").strip()
+            return str(first)
+    label = str(node.get("label", "")).strip()
     if label:
-        return label.split()[0].rstrip(".").upper()
+        return str(label.split()[0].rstrip(".").upper())
     return str(node.get("type", "UNKNOWN")).upper()
 
 
@@ -68,7 +68,7 @@ class IdiomMiner:
         grp_snap = graph_snapshot or parsed_graph.get("provenance", {}).get("graph_digest", "graph:unspecified")
 
         # 1. DEFENSIVE_CALL_STATUS_CHECK: CALL or EXEC SQL followed by IF/EVALUATE checking return status
-        call_anchors: List[NodeAnchor] = []
+        call_anchors: List[Dict[str, Any]] = []
         for i, node in enumerate(nodes):
             stmt_type = _get_verb(node)
             if stmt_type in {"CALL", "EXEC_SQL", "EXEC_CICS"}:
@@ -117,7 +117,7 @@ class IdiomMiner:
                     if para in error_para_candidates:
                         para_incoming[para] = para_incoming.get(para, 0) + 1
 
-        central_error_anchors: List[NodeAnchor] = []
+        central_error_anchors: List[Dict[str, Any]] = []
         for para, count in para_incoming.items():
             if count >= 2:
                 # Find the first node in this paragraph to anchor
@@ -142,7 +142,7 @@ class IdiomMiner:
             })
 
         # 3. INITIALIZATION_AT_ENTRY: Entry paragraph containing consecutive MOVE/INITIALIZE
-        init_anchors: List[NodeAnchor] = []
+        init_anchors: List[Dict[str, Any]] = []
         entry_nodes = [n for n in nodes if n.get("is_entry") or _get_verb(n) in {"ENTRY", "PROGRAM-ID"}]
         entry_para = entry_nodes[0].get("paragraph") if entry_nodes else (nodes[0].get("paragraph") if nodes else "")
         if entry_para:
@@ -167,7 +167,7 @@ class IdiomMiner:
             })
 
         # 4. TERMINAL_GOBACK_GUARD: Branch guarding STOP RUN or GOBACK
-        term_anchors: List[NodeAnchor] = []
+        term_anchors: List[Dict[str, Any]] = []
         for i, node in enumerate(nodes):
             v = _get_verb(node)
             if v in {"STOP", "STOP_RUN", "GOBACK"}:
@@ -207,7 +207,8 @@ def mined_idiom_to_fact(
     The epistemic status is strictly preserved as `INFERRED`.
     """
     claim = f"Codebase follows idiom '{idiom['pattern_name']}': {idiom['description']}"
-    primary_anchor = idiom.get("supporting_anchors", [None])[0] if idiom.get("supporting_anchors") else None
+    anchors = idiom.get("supporting_anchors", [])
+    primary_anchor: Any = anchors[0] if (anchors and isinstance(anchors[0], dict)) else NodeAnchor(paragraph="UNKNOWN", statement_index=0, verb="UNKNOWN", signature="", node_id="UNKNOWN").to_dict()
 
     return create_fact(
         claim=claim,

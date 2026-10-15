@@ -142,10 +142,10 @@ class CallResolver:
                 target_name = raw_target.strip("'\"").upper()
                 is_dynamic = not is_literal
 
-                params: List[str] = []
+                cics_params: List[str] = []
                 commarea_match = re.search(r"\bCOMMAREA\s*\(\s*([A-Za-z0-9_-]+)\s*\)", body, re.IGNORECASE)
                 if commarea_match:
-                    params.append(commarea_match.group(1).upper())
+                    cics_params.append(commarea_match.group(1).upper())
 
                 call_type = f"CICS_{cmd}"
                 status = "DYNAMIC_UNRESOLVED" if is_dynamic else "UNRESOLVED_EXTERNAL"
@@ -155,7 +155,7 @@ class CallResolver:
                     target_name=target_name,
                     call_type=call_type,
                     is_dynamic=is_dynamic,
-                    parameters=params,
+                    parameters=cics_params,
                     line=lineno,
                     raw_statement=match.group(0).strip(),
                     resolution_status=status,
